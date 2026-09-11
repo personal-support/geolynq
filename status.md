@@ -4,7 +4,14 @@
 2026-09-11
 
 ## Fase atual
-Fase 3 — Pipeline de dados (n8n)
+Fase 3 concluída e validada (pipeline de importação) — decisão do usuário
+sobre quando ativar e seguir pra Fase 4 (widget)
+
+## Por onde retomar
+1. Decidir se ativa o workflow `geolynq-import-catalogo` no n8n (`active: true`)
+   e se quer trocar `create` por `upsert` nos nós Supabase (ver "Decisões em
+   aberto" abaixo)
+2. Se seguir, começar a Fase 4 — widget (Web Component)
 
 ## Concluído
 - [x] Fase 0 — GitHub criado, subdomínio wildcard configurado
@@ -18,74 +25,46 @@ Fase 3 — Pipeline de dados (n8n)
   - `docs/` com blueprint, schema v2 e doc da Fase 10 salvos no repo (fonte de
     verdade versionada, não depende mais de upload manual a cada sessão)
   - Build (`npm run build`) e typecheck (`tsc --noEmit`) validados sem erro
-  - Varredura de segredos (`git diff --staged | grep KEY|SECRET|PASSWORD|TOKEN`)
-    rodada antes do commit — sem chave real, só placeholders vazios
-- [x] Fase 3 (parcial) — planilha-modelo + workflow n8n `geolynq-import-catalogo`
+- [x] **Fase 3 — pipeline de importação de catálogo, validado ponta a ponta**
   - `docs/geolynq-catalogo-modelo.xlsx`: 3 abas (Produtos, Revendedores, Cobertura)
-    com cabeçalhos + 1 linha de exemplo preenchida, prontas para virar a planilha
-    real no Google Sheets
-  - Workflow criado no n8n (rascunho, **não ativado**):
+    com cabeçalhos + 1 linha de exemplo preenchida
+  - Planilha real subida ao Google Drive e convertida pra Google Sheets:
+    "GeoLynq — Planilha Modelo Catálogo"
+    (id `18rF_rlwS-wYHASnW9Tbd-FQI0Ko9s1lUHTTSe5T8s_g`), compartilhada com a
+    service account do n8n
+  - Workflow `geolynq-import-catalogo` criado no n8n (**rascunho, não
+    ativado** — funcional e testado):
     https://automacoes-n8n.tvywld.easypanel.host/workflow/2ZPDQymNwVSENTIf
     (22 nós — leitura das 3 abas, validação linha a linha com erro específico
     por linha, geocodificação ViaCEP + Nominatim, gravação em products/
     resellers/addresses/product_reseller_coverage via Supabase node, resumo
-    final em import_batches). Código-fonte do workflow versionado em
+    em import_batches). Código-fonte versionado em
     `docs/n8n-geolynq-import-catalogo.workflow.ts`
+  - Credencial Supabase (`Supabase account`) configurada e vinculada nos 5
+    nós de gravação; tenant de teste `demo` criado
+    (id `3596b3c6-8389-42af-b575-4bbdd69f2f2d`)
+  - **3 execuções reais de teste (#97, #98, #99)** encontraram e validaram a
+    correção de 2 bugs estruturais no workflow:
+    1. `import_batches` nunca era gravado no caminho 100% sem erro (nó de
+       merge era pulado quando todas as 7 entradas de erro ficavam vazias)
+    2. Falha total numa aba (ex: todas as linhas de Produtos com SKU
+       duplicado) travava silenciosamente o processamento das abas
+       seguintes (Revendedores, Cobertura), sem avisar no resumo
+    - Ambos corrigidos com `alwaysOutputData: true` nos nós de gravação que
+      funcionam como "porta" da cadeia (Criar Produtos, Criar Revendedores,
+      Criar Endereços, e o merge de erros)
+    - Execução #99 confirmou o comportamento correto após as correções:
+      erro específico por linha, processamento das abas seguintes mesmo com
+      falha anterior, resumo completo e preciso em `import_batches`
+
+## Decisões em aberto (usuário decide ao retomar)
+- [ ] Ativar o workflow (`active: true`) — hoje é rascunho testado, funcional
+- [ ] Trocar `create` por `upsert` nos nós Supabase se reimportar a mesma
+      planilha (atualizando linhas existentes) for um fluxo esperado — hoje
+      duplicata é tratada como erro por linha, por design (blueprint Fase 3,
+      item 4)
 
 ## Pendente
-- [x] Credencial Supabase (`Supabase account`) — host corrigido pelo usuário
-      (era `.../rest/v1/` no campo Host, causando 403; corrigido pra só
-      `https://vshlsisnuaugeceafipt.supabase.co`) e vinculada manualmente
-      no nó "Criar Produtos no Supabase" que faltava. Todos os 5 nós de
-      gravação Supabase estão com credencial válida agora.
-- [x] Planilha real subida ao Google Drive e convertida para Google Sheets —
-      "GeoLynq — Planilha Modelo Catálogo"
-      (id `18rF_rlwS-wYHASnW9Tbd-FQI0Ko9s1lUHTTSe5T8s_g`) — os 3 nós "Ler Aba ..."
-      apontam pra ela. Usuário compartilhou o arquivo com o e-mail da service
-      account do n8n (corrigiu erro 403 PERMISSION_DENIED na leitura)
-- [x] Tenant de teste criado no Supabase: `demo`
-      (id `3596b3c6-8389-42af-b575-4bbdd69f2f2d`, status `active`)
-- [x] **Primeiro teste ponta a ponta rodado com sucesso (execução #97):**
-      products=1, resellers=1, addresses=1 (com lat/long reais via Nominatim,
-      CEP validado via ViaCEP), product_reseller_coverage=1
-- [x] **Bug encontrado e corrigido:** `import_batches` ficava em 0 mesmo com a
-      execução toda "success". Causa: o nó "Consolidar Erros de Validação e
-      Gravação" (merge, 7 entradas — uma por ramo de erro/linha inválida) fica
-      com TODAS as entradas vazias quando não há nenhum erro; o n8n pula nós
-      cujas entradas chegam todas vazias, então "Montar Resumo da Importação"
-      e "Registrar Lote de Importação" nunca executavam no caminho 100%
-      bem-sucedido — exatamente o caso mais comum. Corrigido com
-      `alwaysOutputData: true` no nó de merge, forçando-o a sempre rodar
-      (mesmo com item sintético vazio) para garantir que todo run grave uma
-      linha em `import_batches`, com ou sem erro. Fonte atualizada em
-      `docs/n8n-geolynq-import-catalogo.workflow.ts`.
-- [x] **Segundo teste (execução #98) confirmou `import_batches` gravando**
-      (status `partial`, rows_processed=3, rows_failed=1) — a correção do
-      merge funcionou. Mas revelou o risco estrutural que estava anotado:
-      como a linha de Produtos falhou (SKU duplicado — reimportou a mesma
-      linha de exemplo), `resellers`/`addresses`/`product_reseller_coverage`
-      continuaram em 1 (não foram pra 2) — Revendedores e Cobertura **nem
-      foram tentados**, e o resumo não avisou isso, só reportou "1 erro".
-- [x] **Bug estrutural corrigido:** os 3 nós de gravação que servem de "porta"
-      pro resto da cadeia (Criar Produtos, Criar Revendedores, Criar
-      Endereços) agora têm `alwaysOutputData: true` — se TODAS as linhas de
-      uma aba falharem, a cadeia continua pras próximas abas em vez de parar
-      silenciosamente. Mesma causa raiz do bug do merge (nó com 0 itens de
-      saída é pulado pelo n8n, e isso se propagava adiante). Fonte atualizada
-      em `docs/n8n-geolynq-import-catalogo.workflow.ts`.
-- [x] **Terceiro teste (execução #99) validou a correção estrutural:**
-      resellers 1→2, addresses 1→2 (Revendedores rodou mesmo com Produtos
-      falhando), product_reseller_coverage continua 1 com erro correto e
-      novo ("produto com SKU 'WPI-900' não encontrado ou não importado" —
-      esperado, não é bug), import_batches novo registro: `partial`,
-      rows_processed=3, rows_failed=2 (produto duplicado + cobertura órfã).
-      **Pipeline de importação considerado validado ponta a ponta**,
-      incluindo o caminho de erro parcial.
-- [ ] Ativar o workflow (`active: true`) quando o usuário decidir que está
-      pronto pra uso real — hoje segue como rascunho testado
-- [ ] Considerar upsert/idempotência real se reimportar a mesma planilha for
-      um fluxo esperado (hoje duplicata é tratada como erro, por design —
-      ver blueprint Fase 3, item 4)
 - [ ] Fase 4 — widget (Web Component)
 
 ## Decisões tomadas nesta fase
@@ -101,4 +80,4 @@ Fase 3 — Pipeline de dados (n8n)
 
 ## Bloqueios
 - [ ] n8n atual roda em conta AWS free tier — acesso expira em 10/11/2026 (prazo fixo do plano gratuito, não depende de crédito). Precisa migrar o workflow pra VPS Hostinger antes dessa data, com folga — Danilo pode fechar o 1º cliente nesse mesmo período.
-  **Nota:** data registrada como 13/11/2026 na entrada anterior deste arquivo; usuário confirmou 10/11/2026 nesta sessão. Mantendo 10/11 como referência — vale conferir a data exata de expiração direto no console AWS antes de aproximar-se do prazo.
+  **Nota:** data registrada como 13/11/2026 na entrada anterior deste arquivo; usuário confirmou 10/11/2026 numa sessão anterior. Mantendo 10/11 como referência — vale conferir a data exata de expiração direto no console AWS antes de aproximar-se do prazo.
