@@ -138,6 +138,15 @@ const supabaseCreateProdutos = node({
   config: {
     name: 'Criar Produtos no Supabase',
     onError: 'continueErrorOutput',
+    // alwaysOutputData: sem isso, se TODAS as linhas de Produtos falharem
+    // (ex: todas com SKU duplicado), a saída de sucesso fica vazia e o n8n
+    // pula o restante da cadeia inteira (Revendedores, Endereços, Cobertura)
+    // sem avisar — o resumo reporta só o erro de Produtos, escondendo que as
+    // outras abas nem foram tentadas. Forçamos saída mesmo vazia para a
+    // cadeia sempre continuar; os nós seguintes usam referência a nós
+    // anteriores (não o item recebido), então um item sintético vazio aqui
+    // não corrompe nada — na pior hipótese gera um novo erro legítimo.
+    alwaysOutputData: true,
     parameters: {
       resource: 'row',
       operation: 'create',
@@ -236,6 +245,10 @@ const supabaseCreateRevendedores = node({
   config: {
     name: 'Criar Revendedores no Supabase',
     onError: 'continueErrorOutput',
+    // alwaysOutputData: mesmo motivo do nó Criar Produtos — garante que
+    // ViaCEP/Nominatim/Endereços/Cobertura continuem mesmo se TODAS as
+    // linhas de Revendedores falharem.
+    alwaysOutputData: true,
     parameters: {
       resource: 'row',
       operation: 'create',
@@ -327,6 +340,9 @@ const supabaseCreateEnderecos = node({
   config: {
     name: 'Criar Endereços no Supabase',
     onError: 'continueErrorOutput',
+    // alwaysOutputData: mesmo motivo dos nós anteriores — garante que a
+    // validação de Cobertura sempre rode, mesmo se TODOS os endereços falharem.
+    alwaysOutputData: true,
     parameters: {
       resource: 'row',
       operation: 'create',

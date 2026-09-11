@@ -59,14 +59,29 @@ Fase 3 — Pipeline de dados (n8n)
       (mesmo com item sintético vazio) para garantir que todo run grave uma
       linha em `import_batches`, com ou sem erro. Fonte atualizada em
       `docs/n8n-geolynq-import-catalogo.workflow.ts`.
-- [ ] **Re-rodar o teste** pra confirmar que `import_batches` grava a linha
-      agora (a correção ainda não foi validada com uma nova execução)
-- [ ] Risco estrutural conhecido, não testado ainda: o pipeline é uma cadeia
-      única (Produtos → Revendedores → Cobertura → Resumo). Se uma aba inteira
-      vier com 0 linhas válidas (ex: todas as linhas de Produtos inválidas),
-      as etapas seguintes (Revendedores, Cobertura, e o próprio resumo) podem
-      não executar — mesma classe de bug do item acima, só que em outros elos
-      da cadeia. Só valida com um teste real usando dados com erro proposital
+- [x] **Segundo teste (execução #98) confirmou `import_batches` gravando**
+      (status `partial`, rows_processed=3, rows_failed=1) — a correção do
+      merge funcionou. Mas revelou o risco estrutural que estava anotado:
+      como a linha de Produtos falhou (SKU duplicado — reimportou a mesma
+      linha de exemplo), `resellers`/`addresses`/`product_reseller_coverage`
+      continuaram em 1 (não foram pra 2) — Revendedores e Cobertura **nem
+      foram tentados**, e o resumo não avisou isso, só reportou "1 erro".
+- [x] **Bug estrutural corrigido:** os 3 nós de gravação que servem de "porta"
+      pro resto da cadeia (Criar Produtos, Criar Revendedores, Criar
+      Endereços) agora têm `alwaysOutputData: true` — se TODAS as linhas de
+      uma aba falharem, a cadeia continua pras próximas abas em vez de parar
+      silenciosamente. Mesma causa raiz do bug do merge (nó com 0 itens de
+      saída é pulado pelo n8n, e isso se propagava adiante). Fonte atualizada
+      em `docs/n8n-geolynq-import-catalogo.workflow.ts`.
+- [ ] **Falta re-rodar mais uma vez** pra confirmar que agora Revendedores/
+      Cobertura são tentados mesmo com Produtos falhando (o teste também vai
+      gerar um novo erro esperado: "produto com SKU 'WPI-900' não encontrado"
+      na Cobertura, já que o produto não foi recriado — isso é comportamento
+      correto, não um bug)
+- [ ] Depois de validar: ativar o workflow (`active: true`) e considerar
+      adicionar upsert/idempotência real se reimportar a mesma planilha for
+      um fluxo esperado (hoje duplicata é tratada como erro, por design —
+      ver blueprint Fase 3, item 4)
 - [ ] Fase 4 — widget (Web Component)
 
 ## Decisões tomadas nesta fase
