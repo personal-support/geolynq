@@ -34,6 +34,9 @@ Fase 3 — Pipeline de dados (n8n)
   novo, tabela `commercial_opportunities` definida desde já — só usar na Fase 10)
 - `packages/shared` cobre as 10 tabelas do schema v2 para não reabrir o pacote de
   tipos a cada fase nova
+- Fase 3 segue rodando no n8n atual (AWS free tier) — sem migração antecipada pra
+  VPS Hostinger. Migrar só perto do prazo de expiração (ver Bloqueios)
 
 ## Bloqueios
-- [ ] n8n atual roda em conta AWS free tier — acesso expira em 13/11/2026 (prazo fixo do plano gratuito, não depende de crédito). Precisa migrar o workflow pra VPS Hostinger antes dessa data, com folga — Danilo pode fechar o 1º cliente nesse mesmo período.
+- [ ] n8n atual roda em conta AWS free tier — acesso expira em 10/11/2026 (prazo fixo do plano gratuito, não depende de crédito). Precisa migrar o workflow pra VPS Hostinger antes dessa data, com folga — Danilo pode fechar o 1º cliente nesse mesmo período.
+  **Nota:** data registrada como 13/11/2026 na entrada anterior deste arquivo; usuário confirmou 10/11/2026 nesta sessão. Mantendo 10/11 como referência — vale conferir a data exata de expiração direto no console AWS antes de aproximar-se do prazo.
