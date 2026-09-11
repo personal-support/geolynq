@@ -450,6 +450,12 @@ const mergeErros = merge({
   version: 3.2,
   config: {
     name: 'Consolidar Erros de Validação e Gravação',
+    // alwaysOutputData: sem isso, quando NENHUMA das 7 entradas (erros/inválidos)
+    // recebe item, o n8n pula o nó inteiro (regra padrão: todas entradas vazias
+    // => nó pulado) e o resumo final (import_batches) nunca é gravado no caminho
+    // 100% bem-sucedido. Forçamos saída mesmo vazia para garantir que
+    // "Montar Resumo da Importação" sempre rode, com ou sem erro.
+    alwaysOutputData: true,
     parameters: { mode: 'append', numberInputs: 7 },
     output: [{ json: { _sheet: 'Produtos', _row: 5, _error: 'exemplo de erro' } }]
   }

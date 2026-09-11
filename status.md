@@ -33,29 +33,40 @@ Fase 3 — Pipeline de dados (n8n)
     `docs/n8n-geolynq-import-catalogo.workflow.ts`
 
 ## Pendente
-- [x] Credencial Supabase (`Supabase account`) já criada no n8n e vinculada em
-      4 dos 5 nós de gravação (Revendedores, Endereços, Cobertura, Import Batch)
+- [x] Credencial Supabase (`Supabase account`) — host corrigido pelo usuário
+      (era `.../rest/v1/` no campo Host, causando 403; corrigido pra só
+      `https://vshlsisnuaugeceafipt.supabase.co`) e vinculada manualmente
+      no nó "Criar Produtos no Supabase" que faltava. Todos os 5 nós de
+      gravação Supabase estão com credencial válida agora.
 - [x] Planilha real subida ao Google Drive e convertida para Google Sheets —
       "GeoLynq — Planilha Modelo Catálogo"
       (id `18rF_rlwS-wYHASnW9Tbd-FQI0Ko9s1lUHTTSe5T8s_g`) — os 3 nós "Ler Aba ..."
-      já apontam pra ela (`documentId` mode `id`, não mais placeholder)
+      apontam pra ela. Usuário compartilhou o arquivo com o e-mail da service
+      account do n8n (corrigiu erro 403 PERMISSION_DENIED na leitura)
 - [x] Tenant de teste criado no Supabase: `demo`
-      (id `3596b3c6-8389-42af-b575-4bbdd69f2f2d`, status `active`) — já
-      preenchido no nó "Parâmetros da Importação" (substituindo o placeholder)
-- [ ] Único passo manual que falta antes de ativar `geolynq-import-catalogo`:
-  Abrir o nó **"Criar Produtos no Supabase"** na UI do n8n e selecionar a
-  credencial **"Supabase account"** no dropdown. A API do n8n não permite essa
-  vinculação para esta sessão (`credential not found or not accessible` — a
-  credencial pertence a outro escopo de permissão que a sessão MCP não
-  enxerga), só a UI resolve. O mapeamento de colunas (fieldId) desse nó já
-  estava corrompido de uma tentativa anterior e foi corrigido via API.
-- [ ] Depois de vincular a credencial: rodar 1x manualmente (botão "Iniciar
-      Importação"), conferir `import_batches` no Supabase antes de liberar
-- [ ] Atenção no primeiro teste: os 3 nós "Ler Aba ..." usam a credencial
-      Google `googleApi` em modo **service account** — se a leitura falhar por
-      permissão, é porque a planilha (criada com a conta pessoal
-      gestao.junior.lopes@gmail.com) precisa ser compartilhada com o e-mail
-      da service account usada por essa credencial no n8n
+      (id `3596b3c6-8389-42af-b575-4bbdd69f2f2d`, status `active`)
+- [x] **Primeiro teste ponta a ponta rodado com sucesso (execução #97):**
+      products=1, resellers=1, addresses=1 (com lat/long reais via Nominatim,
+      CEP validado via ViaCEP), product_reseller_coverage=1
+- [x] **Bug encontrado e corrigido:** `import_batches` ficava em 0 mesmo com a
+      execução toda "success". Causa: o nó "Consolidar Erros de Validação e
+      Gravação" (merge, 7 entradas — uma por ramo de erro/linha inválida) fica
+      com TODAS as entradas vazias quando não há nenhum erro; o n8n pula nós
+      cujas entradas chegam todas vazias, então "Montar Resumo da Importação"
+      e "Registrar Lote de Importação" nunca executavam no caminho 100%
+      bem-sucedido — exatamente o caso mais comum. Corrigido com
+      `alwaysOutputData: true` no nó de merge, forçando-o a sempre rodar
+      (mesmo com item sintético vazio) para garantir que todo run grave uma
+      linha em `import_batches`, com ou sem erro. Fonte atualizada em
+      `docs/n8n-geolynq-import-catalogo.workflow.ts`.
+- [ ] **Re-rodar o teste** pra confirmar que `import_batches` grava a linha
+      agora (a correção ainda não foi validada com uma nova execução)
+- [ ] Risco estrutural conhecido, não testado ainda: o pipeline é uma cadeia
+      única (Produtos → Revendedores → Cobertura → Resumo). Se uma aba inteira
+      vier com 0 linhas válidas (ex: todas as linhas de Produtos inválidas),
+      as etapas seguintes (Revendedores, Cobertura, e o próprio resumo) podem
+      não executar — mesma classe de bug do item acima, só que em outros elos
+      da cadeia. Só valida com um teste real usando dados com erro proposital
 - [ ] Fase 4 — widget (Web Component)
 
 ## Decisões tomadas nesta fase
