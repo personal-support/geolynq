@@ -1,0 +1,13 @@
+{
+  "name": "geolynq",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@geolynq/admin",
+    "build": "npm run build --workspace=@geolynq/admin",
+    "lint": "npm run lint --workspace=@geolynq/admin"
+  }
+}
