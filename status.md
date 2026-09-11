@@ -33,14 +33,23 @@ Fase 3 — Pipeline de dados (n8n)
     `docs/n8n-geolynq-import-catalogo.workflow.ts`
 
 ## Pendente
+- [x] Credencial Supabase (`Supabase account`) já criada no n8n e vinculada em
+      4 dos 5 nós de gravação (Revendedores, Endereços, Cobertura, Import Batch)
 - [ ] Antes de ativar o workflow `geolynq-import-catalogo`:
-  1. Subir `docs/geolynq-catalogo-modelo.xlsx` como Google Sheet real e
-     selecioná-lo nos 3 nós "Ler Aba ..." (picker de spreadsheet no n8n)
-  2. Criar a credencial Supabase no n8n (Project URL + `service_role key` do
-     projeto `geolynq-prod`) e vincular nos 5 nós "Criar ... no Supabase"
-  3. Editar o campo `tenant_id` no nó "Parâmetros da Importação" antes de
-     cada execução manual (um tenant por rodada)
-  4. Rodar 1x com dados de teste, conferir `import_batches` antes de liberar
+  1. Vincular a credencial `Supabase account` manualmente no nó "Criar Produtos
+     no Supabase" pela UI do n8n — a sessão MCP não tem acesso a essa credencial
+     (`credential not found or not accessible`), só o usuário consegue vinculá-la
+     ali. O mapeamento de colunas (fieldId) desse nó já foi corrigido via API —
+     tinha sido perdido/corrompido durante o auto-assign de credenciais.
+  2. Criar um tenant real (ou de teste) na tabela `tenants` do Supabase — hoje
+     a tabela está vazia, então o campo `tenant_id` do nó "Parâmetros da
+     Importação" não tem nenhum UUID válido para usar ainda
+  3. Subir `docs/geolynq-catalogo-modelo.xlsx` como Google Sheet real e
+     selecioná-lo nos 3 nós "Ler Aba ..." (picker de spreadsheet no n8n) —
+     ainda não existe nenhuma planilha "GeoLynq" no Drive conectado
+  4. Editar o campo `tenant_id` no nó "Parâmetros da Importação" com o UUID
+     real antes de cada execução manual (um tenant por rodada)
+  5. Rodar 1x com dados de teste, conferir `import_batches` antes de liberar
 - [ ] Fase 4 — widget (Web Component)
 
 ## Decisões tomadas nesta fase
