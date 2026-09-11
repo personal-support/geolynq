@@ -73,13 +73,17 @@ Fase 3 — Pipeline de dados (n8n)
       silenciosamente. Mesma causa raiz do bug do merge (nó com 0 itens de
       saída é pulado pelo n8n, e isso se propagava adiante). Fonte atualizada
       em `docs/n8n-geolynq-import-catalogo.workflow.ts`.
-- [ ] **Falta re-rodar mais uma vez** pra confirmar que agora Revendedores/
-      Cobertura são tentados mesmo com Produtos falhando (o teste também vai
-      gerar um novo erro esperado: "produto com SKU 'WPI-900' não encontrado"
-      na Cobertura, já que o produto não foi recriado — isso é comportamento
-      correto, não um bug)
-- [ ] Depois de validar: ativar o workflow (`active: true`) e considerar
-      adicionar upsert/idempotência real se reimportar a mesma planilha for
+- [x] **Terceiro teste (execução #99) validou a correção estrutural:**
+      resellers 1→2, addresses 1→2 (Revendedores rodou mesmo com Produtos
+      falhando), product_reseller_coverage continua 1 com erro correto e
+      novo ("produto com SKU 'WPI-900' não encontrado ou não importado" —
+      esperado, não é bug), import_batches novo registro: `partial`,
+      rows_processed=3, rows_failed=2 (produto duplicado + cobertura órfã).
+      **Pipeline de importação considerado validado ponta a ponta**,
+      incluindo o caminho de erro parcial.
+- [ ] Ativar o workflow (`active: true`) quando o usuário decidir que está
+      pronto pra uso real — hoje segue como rascunho testado
+- [ ] Considerar upsert/idempotência real se reimportar a mesma planilha for
       um fluxo esperado (hoje duplicata é tratada como erro, por design —
       ver blueprint Fase 3, item 4)
 - [ ] Fase 4 — widget (Web Component)
