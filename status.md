@@ -36,4 +36,4 @@ Fase 3 — Pipeline de dados (n8n)
   tipos a cada fase nova
 
 ## Bloqueios
-- nenhum
+- [ ] n8n atual roda em conta AWS free tier — acesso expira em 13/11/2026 (prazo fixo do plano gratuito, não depende de crédito). Precisa migrar o workflow pra VPS Hostinger antes dessa data, com folga — Danilo pode fechar o 1º cliente nesse mesmo período.
