@@ -20,11 +20,28 @@ Fase 3 — Pipeline de dados (n8n)
   - Build (`npm run build`) e typecheck (`tsc --noEmit`) validados sem erro
   - Varredura de segredos (`git diff --staged | grep KEY|SECRET|PASSWORD|TOKEN`)
     rodada antes do commit — sem chave real, só placeholders vazios
+- [x] Fase 3 (parcial) — planilha-modelo + workflow n8n `geolynq-import-catalogo`
+  - `docs/geolynq-catalogo-modelo.xlsx`: 3 abas (Produtos, Revendedores, Cobertura)
+    com cabeçalhos + 1 linha de exemplo preenchida, prontas para virar a planilha
+    real no Google Sheets
+  - Workflow criado no n8n (rascunho, **não ativado**):
+    https://automacoes-n8n.tvywld.easypanel.host/workflow/2ZPDQymNwVSENTIf
+    (22 nós — leitura das 3 abas, validação linha a linha com erro específico
+    por linha, geocodificação ViaCEP + Nominatim, gravação em products/
+    resellers/addresses/product_reseller_coverage via Supabase node, resumo
+    final em import_batches). Código-fonte do workflow versionado em
+    `docs/n8n-geolynq-import-catalogo.workflow.ts`
 
 ## Pendente
-- [ ] Fase 3 — planilha-modelo + workflow n8n `geolynq-import-catalogo`
-      (leitura, geocodificação ViaCEP/Nominatim, gravação em products/resellers/
-      addresses/product_reseller_coverage, log por linha em import_batches)
+- [ ] Antes de ativar o workflow `geolynq-import-catalogo`:
+  1. Subir `docs/geolynq-catalogo-modelo.xlsx` como Google Sheet real e
+     selecioná-lo nos 3 nós "Ler Aba ..." (picker de spreadsheet no n8n)
+  2. Criar a credencial Supabase no n8n (Project URL + `service_role key` do
+     projeto `geolynq-prod`) e vincular nos 5 nós "Criar ... no Supabase"
+  3. Editar o campo `tenant_id` no nó "Parâmetros da Importação" antes de
+     cada execução manual (um tenant por rodada)
+  4. Rodar 1x com dados de teste, conferir `import_batches` antes de liberar
+- [ ] Fase 4 — widget (Web Component)
 
 ## Decisões tomadas nesta fase
 - Primeiro projeto Supabase saiu na região errada (ca-central-1) — pausado, não apagado
