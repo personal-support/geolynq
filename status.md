@@ -1,83 +1,108 @@
 # Status — GeoLynq
 
 ## Última atualização
-2026-09-11
+2026-10-01
 
 ## Fase atual
-Fase 3 concluída e validada (pipeline de importação) — decisão do usuário
-sobre quando ativar e seguir pra Fase 4 (widget)
+Fase 4 — widget construído e testado (UI + isolamento + telemetria). **Falta validar
+contra o Supabase real a partir de um navegador** (ver "Por onde retomar").
 
 ## Por onde retomar
-1. Decidir se ativa o workflow `geolynq-import-catalogo` no n8n (`active: true`)
-   e se quer trocar `create` por `upsert` nos nós Supabase (ver "Decisões em
-   aberto" abaixo)
-2. Se seguir, começar a Fase 4 — widget (Web Component)
+1. Validar o widget contra o Supabase real: o sandbox de desenvolvimento bloqueia
+   `*.supabase.co` (egress 403). Liberar o domínio na rede do ambiente de nuvem, ou
+   rodar `npm run dev:widget` localmente (`apps/widget/.env.local` já documentado em
+   `.env.example`) e abrir a página de teste. Conferir em especial que a chave
+   `sb_publishable_…` (header `apikey`) é aceita pelo PostgREST; se não for, trocar por
+   a chave `anon` legada em `VITE_SUPABASE_ANON_KEY`.
+2. Fase 4.5 — hospedar o bundle (`apps/widget/dist/v1/embed.js`) em
+   `widget.geolynq.personalsupport.tech` (Nginx estático no EasyPanel; Fase 6 do blueprint)
+3. Fase 4.1 — site de amostra com o widget instalado (`demo.geolynq.personalsupport.tech`)
+4. Decidir a questão de reimportação (revendedores duplicam — ver "Decisões em aberto")
 
 ## Concluído
 - [x] Fase 0 — GitHub criado, subdomínio wildcard configurado
-- [x] Fase 1 — Supabase geolynq-prod provisionado (sa-east-1), schema aplicado (10 tabelas, RLS ativo)
-- [x] Fase 2 — estrutura do projeto
-  - Monorepo com npm workspaces (`apps/*`, `packages/*`)
-  - `apps/admin`: Next.js 16 (App Router, TypeScript, Tailwind)
-  - `packages/shared`: client Supabase (browser + service_role) e tipos TS de todas
-    as 10 tabelas do schema v2, incluindo `commercial_opportunities` (Fase 10)
-  - `.env.example` documentando as 4 variáveis (sem valores)
-  - `docs/` com blueprint, schema v2 e doc da Fase 10 salvos no repo (fonte de
-    verdade versionada, não depende mais de upload manual a cada sessão)
-  - Build (`npm run build`) e typecheck (`tsc --noEmit`) validados sem erro
-- [x] **Fase 3 — pipeline de importação de catálogo, validado ponta a ponta**
-  - `docs/geolynq-catalogo-modelo.xlsx`: 3 abas (Produtos, Revendedores, Cobertura)
-    com cabeçalhos + 1 linha de exemplo preenchida
-  - Planilha real subida ao Google Drive e convertida pra Google Sheets:
-    "GeoLynq — Planilha Modelo Catálogo"
-    (id `18rF_rlwS-wYHASnW9Tbd-FQI0Ko9s1lUHTTSe5T8s_g`), compartilhada com a
-    service account do n8n
-  - Workflow `geolynq-import-catalogo` criado no n8n (**rascunho, não
-    ativado** — funcional e testado):
-    https://automacoes-n8n.tvywld.easypanel.host/workflow/2ZPDQymNwVSENTIf
-    (22 nós — leitura das 3 abas, validação linha a linha com erro específico
-    por linha, geocodificação ViaCEP + Nominatim, gravação em products/
-    resellers/addresses/product_reseller_coverage via Supabase node, resumo
-    em import_batches). Código-fonte versionado em
-    `docs/n8n-geolynq-import-catalogo.workflow.ts`
-  - Credencial Supabase (`Supabase account`) configurada e vinculada nos 5
-    nós de gravação; tenant de teste `demo` criado
-    (id `3596b3c6-8389-42af-b575-4bbdd69f2f2d`)
-  - **3 execuções reais de teste (#97, #98, #99)** encontraram e validaram a
-    correção de 2 bugs estruturais no workflow:
-    1. `import_batches` nunca era gravado no caminho 100% sem erro (nó de
-       merge era pulado quando todas as 7 entradas de erro ficavam vazias)
-    2. Falha total numa aba (ex: todas as linhas de Produtos com SKU
-       duplicado) travava silenciosamente o processamento das abas
-       seguintes (Revendedores, Cobertura), sem avisar no resumo
-    - Ambos corrigidos com `alwaysOutputData: true` nos nós de gravação que
-      funcionam como "porta" da cadeia (Criar Produtos, Criar Revendedores,
-      Criar Endereços, e o merge de erros)
-    - Execução #99 confirmou o comportamento correto após as correções:
-      erro específico por linha, processamento das abas seguintes mesmo com
-      falha anterior, resumo completo e preciso em `import_batches`
+- [x] Fase 1 — Supabase `geolynq-prod` (sa-east-1, org `gknjufnkbourddiufozo`), schema v2 aplicado
+  - O projeto antigo `geolynq` (ca-central-1, vazio, criado na região errada) foi **pausado
+    em 2026-10-01** — libera 1 das 2 vagas ativas do free tier
+- [x] Fase 2 — monorepo (`apps/admin` Next.js, `packages/shared` client + tipos das 10 tabelas)
+- [x] Fase 3 — pipeline de importação `geolynq-import-catalogo` no n8n (22 nós, validado
+  em 3 execuções reais). **Trigger é manual por design** (Manual Trigger): não existe
+  "ativar" (`active: true`) para esse workflow; roda por clique ou `execute_workflow`.
+  Código-fonte versionado em `docs/n8n-geolynq-import-catalogo.workflow.ts`
+- [x] **Fase 4 — widget** (`apps/widget`)
+  - Web Component `<geolynq-widget tenant="slug" color="#hex">` com Shadow DOM, vanilla
+    TS, **sem supabase-js** (fetch direto no PostgREST). Bundle `dist/v1/embed.js`:
+    **15 kB / 5,7 kB gzip**, 100% ASCII (acentos escapados no build — site de cliente em
+    ISO-8859-1 não corrompe o texto)
+  - Fluxo: busca de produto → CEP (ViaCEP + Nominatim) ou geolocalização do navegador →
+    revendedores por distância (PostGIS) → WhatsApp / Ligar / Site / Como chegar
+  - Telemetria desde o dia 1 (Blueprint Fase 5/10): `search` (inclusive sem resultado:
+    `product_id` null = produto fora do catálogo; `results_count` 0 = sem cobertura) e
+    `reseller_click`, sempre com `session_id` (uuid em localStorage, 30 dias; cai pra
+    memória se o storage estiver bloqueado)
+  - Segurança: todo texto do banco entra por `textContent` (sem innerHTML); `color`
+    validada como hex; site do revendedor só aceita http(s); termo de busca sanitizado
+    contra injeção na sintaxe de filtro do PostgREST; links externos com
+    `noopener noreferrer`; só a chave pública no bundle
+  - Testes: 11 unitários (vitest) + **22 verificações E2E em Chromium** (`npm run e2e -w
+    @geolynq/widget`) com Supabase/ViaCEP/Nominatim simulados — cobre isolamento contra
+    CSS hostil do site, página ISO-8859-1, eventos, tenant inexistente e API fora do ar.
+    O E2E achou 0 falhas; o teste unitário achou 1 bug (distância < 100 m), já corrigido
+  - Banco (migration `supabase/migrations/20261001000000_widget_rls_fix_and_rpcs.sql`):
+    ver "Bug encontrado" abaixo + RPCs `widget_get_tenant` e `widget_nearest_resellers`
 
-## Decisões em aberto (usuário decide ao retomar)
-- [ ] Ativar o workflow (`active: true`) — hoje é rascunho testado, funcional
-- [ ] Trocar `create` por `upsert` nos nós Supabase se reimportar a mesma
-      planilha (atualizando linhas existentes) for um fluxo esperado — hoje
-      duplicata é tratada como erro por linha, por design (blueprint Fase 3,
-      item 4)
+## Bug encontrado e corrigido nesta sessão (Fase 1 → impactava a Fase 4)
+As policies `public_read_*` e `public_insert_events` do schema v2 usavam
+`exists (select 1 from tenants …)`. Como `tenants` tem RLS e só a policy `tenant_users_self`,
+o subselect rodava como `anon` sem enxergar nenhum tenant → **o `anon` lia 0 linhas de
+products/resellers/addresses/coverage e não conseguia gravar eventos**, mesmo com dados
+ativos. O widget como desenhado (anon key + RLS) teria aberto vazio em produção.
+Corrigido com `public.is_active_tenant()` (SECURITY DEFINER) nas 5 policies; `tenants`
+continua fechada para `anon` (o widget só enxerga 5 campos públicos via RPC).
+Validado como role `anon` no geolynq-prod: lê produtos/revendedores/endereços/cobertura,
+`tenants` direto = 0 linhas, RPCs retornam, insert de evento passa.
+**`schema-locator-v2.sql` em `docs/` ainda tem as policies antigas** — a fonte de verdade
+do banco agora é schema + migration acima.
+
+## Decisões em aberto (usuário decide)
+- [ ] **Reimportação de revendedores duplica registros.** `products` tem
+      `unique(tenant_id, sku)` (duplicata vira erro por linha), mas `resellers` não tem
+      constraint única — reimportar a mesma planilha cria revendedores duplicados em
+      silêncio (já visto no tenant `demo`: 2× "Farmácia Saúde Total", das execuções #97/#98).
+      O registro anterior neste arquivo dizia que duplicata era sempre erro — vale só
+      para produtos e cobertura. Opções: `unique(tenant_id, name)` + `upsert`, ou chave
+      de negócio (nome + CEP). Resolver antes do 1º cliente real.
+- [ ] Busca de produto é sensível a acento ("proteina" não acha "Proteína"). Resolver com
+      `unaccent` + RPC de busca quando houver catálogo real.
 
 ## Pendente
-- [ ] Fase 4 — widget (Web Component)
+- [ ] Fase 4.1 — site de amostra (em paralelo à Fase 5)
+- [ ] Fase 5 — painel admin
+- [ ] Limpar os dados de teste do tenant `demo` (revendedor duplicado) antes de mostrar a cliente
+- [ ] Anti-spam em `widget_events` (qualquer um com a anon key pode inserir) — rate limit
+      no gateway/Nginx quando o widget estiver público
+- [ ] `public.spatial_ref_sys` (PostGIS) sem RLS — risco baixo (só sistemas de coordenadas),
+      advisor marca como crítico; decidir entre `ENABLE ROW LEVEL SECURITY` ou mover PostGIS
+      para o schema `extensions`
+- [ ] `npm audit`: **`next` 16.3.4 do `apps/admin` com alerta crítico** (RCE em
+      `next/og` ImageResponse; corrigido na 16.3.8) — subir patch antes do deploy do admin.
+      Mais `brace-expansion` (high, transitivo) com fix disponível
 
-## Decisões tomadas nesta fase
-- Primeiro projeto Supabase saiu na região errada (ca-central-1) — pausado, não apagado
-- Sem geolynq-dev por enquanto — free tier da org só permite 2 projetos ativos
-- Blueprint e schema atualizados para v2 nesta sessão (branding GeoLynq consolidado,
-  subdomínio wildcard `*.geolynq.personalsupport.tech`, `widget_events.session_id`
-  novo, tabela `commercial_opportunities` definida desde já — só usar na Fase 10)
-- `packages/shared` cobre as 10 tabelas do schema v2 para não reabrir o pacote de
-  tipos a cada fase nova
-- Fase 3 segue rodando no n8n atual (AWS free tier) — sem migração antecipada pra
-  VPS Hostinger. Migrar só perto do prazo de expiração (ver Bloqueios)
+## Decisões tomadas
+- Widget fala com o PostgREST via `fetch`, sem supabase-js (bundle pequeno em site de terceiro)
+- Banco de leitura pública do widget: tabelas continuam fechadas; `tenants` só via RPC de
+  5 campos; busca de revendedores é RPC `SECURITY INVOKER` (RLS continua valendo)
+- Chave no bundle: `sb_publishable_…` (feita para navegador); nunca service_role
+- Sem geolynq-dev por enquanto — free tier só permite 2 projetos ativos
+- Fase 3 segue no n8n atual (AWS free tier); migrar pra VPS Hostinger perto do prazo
+- Migration da Fase 4 aplicada via `execute_sql`, não `apply_migration` (3 timeouts da
+  ferramenta, sem lock no banco) → **não consta no histórico `supabase_migrations`**;
+  arquivo no repo é idempotente
 
 ## Bloqueios
-- [ ] n8n atual roda em conta AWS free tier — acesso expira em 10/11/2026 (prazo fixo do plano gratuito, não depende de crédito). Precisa migrar o workflow pra VPS Hostinger antes dessa data, com folga — Danilo pode fechar o 1º cliente nesse mesmo período.
-  **Nota:** data registrada como 13/11/2026 na entrada anterior deste arquivo; usuário confirmou 10/11/2026 numa sessão anterior. Mantendo 10/11 como referência — vale conferir a data exata de expiração direto no console AWS antes de aproximar-se do prazo.
+- [ ] **Egress do ambiente de nuvem bloqueia `*.supabase.co`** (gateway responde 403 ao
+      CONNECT) — impede testar o widget contra o banco real a partir desta sessão. Liberar em
+      Network access do ambiente (menu do ambiente na barra de título da sessão → Edit),
+      ou testar localmente. As tools MCP do Supabase funcionam (caminho diferente).
+- [ ] n8n atual roda em conta AWS free tier — acesso expira em 10/11/2026. Migrar o
+      workflow pra VPS Hostinger com folga. Conferir a data exata no console AWS.
