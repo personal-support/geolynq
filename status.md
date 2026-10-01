@@ -9,6 +9,15 @@ via MCP + chamadas HTTP reais com a chave publishable (ver "Validação da Fase 
 Supabase real"). Próximo: Fase 4.5 (hospedar o bundle).
 
 ## Por onde retomar
+**Pausa em 2026-10-01** — usuário retoma depois. Fase 4 fechada e validada; nada em
+andamento nem pendente de limpeza.
+
+**Como trabalhar com o usuário (combinado nesta sessão):** ele não usa PC, só a VPS
+Hostinger (`root@srv1887859`, EasyPanel). Para qualquer passo na VPS: primeiro explicar em
+português simples o que será feito e por quê, depois entregar comandos prontos para colar
+(um bloco por vez, com o resultado esperado), e pedir a saída de volta. Nada de jargão
+solto nem de falar de fase futura sem contexto. O que roda no ambiente de nuvem da
+sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos pela VPS.
 
 1. Fase 4.5 — hospedar o bundle (`apps/widget/dist/v1/embed.js`) em
    `widget.geolynq.personalsupport.tech` (Nginx estático no EasyPanel; Fase 6 do blueprint)
