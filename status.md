@@ -4,18 +4,15 @@
 2026-10-01
 
 ## Fase atual
-Fase 4 — widget construído e testado. **Validado contra o banco real no nível SQL**
-(2026-10-01, ver "Validação da Fase 4 contra o Supabase real"). **Falta só 1 smoke test
-HTTP a partir de um navegador** (1 passo, abaixo).
+Fase 4 — widget construído e **validado contra o Supabase real** (2026-10-01): nível SQL
+via MCP + chamadas HTTP reais com a chave publishable (ver "Validação da Fase 4 contra o
+Supabase real"). Próximo: Fase 4.5 (hospedar o bundle).
 
 ## Por onde retomar
-1. Smoke test HTTP do widget contra o Supabase real (único passo que ficou sem rodar):
-   local, `cp apps/widget/.env.example apps/widget/.env.local`, preencher
-   `VITE_SUPABASE_URL=https://vshlsisnuaugeceafipt.supabase.co` e
-   `VITE_SUPABASE_ANON_KEY=` (chave `sb_publishable_…` do projeto), `npm run dev:widget`,
-   buscar "whey" e informar um CEP de Santos. Esperado: 1 resultado ("Farmácia Saúde
-   Total", ~0,2 km do centro) e 1 linha nova em `widget_events` por busca/clique.
-   Se o PostgREST recusar a publishable, trocar por a chave `anon` legada.
+1. Apagar a linha de teste em `widget_events` (`session_id = 'smoke-test-vps'`, id
+   `6162341c-eec1-4a9a-aac4-5a6e94ee7fc5`) — o `execute_sql` do MCP deu timeout 3x no
+   DELETE; rodar no SQL Editor do Supabase:
+   `delete from public.widget_events where session_id = 'smoke-test-vps';`
 2. Fase 4.5 — hospedar o bundle (`apps/widget/dist/v1/embed.js`) em
    `widget.geolynq.personalsupport.tech` (Nginx estático no EasyPanel; Fase 6 do blueprint)
 3. Fase 4.1 — site de amostra com o widget instalado (`demo.geolynq.personalsupport.tech`)
@@ -75,8 +72,12 @@ widget emite; escritas dentro de transação com `rollback` (confirmado depois: 
       revendedores retornam 0 (o "desligar cliente" funciona)
 - [x] Chave `sb_publishable_…` só no header `apikey`, sem `Authorization` (conforme a doc
       do Supabase; o E2E também checa isso)
-- [ ] **Não validado:** chamada HTTP real ao PostgREST com a publishable (o sandbox não
-      alcança `*.supabase.co`). É o smoke test do "Por onde retomar"
+- [x] **Smoke test HTTP real**, rodado pelo usuário na VPS Hostinger com `curl` e a chave
+      `sb_publishable_…` só no header `apikey`: `widget_get_tenant('demo')` 200,
+      busca `whey` 200 (WPI-900), `widget_nearest_resellers` 200 (Farmácia Saúde Total a
+      0,179 km), insert em `widget_events` 201. A publishable é aceita pelo PostgREST;
+      não precisa trocar pela anon legada
+- [ ] Sobrou 1 linha de teste em `widget_events` (ver "Por onde retomar", item 1)
 - Nota: E2E (22 verificações) só passa se o bundle for buildado com `VITE_SUPABASE_URL` e
   `VITE_SUPABASE_ANON_KEY`; sem elas dá timeout em `input#gl-term` (comentário no script)
 - Nota: `execute_sql` do MCP deu timeout (60 s) em blocos `DO $$` com UPDATE/DELETE; o
