@@ -4,6 +4,9 @@ const { chromium } = req('playwright'); const fs = require('fs');
 // E2E do widget em Chromium real, com Supabase/ViaCEP/Nominatim simulados via page.route
 // (formato das respostas validado antes via SQL como role anon no geolynq-prod).
 // Uso: npm run build -w @geolynq/widget && npm run e2e -w @geolynq/widget
+// O build PRECISA ter VITE_SUPABASE_URL (a mesma de SB abaixo) e VITE_SUPABASE_ANON_KEY
+// (em apps/widget/.env.local ou no ambiente); sem elas o widget nem chega na tela de busca
+// e o E2E falha com timeout esperando input#gl-term.
 const BUNDLE = require('path').join(__dirname, '..', 'dist', 'v1', 'embed.js');
 const SB = 'https://vshlsisnuaugeceafipt.supabase.co';
 const TENANT_ID = '3596b3c6-8389-42af-b575-4bbdd69f2f2d', PRODUCT_ID = 'p-1';

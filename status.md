@@ -4,16 +4,18 @@
 2026-10-01
 
 ## Fase atual
-Fase 4 — widget construído e testado (UI + isolamento + telemetria). **Falta validar
-contra o Supabase real a partir de um navegador** (ver "Por onde retomar").
+Fase 4 — widget construído e testado. **Validado contra o banco real no nível SQL**
+(2026-10-01, ver "Validação da Fase 4 contra o Supabase real"). **Falta só 1 smoke test
+HTTP a partir de um navegador** (1 passo, abaixo).
 
 ## Por onde retomar
-1. Validar o widget contra o Supabase real: o sandbox de desenvolvimento bloqueia
-   `*.supabase.co` (egress 403). Liberar o domínio na rede do ambiente de nuvem, ou
-   rodar `npm run dev:widget` localmente (`apps/widget/.env.local` já documentado em
-   `.env.example`) e abrir a página de teste. Conferir em especial que a chave
-   `sb_publishable_…` (header `apikey`) é aceita pelo PostgREST; se não for, trocar por
-   a chave `anon` legada em `VITE_SUPABASE_ANON_KEY`.
+1. Smoke test HTTP do widget contra o Supabase real (único passo que ficou sem rodar):
+   local, `cp apps/widget/.env.example apps/widget/.env.local`, preencher
+   `VITE_SUPABASE_URL=https://vshlsisnuaugeceafipt.supabase.co` e
+   `VITE_SUPABASE_ANON_KEY=` (chave `sb_publishable_…` do projeto), `npm run dev:widget`,
+   buscar "whey" e informar um CEP de Santos. Esperado: 1 resultado ("Farmácia Saúde
+   Total", ~0,2 km do centro) e 1 linha nova em `widget_events` por busca/clique.
+   Se o PostgREST recusar a publishable, trocar por a chave `anon` legada.
 2. Fase 4.5 — hospedar o bundle (`apps/widget/dist/v1/embed.js`) em
    `widget.geolynq.personalsupport.tech` (Nginx estático no EasyPanel; Fase 6 do blueprint)
 3. Fase 4.1 — site de amostra com o widget instalado (`demo.geolynq.personalsupport.tech`)
@@ -50,6 +52,35 @@ contra o Supabase real a partir de um navegador** (ver "Por onde retomar").
     O E2E achou 0 falhas; o teste unitário achou 1 bug (distância < 100 m), já corrigido
   - Banco (migration `supabase/migrations/20261001000000_widget_rls_fix_and_rpcs.sql`):
     ver "Bug encontrado" abaixo + RPCs `widget_get_tenant` e `widget_nearest_resellers`
+
+## Validação da Fase 4 contra o Supabase real (2026-10-01, geolynq-prod)
+Feita via conector MCP do Supabase, como role `anon`, com as mesmas consultas que o
+widget emite; escritas dentro de transação com `rollback` (confirmado depois: tenant
+`demo` `active`, 0 eventos, nenhuma transação aberta).
+- [x] Migration aplicada em produção: `is_active_tenant`, `widget_get_tenant`,
+      `widget_nearest_resellers` existem; policies `public_read_*`/`public_insert_events`
+      usam `is_active_tenant`
+- [x] `widget_get_tenant('demo')` → 1 linha (5 campos); slug inexistente → 0; `tenants`
+      direto → 0 linhas
+- [x] Busca `whey` e SKU `wpi-900` → 1 produto; termo inexistente → 0
+- [x] `widget_nearest_resellers` com coordenadas do centro de Santos → "Farmácia Saúde
+      Total" a 0,179 km; sem coordenadas → `distance_km` null; produto/tenant inexistente → 0
+- [x] Insert como `anon` dos 3 formatos de evento (search sem produto, search com
+      produto, reseller_click) passa nos CHECK/FK
+- [x] Negativos: tenant falso → `42501` (RLS); `event_type` inválido → `23514` (CHECK);
+      UPDATE/DELETE como `anon` em events/products/resellers/addresses/coverage → 0
+      linhas; `widget_events`, `leads`, `import_batches`, `commercial_opportunities`,
+      `tenant_users` → 0 linhas lidas
+- [x] Tenant `suspended` → `widget_get_tenant`, products, resellers, addresses e RPC de
+      revendedores retornam 0 (o "desligar cliente" funciona)
+- [x] Chave `sb_publishable_…` só no header `apikey`, sem `Authorization` (conforme a doc
+      do Supabase; o E2E também checa isso)
+- [ ] **Não validado:** chamada HTTP real ao PostgREST com a publishable (o sandbox não
+      alcança `*.supabase.co`). É o smoke test do "Por onde retomar"
+- Nota: E2E (22 verificações) só passa se o bundle for buildado com `VITE_SUPABASE_URL` e
+  `VITE_SUPABASE_ANON_KEY`; sem elas dá timeout em `input#gl-term` (comentário no script)
+- Nota: `execute_sql` do MCP deu timeout (60 s) em blocos `DO $$` com UPDATE/DELETE; o
+  banco ficou limpo nos dois casos. Comandos simples com `begin; … rollback;` funcionam
 
 ## Bug encontrado e corrigido nesta sessão (Fase 1 → impactava a Fase 4)
 As policies `public_read_*` e `public_insert_events` do schema v2 usavam
