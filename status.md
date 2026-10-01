@@ -9,14 +9,11 @@ via MCP + chamadas HTTP reais com a chave publishable (ver "Validação da Fase 
 Supabase real"). Próximo: Fase 4.5 (hospedar o bundle).
 
 ## Por onde retomar
-1. Apagar a linha de teste em `widget_events` (`session_id = 'smoke-test-vps'`, id
-   `6162341c-eec1-4a9a-aac4-5a6e94ee7fc5`) — o `execute_sql` do MCP deu timeout 3x no
-   DELETE; rodar no SQL Editor do Supabase:
-   `delete from public.widget_events where session_id = 'smoke-test-vps';`
-2. Fase 4.5 — hospedar o bundle (`apps/widget/dist/v1/embed.js`) em
+
+1. Fase 4.5 — hospedar o bundle (`apps/widget/dist/v1/embed.js`) em
    `widget.geolynq.personalsupport.tech` (Nginx estático no EasyPanel; Fase 6 do blueprint)
-3. Fase 4.1 — site de amostra com o widget instalado (`demo.geolynq.personalsupport.tech`)
-4. Decidir a questão de reimportação (revendedores duplicam — ver "Decisões em aberto")
+2. Fase 4.1 — site de amostra com o widget instalado (`demo.geolynq.personalsupport.tech`)
+3. Decidir a questão de reimportação (revendedores duplicam — ver "Decisões em aberto")
 
 ## Concluído
 - [x] Fase 0 — GitHub criado, subdomínio wildcard configurado
@@ -77,7 +74,7 @@ widget emite; escritas dentro de transação com `rollback` (confirmado depois: 
       busca `whey` 200 (WPI-900), `widget_nearest_resellers` 200 (Farmácia Saúde Total a
       0,179 km), insert em `widget_events` 201. A publishable é aceita pelo PostgREST;
       não precisa trocar pela anon legada
-- [ ] Sobrou 1 linha de teste em `widget_events` (ver "Por onde retomar", item 1)
+- [x] Linha de teste (`smoke-test-vps`) apagada pelo usuário no SQL Editor; `widget_events` = 0 linhas (conferido)
 - Nota: E2E (22 verificações) só passa se o bundle for buildado com `VITE_SUPABASE_URL` e
   `VITE_SUPABASE_ANON_KEY`; sem elas dá timeout em `input#gl-term` (comentário no script)
 - Nota: `execute_sql` do MCP deu timeout (60 s) em blocos `DO $$` com UPDATE/DELETE; o
