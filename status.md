@@ -32,9 +32,8 @@ universo da Receita); (3) **motor de dados + backoffice** (cadastro por CNPJ, se
    **Princípio:** o perfil de mercado de **cada cliente** vem da Receita no cadastro (CNPJ → CNAE → segmento →
    canais → territórios) e todo o sistema o respeita; a New Millen é só a cliente inicial (Baixada Santista era
    só a região da demo; Gofind dela ≤ 500 acessos/mês). **Foco fixo:** fabricantes que dependem de ponto de venda
-   (lojas, representantes, distribuidores; físico ou online). Ordem: ~~**B1 Telemetria v2**~~ (feito) → **próximo: B0**; (genérica, com
-   `bairro`; **FEITO e no ar em 2026-10-02**, ver "Concluído") → **B0 Perfil do tenant por CNPJ**
-   (cadastro, taxonomia de segmentos → CNAEs de canal, territórios, **CNPJ como chave de revendedor**
+   (lojas, representantes, distribuidores; físico ou online). Ordem: ~~B1 Telemetria v2~~ (**FEITO e no ar em 2026-10-02**, ver
+   "Concluído") → **próximo: B0 Perfil do tenant por CNPJ** (cadastro, taxonomia de segmentos → CNAEs de canal, territórios, **CNPJ como chave de revendedor**
    `unique(tenant_id, cnpj)`, verificação mensal de situação cadastral) → **B3 Candidatos por tenant** (base da
    Receita na VPS, recorte por tenant no Supabase) → **prova de valor com a New Millen no território dela** →
    **B2 Painel** (visões B2C lojas e B2B distribuidores/representantes) → **B4 Relatório mensal automático**.
