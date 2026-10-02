@@ -1,12 +1,14 @@
 # Status — GeoLynq
 
 ## Última atualização
-2026-10-01
+2026-10-02
 
 ## Fase atual
 Fase 4 — widget construído e **validado contra o Supabase real** (2026-10-01): nível SQL
 via MCP + chamadas HTTP reais com a chave publishable (ver "Validação da Fase 4 contra o
-Supabase real"). Próximo: Fase 4.5 (hospedar o bundle).
+Supabase real"). **Fase 4.5 em andamento:** empacotamento pronto no repo
+(`apps/widget/Dockerfile`, `apps/widget/nginx.conf`, `.dockerignore`); falta criar o app
+no EasyPanel e apontar `widget.geolynq.personalsupport.tech`.
 
 ## Por onde retomar
 **Pausa em 2026-10-01** — usuário retoma depois. Fase 4 fechada e validada; nada em
@@ -19,8 +21,22 @@ português simples o que será feito e por quê, depois entregar comandos pronto
 solto nem de falar de fase futura sem contexto. O que roda no ambiente de nuvem da
 sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos pela VPS.
 
-1. Fase 4.5 — hospedar o bundle (`apps/widget/dist/v1/embed.js`) em
-   `widget.geolynq.personalsupport.tech` (Nginx estático no EasyPanel; Fase 6 do blueprint)
+1. Fase 4.5 — hospedar o bundle em `widget.geolynq.personalsupport.tech`.
+   **Pronto no repo:** `apps/widget/Dockerfile` (build context = raiz do repo; multi-stage
+   node:22-alpine → nginx:1.27-alpine), `apps/widget/nginx.conf` (só `/v1/*` e `/healthz`;
+   cache 5 min; gzip; resto 404), `.dockerignore`. URL e chave publishable do
+   `geolynq-prod` entram como `ARG` com default no Dockerfile (públicas por design; nunca
+   service_role).
+   **Falta (na VPS/EasyPanel, usuário):** criar o app apontando pro repo GitHub
+   `personal-support/geolynq` (privado → EasyPanel precisa de acesso), branch
+   `claude/bold-cray-vbbdyb` enquanto não houver merge na `main`, build por Dockerfile
+   `apps/widget/Dockerfile` com contexto na raiz, porta 80, domínio
+   `widget.geolynq.personalsupport.tech` (SSL Let's Encrypt automático). Depois validar:
+   `curl -I https://widget.geolynq.personalsupport.tech/v1/embed.js` (200, JS, cache 300).
+   **Não verificado:** a imagem nunca foi construída de verdade (sem daemon Docker no
+   ambiente de nuvem) nem a sintaxe do nginx.conf; só os passos do build foram simulados
+   (npm ci filtrado + build = bundle 15,09 kB OK). Os rótulos exatos da UI do EasyPanel
+   também não foram conferidos (easypanel.io bloqueado no egress do ambiente).
 2. Fase 4.1 — site de amostra com o widget instalado (`demo.geolynq.personalsupport.tech`)
 3. Decidir a questão de reimportação (revendedores duplicam — ver "Decisões em aberto")
 
