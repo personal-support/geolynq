@@ -10,7 +10,7 @@ const { chromium } = req('playwright'); const fs = require('fs');
 const BUNDLE = require('path').join(__dirname, '..', 'dist', 'v1', 'embed.js');
 const SB = 'https://vshlsisnuaugeceafipt.supabase.co';
 const TENANT_ID = '3596b3c6-8389-42af-b575-4bbdd69f2f2d', PRODUCT_ID = 'p-1';
-const events = [], supabaseCalls = [];
+const events = [], supabaseCalls = [], reverseCalls = [];
 const results = [];
 const check = (n, ok, x='') => { results.push(ok); console.log((ok?'PASS ':'FAIL ')+n+(x?'  -> '+x:'')); };
 // ISO-8859-1 de propósito: simula site hospedeiro antigo, sem charset utf-8 no JS
@@ -20,7 +20,7 @@ const pageHtml = (t, p) => `<!doctype html><html><head><meta charset="iso-8859-1
 
 async function setup(ctx) {
   const page = await ctx.newPage();
-  await page.route('http://host.test/**', (r) => {
+  await page.route(/^https?:\/\/host\.test\//, (r) => {
     const u = new URL(r.request().url());
     if (u.pathname === '/page') return r.fulfill({ headers: { 'content-type': 'text/html; charset=iso-8859-1' }, body: pageHtml(u.searchParams.get('t'), u.searchParams.get('p')) });
     if (u.pathname === '/v1/embed.js') return r.fulfill({ headers: { 'content-type': 'text/javascript' }, body: fs.readFileSync(BUNDLE) });
@@ -50,7 +50,11 @@ async function setup(ctx) {
     return json({ message: 'unexpected' }, 400);
   });
   await page.route('https://viacep.com.br/**', r => r.fulfill({ headers: cors, json: { logradouro: 'Av Ana Costa', bairro: 'Gonzaga', localidade: 'Santos', uf: 'SP' } }));
-  await page.route('https://nominatim.openstreetmap.org/**', r => r.fulfill({ headers: cors, json: [{ lat: '-23.9608', lon: '-46.3336' }] }));
+  await page.route('https://nominatim.openstreetmap.org/**', r => {
+    const u = new URL(r.request().url());
+    if (u.pathname.startsWith('/reverse')) { reverseCalls.push(u.search); return r.fulfill({ headers: cors, json: { address: { suburb: 'Gonzaga', city: 'Santos', state: 'São Paulo', 'ISO3166-2-lvl4': 'BR-SP' } } }); }
+    return r.fulfill({ headers: cors, json: [{ lat: '-23.9608', lon: '-46.3336' }] });
+  });
   return page;
 }
 
@@ -115,6 +119,10 @@ async function setup(ctx) {
   check('session_id é o mesmo em todos os eventos', new Set(ev.map(e => e.session_id)).size === 1);
   const sid = await page.evaluate(() => JSON.parse(localStorage.getItem('geolynq_sid')));
   check('session_id persistido ~30 dias no localStorage', sid.id === ev[0].session_id && sid.exp - Date.now() > 29 * 864e5);
+  check('telemetria v2: todos os eventos trazem telemetry_v = 2 e location_source válido', ev.every(e => e.telemetry_v === 2 && ['cep', 'gps', 'none'].includes(e.location_source)), JSON.stringify(ev.map(e => [e.event_type, e.telemetry_v, e.location_source])));
+  check('v2 busca por CEP: bairro, cep5 (5 dígitos), coordenada arredondada, contagens e distância', !!e1 && e1.location_source === 'cep' && e1.neighborhood === 'Gonzaga' && e1.cep5 === '11060' && e1.lat_approx === -23.96 && e1.lng_approx === -46.33 && e1.physical_count === 1 && e1.online_count === 0 && e1.nearest_km === 0.2, JSON.stringify(e1));
+  check('v2 busca sem produto: location_source "none"', !!e0 && e0.location_source === 'none' && e0.cep5 === null, JSON.stringify(e0));
+  check('v2 clique: ação (whatsapp), distância do revendedor e localização', !!e2 && e2.action === 'whatsapp' && e2.distance_km === 0.2 && e2.location_source === 'cep' && e2.neighborhood === 'Gonzaga', JSON.stringify(e2));
   check('requisições usam só apikey, sem Authorization/service_role', supabaseCalls.every(c => !!c.apikey && !c.auth), supabaseCalls[0].apikey.slice(0,20)+'…');
 
   // raio máximo: a RPC nova recebe p_max_km=100 (e a antiga, sem raio, nunca mais é chamada)
@@ -135,6 +143,7 @@ async function setup(ctx) {
   await page.waitForTimeout(300);
   const eFar = events.find(e => e.event_type === 'search' && e.product_id === 'p-far');
   check('lacuna local registrada mesmo com loja online (results_count = 0)', !!eFar && eFar.results_count === 0, JSON.stringify(eFar));
+  check('v2 só online: physical_count 0, online_count 1, nearest_km nulo', !!eFar && eFar.physical_count === 0 && eFar.online_count === 1 && eFar.nearest_km === null, JSON.stringify(eFar));
 
   // produto sem nenhum revendedor, com localização: mensagem com o raio
   await goSearch('hiper');
@@ -162,6 +171,37 @@ async function setup(ctx) {
   await sel2(p5, 'input#gl-term').waitFor({ timeout: 10000 });
   check('product="SKU" inexistente: cai na busca normal', true);
 
+  // GPS: cidade/UF/bairro via geocodificação reversa (coordenada arredondada), em paralelo à busca
+  const gpsOpts = { permissions: ['geolocation'], geolocation: { latitude: -23.9608, longitude: -46.3336 } };
+  const ctxGps = await browser.newContext(gpsOpts);
+  const p6 = await setup(ctxGps);
+  await p6.goto('https://host.test/page?t=demo&p=WPI-900'); // geolocalização exige HTTPS
+  await sel2(p6, 'input#gl-cep').waitFor({ timeout: 10000 });
+  await sel2(p6, 'button:has-text("Usar minha localização")').click();
+  await sel2(p6, 'article.card').first().waitFor({ timeout: 10000 });
+  const subGps = await sel2(p6, 'p[aria-live=polite]').innerText();
+  check('GPS: o cabeçalho mostra a cidade vinda da geocodificação reversa', /perto de Santos\/SP/.test(subGps), subGps);
+  await p6.waitForTimeout(400);
+  const eGps = events.filter(e => e.event_type === 'search' && e.location_source === 'gps').pop();
+  check('GPS: evento com cidade, UF, bairro, coordenada arredondada e sem cep5', !!eGps && eGps.city === 'Santos' && eGps.state === 'SP' && eGps.neighborhood === 'Gonzaga' && eGps.lat_approx === -23.96 && eGps.lng_approx === -46.33 && eGps.cep5 === null, JSON.stringify(eGps));
+  check('GPS: a coordenada enviada ao serviço de terceiros é arredondada (nunca a exata)', reverseCalls.length > 0 && reverseCalls.every(u => /lat=-23\.96&lon=-46\.33/.test(u)) && !reverseCalls.some(u => /23\.9608|46\.3336/.test(u)), reverseCalls.join(' '));
+
+  // GPS com a geocodificação reversa fora do ar: a busca funciona e o evento sai sem cidade
+  const ctxGps2 = await browser.newContext(gpsOpts);
+  const p7 = await setup(ctxGps2);
+  await p7.route('https://nominatim.openstreetmap.org/reverse**', r => r.abort());
+  await p7.goto('https://host.test/page?t=demo&p=WPI-900');
+  await sel2(p7, 'input#gl-cep').waitFor({ timeout: 10000 });
+  const nBefore = events.length;
+  await sel2(p7, 'button:has-text("Usar minha localização")').click();
+  await sel2(p7, 'article.card').first().waitFor({ timeout: 10000 });
+  await p7.waitForTimeout(400);
+  const eGps2 = events.slice(nBefore).find(e => e.event_type === 'search');
+  check('GPS sem geocodificação reversa: resultados aparecem e o evento sai sem cidade', !!eGps2 && eGps2.location_source === 'gps' && eGps2.city === null && eGps2.lat_approx === -23.96, JSON.stringify(eGps2));
+
+  // privacidade: nenhum evento guarda o CEP inteiro nem a coordenada exata
+  check('privacidade: nenhum evento contém CEP completo nem coordenada exata', !/23\.9608|46\.3336|11060-?001/.test(JSON.stringify(events)));
+
   // tenant inexistente
   const p2 = await setup(ctx);
   await p2.goto('http://host.test/page?t=nao-existe');
@@ -178,6 +218,7 @@ async function setup(ctx) {
 
   const bad = errs.filter(e => !/Failed to load resource|nao-existe|\[geolynq\]/.test(e));
   check('sem exceções JS inesperadas', bad.length === 0, bad.join(' || ').slice(0, 300));
+  if (process.env.E2E_DUMP_EVENTS) fs.writeFileSync(process.env.E2E_DUMP_EVENTS, JSON.stringify(events, null, 1));
   await browser.close();
   console.log(results.every(Boolean) ? `ALL PASS (${results.length})` : 'SOME FAILED');
 })().catch(e => { console.error('E2E ERROR', e.message.split('\n').slice(0,3).join(' / ')); process.exit(1); });

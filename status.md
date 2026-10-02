@@ -32,8 +32,8 @@ universo da Receita); (3) **motor de dados + backoffice** (cadastro por CNPJ, se
    **Princípio:** o perfil de mercado de **cada cliente** vem da Receita no cadastro (CNPJ → CNAE → segmento →
    canais → territórios) e todo o sistema o respeita; a New Millen é só a cliente inicial (Baixada Santista era
    só a região da demo; Gofind dela ≤ 500 acessos/mês). **Foco fixo:** fabricantes que dependem de ponto de venda
-   (lojas, representantes, distribuidores; físico ou online). Ordem: **B1 Telemetria v2** (genérica, com
-   `bairro`; **precisa OK do usuário para alterar `widget_events` em produção**) → **B0 Perfil do tenant por CNPJ**
+   (lojas, representantes, distribuidores; físico ou online). Ordem: ~~**B1 Telemetria v2**~~ (feito) → **próximo: B0**; (genérica, com
+   `bairro`; **FEITO e no ar em 2026-10-02**, ver "Concluído") → **B0 Perfil do tenant por CNPJ**
    (cadastro, taxonomia de segmentos → CNAEs de canal, territórios, **CNPJ como chave de revendedor**
    `unique(tenant_id, cnpj)`, verificação mensal de situação cadastral) → **B3 Candidatos por tenant** (base da
    Receita na VPS, recorte por tenant no Supabase) → **prova de valor com a New Millen no território dela** →
@@ -77,7 +77,7 @@ pedir OK. Nunca pedir nem colar tokens/URLs de webhook em chat.
 | EasyPanel | `https://panel.personalsupport.tech` → projeto `geolynq` → app `widget` (serve os 2 hosts: `widget.` e `demo.`) |
 | Deploy | push na branch → webhook do GitHub → Gatilho de Implantação do EasyPanel (HTTPS pelo domínio do painel). O Dockerfile faz `nginx -t`: config inválida derruba o build, não o container no ar |
 | n8n | `https://automacoes-n8n.tvywld.easypanel.host`, workflow `geolynq-import-catalogo` (id `2ZPDQymNwVSENTIf`, trigger manual); planilha-modelo no Google Sheets id `18rF_rlwS-wYHASnW9Tbd-FQI0Ko9s1lUHTTSe5T8s_g` |
-| Testes do widget | `npm run typecheck -w @geolynq/widget` · `npm test -w @geolynq/widget` (13) · E2E: buildar com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` e então `npm run e2e -w @geolynq/widget` (36). Site: `node apps/demo/build.mjs` |
+| Testes do widget | `npm run typecheck -w @geolynq/widget` · `npm test -w @geolynq/widget` (21) · E2E: buildar com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` e então `npm run e2e -w @geolynq/widget` (46). Site: `node apps/demo/build.mjs` |
 | Segredos | chave `sb_publishable_…` é pública (está no Dockerfile como `ARG`). `service_role` só no EasyPanel (admin futuro) e no n8n. A URL do gatilho de deploy é secreta |
 
 ## Armadilhas já enfrentadas (não repetir)
@@ -207,6 +207,19 @@ pedir OK. Nunca pedir nem colar tokens/URLs de webhook em chat.
 - [x] **Widget: atributo `product="SKU"`** abre direto na etapa de CEP (SKU inexistente cai
       na busca normal) e **correção de foco**: o widget não rouba mais o foco/rolagem da página
       no carregamento (antes focava o campo de busca ao montar). 36 verificações E2E (eram 30)
+- [x] **B1 — Telemetria v2** (2026-10-02; autorizado pelo usuário; **no ar**). Banco (`geolynq-prod`, migration
+      `supabase/migrations/20261002010000_widget_events_v2.sql`, só aditiva): 11 colunas novas em `widget_events`
+      (`telemetry_v`, `neighborhood`, `lat_approx`, `lng_approx`, `cep5`, `location_source`, `nearest_km`,
+      `physical_count`, `online_count`, `action`, `distance_km`) + CHECK `widget_events_v2_check` (formato e
+      tamanho, inclusive `query_text` ≤ 200 e `session_id` ≤ 64, pois a tabela aceita INSERT anônimo). Linhas
+      antigas ficaram com `telemetry_v = 1`. **Privacidade:** nunca o CEP inteiro (só `cep5`) nem coordenada exata
+      (2 casas, ~1 km; a geocodificação reversa também recebe a coordenada arredondada). Widget: busca grava
+      localização (CEP ou GPS), bairro, contagem física/online e distância ao físico mais próximo; `results_count`
+      passa a ser = físicos no raio; clique grava a **ação** (`whatsapp`/`call`/`site`/`directions`) e a distância do
+      revendedor; GPS ganha cidade/UF/bairro por **geocodificação reversa** (Nominatim, 2,5 s, falha silenciosa, em
+      paralelo à busca). Validado: 21 unitários, **46 E2E**, e **os 8 eventos que o widget novo emite foram
+      inseridos como `anon` no banco real** (rollback) + 3 casos inválidos recusados (`23514`). Não coberto: GPS
+      real em navegador e a geocodificação reversa real (só simuladas)
 
 ## Validação da Fase 4 contra o Supabase real (2026-10-01, geolynq-prod)
 Feita via conector MCP do Supabase, como role `anon`, com as mesmas consultas que o
@@ -272,7 +285,6 @@ do banco agora é schema + migration acima.
 ## Pendente
 - [ ] Decisão de negócio: oferta e preço para a New Millen (seção 10 de `docs/operacao-e-mercado.md`); a tabela
       antiga (Essencial R$ 247) **não vale mais**
-- [ ] **Telemetria v2** em `widget_events` (B1) — pré-requisito dos relatórios
 - [ ] **B0 Perfil do tenant por CNPJ** (cadastro) e **CNPJ nos revendedores** (resolve a reimportação que duplica)
 - [ ] Widget: exibir atribuição "© OpenStreetMap" (exigência do Nominatim) e cachear CEP→coordenadas
 - [ ] Supabase `geolynq-prod` ainda no plano grátis → Pro antes do 1º cliente pagante

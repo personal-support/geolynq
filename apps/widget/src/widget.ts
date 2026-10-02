@@ -1,7 +1,9 @@
+import type { WidgetEventAction } from "@geolynq/shared";
 import {
   GeoLynqApi,
   browserLocation,
   geocodeCep,
+  reverseGeocode,
   type EventPayload,
   type GeoPoint,
   type ProductPublic,
@@ -13,12 +15,14 @@ import {
   MAX_RADIUS_KM,
   countNearby,
   formatDistance,
+  locationFields,
   mapsLink,
   parseCep,
   readableTextColor,
   resolveColor,
   safeUrl,
   sanitizeSearchTerm,
+  summarizeResults,
   telLink,
   whatsappLink,
 } from "./util";
@@ -166,7 +170,13 @@ export class GeoLynqWidget extends HTMLElement {
       this.products = products;
       // Termo que não bate com nenhum SKU = demanda por produto fora do catálogo (Fase 10).
       if (products.length === 0) {
-        this.log({ event_type: "search", query_text: term, product_id: null, results_count: 0 });
+        this.log({
+          event_type: "search",
+          query_text: term,
+          product_id: null,
+          results_count: 0,
+          ...locationFields(null),
+        });
       }
     } catch {
       if (run !== this.token) return;
@@ -221,7 +231,8 @@ export class GeoLynqWidget extends HTMLElement {
     try {
       const point = await browserLocation();
       if (run !== this.token) return;
-      await this.lookup(point);
+      // O GPS só dá coordenadas: cidade/UF/bairro vêm de geocodificação reversa, em paralelo à busca (falha silenciosa).
+      await this.lookup(point, reverseGeocode(point.lat, point.lng));
     } catch {
       if (run !== this.token) return;
       this.busy = false;
@@ -231,7 +242,10 @@ export class GeoLynqWidget extends HTMLElement {
     }
   }
 
-  private async lookup(point: GeoPoint | null): Promise<void> {
+  private async lookup(
+    point: GeoPoint | null,
+    place?: Promise<Pick<GeoPoint, "city" | "state" | "neighborhood"> | null>,
+  ): Promise<void> {
     const tenant = this.tenant;
     const product = this.product;
     if (!tenant || !product) return;
@@ -240,22 +254,29 @@ export class GeoLynqWidget extends HTMLElement {
     this.error = null;
     this.render();
     try {
-      const resellers = await this.api.nearestResellers(tenant.id, product.id, point);
+      const [resellers, found] = await Promise.all([
+        this.api.nearestResellers(tenant.id, product.id, point),
+        place ?? Promise.resolve(null),
+      ]);
       if (run !== this.token) return;
-      this.point = point;
+      const located: GeoPoint | null = point && found ? { ...point, ...found } : point;
+      this.point = located;
       this.resellers = resellers;
       this.view = "results";
       this.focusTarget = "heading";
       // product_id + results_count = 0 → produto existe, ninguém vende perto (coverage gap).
       // results_count conta só revendedores físicos dentro do raio: a loja online aparece pro
       // usuário, mas não esconde a lacuna de cobertura local.
+      const summary = summarizeResults(resellers);
       this.log({
         event_type: "search",
         query_text: sanitizeSearchTerm(this.term) || product.name,
         product_id: product.id,
-        city: point?.city ?? null,
-        state: point?.state ?? null,
-        results_count: countNearby(resellers),
+        results_count: summary.physical_count,
+        ...locationFields(located),
+        nearest_km: summary.nearest_km,
+        physical_count: summary.physical_count,
+        online_count: summary.online_count,
       });
     } catch {
       if (run !== this.token) return;
@@ -284,14 +305,15 @@ export class GeoLynqWidget extends HTMLElement {
     if (this.tenant) this.api.logEvent(this.tenant.id, event);
   }
 
-  private trackClick(reseller: ResellerResult): void {
+  private trackClick(reseller: ResellerResult, action: WidgetEventAction): void {
     this.log({
       event_type: "reseller_click",
       query_text: sanitizeSearchTerm(this.term) || this.product?.name || null,
       product_id: this.product?.id ?? null,
       reseller_id: reseller.reseller_id,
-      city: this.point?.city ?? null,
-      state: this.point?.state ?? null,
+      ...locationFields(this.point),
+      action,
+      distance_km: reseller.distance_km === null ? null : Math.round(reseller.distance_km * 100) / 100,
     });
   }
 
@@ -496,7 +518,7 @@ export class GeoLynqWidget extends HTMLElement {
     const line1 = [r.street, r.number].filter(Boolean).join(", ");
     const line2 = [r.neighborhood, `${r.city}/${r.state}`].filter(Boolean).join(" — ");
 
-    const link = (label: string, href: string | null, secondary: boolean): Node | null =>
+    const link = (label: string, href: string | null, secondary: boolean, action: WidgetEventAction): Node | null =>
       href
         ? h(
             "a",
@@ -505,7 +527,7 @@ export class GeoLynqWidget extends HTMLElement {
               href,
               target: "_blank",
               rel: "noopener noreferrer",
-              onclick: () => this.trackClick(r),
+              onclick: () => this.trackClick(r, action),
             },
             label,
           )
@@ -525,11 +547,11 @@ export class GeoLynqWidget extends HTMLElement {
       h(
         "div",
         { class: "actions" },
-        link("WhatsApp", whatsappLink(r.whatsapp), false),
-        link("Ligar", telLink(r.phone), true),
-        link("Site", safeUrl(r.website), true),
+        link("WhatsApp", whatsappLink(r.whatsapp), false, "whatsapp"),
+        link("Ligar", telLink(r.phone), true, "call"),
+        link("Site", safeUrl(r.website), true, "site"),
         !isOnline
-          ? link("Como chegar", mapsLink(r.latitude, r.longitude, [line1, line2].filter(Boolean).join(", ")), true)
+          ? link("Como chegar", mapsLink(r.latitude, r.longitude, [line1, line2].filter(Boolean).join(", ")), true, "directions")
           : null,
       ),
     );

@@ -8,6 +8,10 @@ export type ResellerType =
 export type ResellerStatus = "active" | "inactive";
 export type ImportBatchStatus = "processing" | "success" | "partial" | "failed";
 export type WidgetEventType = "search" | "reseller_click";
+/** Como a localização do visitante foi obtida (telemetria v2). */
+export type WidgetLocationSource = "cep" | "gps" | "none";
+/** Ação escolhida pelo visitante num revendedor (telemetria v2). */
+export type WidgetEventAction = "whatsapp" | "call" | "site" | "directions";
 export type LeadStatus =
   | "new"
   | "contacted"
@@ -109,9 +113,27 @@ export interface WidgetEvent {
   product_id: string | null;
   city: string | null;
   state: string | null;
+  /** v2: nº de revendedores FÍSICOS no raio (v1: total devolvido). */
   results_count: number | null;
   reseller_id: string | null;
   created_at: string;
+  // ---- telemetria v2 (migration 20261002010000_widget_events_v2.sql); linhas antigas têm telemetry_v = 1 e nulos ----
+  telemetry_v: number;
+  neighborhood: string | null;
+  /** coordenada arredondada a 2 casas (~1 km); nunca a exata */
+  lat_approx: number | null;
+  lng_approx: number | null;
+  /** 5 primeiros dígitos do CEP; nunca o CEP inteiro */
+  cep5: string | null;
+  location_source: WidgetLocationSource | null;
+  /** distância ao revendedor físico mais próximo entregue na busca (null se nenhum) */
+  nearest_km: number | null;
+  physical_count: number | null;
+  online_count: number | null;
+  /** só em reseller_click */
+  action: WidgetEventAction | null;
+  /** só em reseller_click: distância do revendedor clicado */
+  distance_km: number | null;
 }
 
 export type OpportunityClassification =
