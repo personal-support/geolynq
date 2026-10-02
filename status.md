@@ -27,7 +27,14 @@ sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos
    cache 5 min; gzip; resto 404), `.dockerignore`. URL e chave publishable do
    `geolynq-prod` entram como `ARG` com default no Dockerfile (públicas por design; nunca
    service_role).
-   **Falta (na VPS/EasyPanel, usuário):** criar o app apontando pro repo GitHub
+   **Andamento (2026-10-02, EasyPanel `panel.personalsupport.tech`):** app `widget` criado no
+   projeto `geolynq`; Fonte = aba **Git** (`git@github.com:personal-support/geolynq.git`,
+   branch `claude/bold-cray-vbbdyb`, build path `/`); Construção = Dockerfile
+   `apps/widget/Dockerfile`; deploy key `easypanel-vps` adicionada no GitHub (recriada
+   como read-only — conferir); DNS ok. **Falta:** aba Domínios (`widget.geolynq…`,
+   porta 80, HTTPS) e Implantar. (Aba "Github" do EasyPanel não serve: pede conta
+   conectada; o formato `git@…` é da aba "Git".)
+   **Plano original (referência):** criar o app apontando pro repo GitHub
    `personal-support/geolynq` (privado → EasyPanel precisa de acesso), branch
    `claude/bold-cray-vbbdyb` enquanto não houver merge na `main`, build por Dockerfile
    `apps/widget/Dockerfile` com contexto na raiz, porta 80, domínio
@@ -41,7 +48,12 @@ sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos
 3. Decidir a questão de reimportação (revendedores duplicam — ver "Decisões em aberto")
 
 ## Concluído
-- [x] Fase 0 — GitHub criado, subdomínio wildcard configurado
+- [x] Fase 0 — GitHub criado. **DNS corrigido em 2026-10-02:** o wildcard registrado antes
+  não existia de fato (NXDOMAIN). Criados na Hostinger (DNS em `dns-parking.com`) 2
+  registros A → `179.198.116.157` (IP da VPS): `*.geolynq` e `geolynq`. O curinga NÃO
+  cobre `geolynq.personalsupport.tech` (a raiz), por isso são dois registros. Verificado
+  via DNS do Google (TTL 300). O `getent` da VPS pode devolver NXDOMAIN em cache por até
+  10 min (SOA negativo = 600 s) — não afeta o Let's Encrypt
 - [x] Fase 1 — Supabase `geolynq-prod` (sa-east-1, org `gknjufnkbourddiufozo`), schema v2 aplicado
   - O projeto antigo `geolynq` (ca-central-1, vazio, criado na região errada) foi **pausado
     em 2026-10-01** — libera 1 das 2 vagas ativas do free tier
