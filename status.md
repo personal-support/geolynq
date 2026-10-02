@@ -34,12 +34,12 @@ sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos
    secret `EASYPANEL_WIDGET_DEPLOY_URL`, merge na `main` e Ramo `main` no EasyPanel; ao
    ativá-la, REMOVER o webhook do GitHub para não publicar 2x). Mudanças de banco
    (migrations) continuam manuais.
-2. Fase 4.1 — **código pronto e enviado; falta ativar o endereço** (passo do usuário): EasyPanel →
-   app `widget` → **Domínios** → adicionar `demo.geolynq.personalsupport.tech`, porta 80,
-   HTTPS ligado (DNS já cobre pelo curinga `*.geolynq`). Depois conferir na VPS:
-   `curl -sI --resolve demo.geolynq.personalsupport.tech:443:179.198.116.157 https://demo.geolynq.personalsupport.tech/`
-   (200, `x-robots-tag: noindex`) e abrir no navegador para testar o widget de verdade
-   (Nominatim/ViaCEP/Supabase reais, só testados com simulação)
+2. ~~Fase 4.1~~ **no ar** (ver "Concluído"). Falta só (usuário, SQL Editor do `geolynq-prod`; o
+   conector MCP trava em DELETE/DROP):
+   a. `delete from public.widget_events where tenant_id = '3596b3c6-8389-42af-b575-4bbdd69f2f2d';`
+      (apaga as buscas de teste da demo; fazer **depois** de terminar de testar)
+   b. `drop function public.widget_nearest_resellers(uuid, uuid, double precision, double precision, int);`
+      (função antiga sem raio; o widget novo já está no ar e usa a `widget_resellers_in_radius`)
 3. Decidir a questão de reimportação (revendedores duplicam — ver "Decisões em aberto")
 
 ## Concluído
@@ -115,7 +115,7 @@ sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos
       função. **Pendente:** depois que o widget novo estiver no ar e conferido, remover a
       antiga: `drop function public.widget_nearest_resellers(uuid, uuid, double precision,
       double precision, int);` (rodar à mão no SQL Editor; o conector trava em DROP)
-- [x] **Fase 4.1 — site de amostra "Pódio"** (2026-10-02; código no repo, **ainda não no ar**).
+- [x] **Fase 4.1 — site de amostra "Pódio"** (2026-10-02; **NO AR** em https://demo.geolynq.personalsupport.tech).
       `apps/demo/`: gerador Node sem dependências (`build.mjs`, `products.json` espelhando os
       12 SKUs do tenant `demo`, `styles.css`) → HTML estático: home com o widget ao vivo no
       herói + catálogo por categoria + "Roteiro da demonstração" (5 passos para quem apresenta;
@@ -132,6 +132,17 @@ sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos
       `RUN nginx -t` (config inválida derruba o BUILD, não o container no ar). `nginx.conf`
       testado com nginx 1.24 real: 12 páginas 200, `/` 200, 404 próprio, `/v1/*` só no host do
       widget, 0 erros no log (isso pegou um bug: `/` dava 404 sem `index`)
+      **Verificação em produção (usuário, 2026-10-02):** na VPS, `/` 200 (gzip, `no-cache`,
+      `x-robots-tag: noindex, nofollow`), `/produto/wpc-900.html` 200, `/healthz` ok, widget
+      segue 200 com `max-age=300`, `/v1/embed.js` no host do demo 404. No navegador, com
+      ViaCEP/Nominatim/Supabase reais: Whey + CEP 11060-001 → "6 revendedores perto de
+      Santos/SP" (Nutri Gonzaga 800 m, Orla Saúde 4,1 km, Pitangueiras 8,5 km, Paulista 55 km,
+      Pinheiros 57 km, loja online por último sem distância), ou seja, raio de 100 km e
+      ordenação funcionando de ponta a ponta. **Não coberto pelo print enviado:** glutamina,
+      hipercalórico, página de produto com `product=`, celular, fontes
+      **Polimento opcional visto no print:** o subtítulo diz "6 revendedores perto de…"
+      contando a loja online (poderia ser "5 perto de… + 1 loja online"); a coluna do texto
+      do herói fica vazia ao lado do resultado longo do widget
 - [x] **Widget: atributo `product="SKU"`** abre direto na etapa de CEP (SKU inexistente cai
       na busca normal) e **correção de foco**: o widget não rouba mais o foco/rolagem da página
       no carregamento (antes focava o campo de busca ao montar). 36 verificações E2E (eram 30)
