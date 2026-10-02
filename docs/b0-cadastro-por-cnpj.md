@@ -1,0 +1,157 @@
+# B0 — Cadastro do cliente por CNPJ e perfil de mercado (desenho, 2026-10-02)
+
+> **Estado: DESENHO. Nada disto foi aplicado no banco de produção.** O SQL da seção 5 é rascunho e só roda depois do OK do Junior.
+
+## 1. O caso real: New Millen (dados informados pelo Junior + fontes públicas)
+
+| Campo | Valor |
+|---|---|
+| Razão social / fantasia | **NM Alimentos LTDA** / **New Millen** |
+| CNPJ da matriz | **00.385.181/0001-11** (Cajamar/SP). Há também a filial **/0002-00** (São Paulo/SP) |
+| Situação / abertura / porte | Ativa · 05/01/1995 · Empresa de Pequeno Porte |
+| Atividade principal (CNAE) | **1099-6/07**, Fabricação de alimentos dietéticos e complementos alimentares |
+| Endereço da matriz | Av. Dr. José Luís Leme Maciel, 327, Santa Terezinha (Jordanésia), Cajamar/SP, CEP 07786-450 |
+| Site | newmillen.com.br |
+| Segmento | **Suplementos em geral** |
+| Território e canais | **"Todos"**: interpretado como **Brasil inteiro** e **todos os canais** (confirmar) |
+
+> **Correção:** o CNAE é **1099-6/07**. Eu havia citado `/04` de memória; a consulta mostrou que `/04` é fabricação de gelo. Códigos de
+> atividade só entram no sistema depois de conferidos na tabela do IBGE ou na base da Receita, nunca de memória.
+
+**Como a New Millen vende hoje (busca pública, indicativa):** marketplaces (Mercado Livre), e-commerces de esporte e suplementos
+(Netshoes, Scoop, Corpore, Suplevita), **redes de farmácia** (Drogarias Pacheco) e venda direta da fábrica; há também atacado.
+Ou seja: o canal é **misto, com muito online e redes**.
+
+## 2. Decisões de modelagem
+
+1. **Cliente = empresa (raiz do CNPJ, 8 dígitos), não um estabelecimento.** A New Millen tem matriz e filial; a Receita publica por
+   estabelecimento (14 dígitos). Guardar a raiz como chave do cliente e o CNPJ da matriz como referência.
+2. **Revendedor = CNPJ de 14 dígitos por cliente** (`unique(tenant_id, cnpj)`), e **rede = mesma raiz**. Isso resolve a duplicação na
+   reimportação e permite tratar "Drogarias X" como uma rede com N lojas.
+3. **Perfil de canal aprendido da própria base do cliente.** Quando o cliente subir os revendedores com CNPJ, consultamos a atividade
+   (CNAE) de cada um e calculamos a distribuição ("38% varejo especializado, 22% farmácias, 15% atacado, 6% academias"). **Esses
+   são os CNAEs de canal do cliente, medidos, não adivinhados.** A tabela curada de segmentos vira só **ponto de partida** para
+   cliente sem lista.
+4. **Rede vs loja:** para redes (muitas filiais), a abordagem é **uma só, na matriz da rede** (compras). O relatório de candidatos
+   agrupa por raiz ("Rede X: 14 lojas na sua região") em vez de listar 14 linhas.
+5. **Online é outra lógica:** marketplaces e e-commerces não têm raio; entram como revendedor `online` (já suportado) e a "lacuna"
+   online é de **presença** (quais marketplaces/sites listam o produto), tratada à parte.
+6. **Ruído do CNAE de varejo:** a atividade 4729-6/99 é um "guarda-chuva" (alimentos em geral) e mistura lojas irrelevantes. O universo
+   de candidatos precisa de **filtro extra** (palavras no nome fantasia/razão como suplement, nutri, fit, natural, vitamin; e o perfil
+   medido do cliente) e de um **score de aderência**, validado numa amostra antes de mostrar ao cliente.
+7. **Território "Brasil"** gera um universo enorme; a priorização é por **município**: potencial (empresas elegíveis) × cobertura atual
+   do cliente × demanda (buscas). O foco inicial do relatório é "onde há muito potencial e pouca presença".
+
+## 3. Fluxo de cadastro (como o Junior/Danilo cadastram um cliente)
+
+1. Digitar o **CNPJ** → consulta (API pública BrasilAPI/Minha Receita; plano B: nossa carga da Receita) → ficha preenchida e **situação
+   conferida** (só cadastra se *ativa*).
+2. Escolher **segmento** (ponto de partida) e **território** (Brasil / UFs / municípios). Confirmar com o cliente.
+3. Gerar o **slug**, a cor e criar o `tenant` + perfil.
+4. Receber a planilha de revendedores **com CNPJ** → importar (validar dígito verificador, deduplicar por CNPJ).
+5. Calcular o **perfil de canal medido** e propor os CNAEs de canal; confirmar.
+6. A partir daí o sistema monta o **universo** daquele cliente (B3) e roda a **verificação mensal** dos revendedores.
+
+Sem painel (B2) ainda, os passos 1–3 rodam por uma função de cadastro restrita ao `service_role` e um workflow n8n manual
+(`geolynq-cadastro-cliente`); a tela vem no B2.
+
+## 4. Impacto no que já existe
+- **Planilha-modelo:** a aba Revendedores ganha a coluna **CNPJ** (obrigatória para novos clientes; opcional no `demo`).
+- **Importador n8n:** validar CNPJ (dígito verificador), normalizar (só dígitos), **upsert por (tenant, CNPJ)** em vez de *create*.
+- **Widget:** nenhuma mudança.
+- **Dados existentes:** os 12 revendedores do `demo` ficam sem CNPJ (campo opcional); o índice único ignora linhas sem CNPJ.
+
+## 5. Esquema proposto (RASCUNHO, NÃO APLICADO)
+
+```sql
+-- Perfil de mercado do cliente (1:1 com tenants). Só dados de pessoa jurídica; não guarda sócios.
+create table public.tenant_profiles (
+  tenant_id          uuid primary key references public.tenants(id) on delete cascade,
+  cnpj_raiz          text not null unique check (cnpj_raiz ~ '^[0-9]{8}$'),
+  cnpj_matriz        text not null check (cnpj_matriz ~ '^[0-9]{14}$'),
+  razao_social       text not null,
+  nome_fantasia      text,
+  situacao_cadastral text,
+  data_abertura      date,
+  porte              text,
+  cnae_principal     text check (cnae_principal ~ '^[0-9]{7}$'),
+  cnaes_secundarios  text[] not null default '{}',
+  uf                 text check (uf ~ '^[A-Z]{2}$'),
+  municipio          text,
+  municipio_ibge     integer,
+  cep                text check (cep ~ '^[0-9]{8}$'),
+  website            text,
+  fonte              text not null default 'manual' check (fonte in ('brasilapi','receita_dump','manual')),
+  consultado_em      timestamptz,
+  created_at         timestamptz not null default now()
+);
+
+-- Segmentos (ponto de partida) e seus CNAEs de canal
+create table public.segments (
+  id    text primary key check (id ~ '^[a-z0-9_]+$'),
+  nome  text not null,
+  ativo boolean not null default true
+);
+create table public.segment_channel_cnaes (
+  segment_id text not null references public.segments(id) on delete cascade,
+  cnae       text not null check (cnae ~ '^[0-9]{7}$'),
+  tipo_canal text not null check (tipo_canal in ('varejo','atacado','representante','online','outro')),
+  peso       smallint not null default 1,
+  primary key (segment_id, cnae)
+);
+create table public.tenant_segments (
+  tenant_id  uuid not null references public.tenants(id) on delete cascade,
+  segment_id text not null references public.segments(id),
+  primary key (tenant_id, segment_id)
+);
+
+-- Território de atuação (scope 'brasil' = país inteiro)
+create table public.tenant_territories (
+  id             uuid primary key default gen_random_uuid(),
+  tenant_id      uuid not null references public.tenants(id) on delete cascade,
+  scope          text not null check (scope in ('brasil','uf','municipio')),
+  uf             text check (uf ~ '^[A-Z]{2}$'),
+  municipio_ibge integer,
+  check ((scope = 'brasil' and uf is null and municipio_ibge is null)
+      or (scope = 'uf' and uf is not null and municipio_ibge is null)
+      or (scope = 'municipio' and municipio_ibge is not null))
+);
+
+-- CNPJ como chave de negócio do revendedor + verificação
+alter table public.resellers
+  add column if not exists cnpj text check (cnpj ~ '^[0-9]{14}$'),
+  add column if not exists verification_status text
+    check (verification_status in ('nao_verificado','ativa','suspensa','inapta','baixada','nula')),
+  add column if not exists verified_at timestamptz;
+create unique index if not exists resellers_tenant_cnpj_uq on public.resellers (tenant_id, cnpj) where cnpj is not null;
+
+-- RLS: ligado em todas; leitura só para quem pertence ao tenant; escrita só service_role (sem policy de escrita).
+-- segments / segment_channel_cnaes: leitura para authenticated; escrita só service_role.
+-- Função de cadastro: public.provision_tenant(...) SECURITY DEFINER, EXECUTE somente para service_role.
+-- Função public.is_valid_cnpj(text) (dígito verificador) usada pelo importador.
+```
+
+## 6. Dados da Receita e infraestrutura (alimenta o B3 e a verificação mensal)
+- Base completa: CSV mensal, **~85 GB descompactados** (fonte secundária), com CNAE principal e secundários por estabelecimento.
+  Fica **na VPS**; o Supabase recebe só o recorte do cliente. **Antes de planejar é preciso saber o disco/RAM da VPS.**
+- A **verificação mensal** ("N revendedores ficaram inativos") e o **perfil de canal medido** dependem dessa base; por isso o
+  ETL da Receita na VPS entra **junto** com o B0 (não depois). API pública só para consulta unitária no cadastro.
+
+## 7. Ordem de execução do B0
+1. **B0.1** Migration das tabelas e colunas acima + RLS + `is_valid_cnpj` (**precisa de OK**; aditiva).
+2. **B0.2** Função `provision_tenant` (service_role) e semente do segmento **suplementos** (CNAEs conferidos na base real).
+3. **B0.3** Workflow n8n de cadastro por CNPJ + atualização do importador (CNPJ, upsert) e da planilha-modelo.
+4. **B0.4** Cadastro da New Millen como tenant real (só quando o Junior mandar).
+5. **B0.5** ETL da Receita na VPS + perfil de canal medido + verificação mensal (continua no B3).
+
+## 8. Riscos e dúvidas
+- API pública de CNPJ é de terceiros: limites/disponibilidade **não verificados**; precisa de cache e plano B.
+- Se "Todos" não for Brasil inteiro e todos os canais, o universo e os relatórios mudam.
+- Cliente sem lista de revendedores com CNPJ: cai no ponto de partida do segmento (menos preciso).
+- Sem painel (B2), o cadastro é operado pelo Junior/Claude (não é autoatendimento).
+- LGPD: o perfil guarda só dados de PJ; os revendedores MEI podem ter nome de pessoa na razão social.
+
+## 9. Pedidos ao Junior
+(1) Confirmar **"Todos" = Brasil inteiro + todos os canais**; (2) rodar na VPS o comando de consulta do CNPJ (resposta real da API) e
+a checagem de **disco/RAM**; (3) **OK para o B0.1** (migration aditiva); (4) mandar, quando o Danilo tiver, a **lista de revendedores da
+New Millen com CNPJ**.

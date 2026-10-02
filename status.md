@@ -33,7 +33,7 @@ universo da Receita); (3) **motor de dados + backoffice** (cadastro por CNPJ, se
    canais → territórios) e todo o sistema o respeita; a New Millen é só a cliente inicial (Baixada Santista era
    só a região da demo; Gofind dela ≤ 500 acessos/mês). **Foco fixo:** fabricantes que dependem de ponto de venda
    (lojas, representantes, distribuidores; físico ou online). Ordem: ~~B1 Telemetria v2~~ (**FEITO e no ar em 2026-10-02**, ver
-   "Concluído") → **próximo: B0 Perfil do tenant por CNPJ** (cadastro, taxonomia de segmentos → CNAEs de canal, territórios, **CNPJ como chave de revendedor**
+   "Concluído") → **próximo: B0 Perfil do tenant por CNPJ** (**desenho pronto em `docs/b0-cadastro-por-cnpj.md`, aguardando OK do usuário para a migration B0.1**; cadastro, taxonomia de segmentos → CNAEs de canal, territórios, **CNPJ como chave de revendedor**
    `unique(tenant_id, cnpj)`, verificação mensal de situação cadastral) → **B3 Candidatos por tenant** (base da
    Receita na VPS, recorte por tenant no Supabase) → **prova de valor com a New Millen no território dela** →
    **B2 Painel** (visões B2C lojas e B2B distribuidores/representantes) → **B4 Relatório mensal automático**.
@@ -219,6 +219,18 @@ pedir OK. Nunca pedir nem colar tokens/URLs de webhook em chat.
       paralelo à busca). Validado: 21 unitários, **46 E2E**, e **os 8 eventos que o widget novo emite foram
       inseridos como `anon` no banco real** (rollback) + 3 casos inválidos recusados (`23514`). Não coberto: GPS
       real em navegador e a geocodificação reversa real (só simuladas)
+- [x] **B0 — desenho do cadastro por CNPJ** (2026-10-02; **só desenho, nada aplicado**; ver `docs/b0-cadastro-por-cnpj.md`).
+      Caso real **New Millen** (dados do Junior + fontes públicas): **NM Alimentos LTDA**, CNPJ matriz
+      **00.385.181/0001-11** (Cajamar/SP; filial /0002-00 em São Paulo), ativa, aberta em 05/01/1995, EPP, CNAE
+      principal **1099-6/07** (corrige o `/04` citado antes de memória: `/04` é gelo), segmento "suplementos em geral",
+      território/canais "Todos" (interpretado como Brasil inteiro + todos os canais; **confirmar**). Vende em
+      marketplaces, e-commerces, redes de farmácia e direto da fábrica. **Decisões:** cliente = raiz do CNPJ;
+      revendedor = CNPJ de 14 dígitos (`unique(tenant_id, cnpj)`), rede = mesma raiz (abordar a matriz da rede, não
+      cada loja); **CNAEs de canal aprendidos da própria base de revendedores do cliente** (medidos, não
+      adivinhados) com a tabela curada só como ponto de partida; CNAE 4729-6/99 é guarda-chuva ruidoso → filtro por
+      nome + score de aderência validado em amostra; online sem raio (lacuna de presença); código de atividade
+      só entra depois de conferido na base/IBGE, nunca de memória. A API pública de CNPJ e o Gofind/Receita estão
+      bloqueados no sandbox: a consulta real sai da VPS do usuário
 
 ## Validação da Fase 4 contra o Supabase real (2026-10-01, geolynq-prod)
 Feita via conector MCP do Supabase, como role `anon`, com as mesmas consultas que o
