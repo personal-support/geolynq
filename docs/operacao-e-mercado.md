@@ -107,6 +107,9 @@ autoatendimento. Vale seguir **se** 2+ clientes pagarem no piloto (ver seção 7
 
 ## 6. Quanto e como cobrar (hipóteses a validar com Danilo)
 
+> **Atualização (seção 10):** depois da conversa com a New Millen, a estratégia mudou para **sem plano básico**.
+> A tabela abaixo fica como referência histórica; a oferta vigente está na seção 10.
+
 **Âncora nº 1 (a mais valiosa, e eu não tenho): o que os 2 clientes pagam hoje ao Gofind.** Regra: cobrar 40–60% disso no piloto.
 
 | Plano | Preço sugerido | Inclui |
@@ -176,3 +179,94 @@ autopeças. Foque em **1 vertical principal + 1 vizinha**.
 - Consumidor: [ClienteSA](https://portal.clientesa.com.br/quase-metade-dos-consumidores-consultam-google-antes-de-se-decidirem-onde-comprar/) · [Agência E-Plus](https://www.agenciaeplus.com.br/58-dos-consumidores-usam-google-para-fazer-pesquisa-de-compra/)
 - Custos de infraestrutura: [Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/) · [Google Maps (preços)](https://www.woosmap.com/blog/google-maps-api-pricing-breakdown) · [Supabase (preços)](https://www.jetadmin.io/blog/supabase-pricing-2026-guide-to-plans-limits-and-real-world-costs/)
 - Benchmarks SaaS Brasil: [Baita Aceleradora](https://baita.ac/tudo-sobre/benchmarks-saas)
+
+## 10. Revisão após a conversa com a New Millen (2026-10-02)
+
+**Fatos novos (relato do Danilo):** a New Millen **quer** o GeoLynq e hoje paga **R$ 1.600/mês** ao Gofind. Reclamações:
+(a) o Gofind usa **notas fiscais emitidas**, então a atualização dos dados **leva meses**; (b) o widget no site é
+**pouco intuitivo e orgânico**. **Decisão do Junior:** não oferecer plano básico; entrar com algo que gere impacto; o gancho são
+os **relatórios e dashboards das buscas feitas no site**: *onde está, como está, onde não está e como chegar* em
+revendedoras, distribuidoras e lojas. Observação: o tempo de desenvolvimento depende mais do Claude do que do Junior,
+então cada bloco abaixo é dimensionado como uma entrega fechada.
+
+### 10.1 Reposicionamento
+De "localizador de lojas" para **Radar de Cobertura**: o widget **captura** a demanda real, o painel **mostra**, a lista de
+prospecção **dá a ação** e a reunião mensal **fecha o ciclo**.
+
+### 10.2 Crítica honesta (o que NÃO dizer)
+- O **Gofind também vende análise**: anuncia "Mapa de Positivação", mapa de onde há/não há demanda e painéis por região e
+  produto (grandes marcas de consumo são o foco). Vender "temos dashboard" não diferencia.
+- **Diferenciais defensáveis do GeoLynq:** (1) **frescor**: cada busca real no site do cliente aparece em minutos, contra
+  meses de nota fiscal; (2) **intenção do consumidor** (demanda declarada, com CEP), não venda inferida; (3) **ação**: para cada
+  lacuna, uma lista de candidatos a revendedor; (4) **widget claro** no site do cliente; (5) **preço e serviço** para a marca
+  média.
+- **Limite do método:** a amostra são os **visitantes do site da marca**. Pouco tráfego = estatística fraca (precisamos do
+  volume de buscas da New Millen para saber se o painel fica útil).
+- O método "nota fiscal" do Gofind é **relato do cliente**; não confirmei em fonte pública. Não afirmar em material
+  comercial; citar como "segundo a New Millen". Cuidado com publicidade comparativa.
+
+### 10.3 As 4 perguntas viram relatórios
+
+| Pergunta | Relatórios da v1 | Dado necessário | Estado hoje |
+|---|---|---|---|
+| **Onde está** | Mapa e tabela de cobertura por UF/cidade e tipo; **frescor** ("atualizado há X dias"); **completude** (tem WhatsApp? endereço geocodificado?) | tabelas já existentes | dados existem; falta a tela |
+| **Como está** | Funil busca → clique por produto e região; ranking de revendedores por cliques; **distância média ao revendedor mais próximo**; produtos mais buscados; tendência mensal | `widget_events` | **parcial** (falta distância e localização confiável) |
+| **Onde não está** | **Lacunas:** buscas sem revendedor físico no raio, por cidade e produto, por volume; buscas por produtos fora do catálogo; mapa de calor de demanda não atendida | `results_count` (físicos no raio), cidade/UF | **parcial** (cidade vem nula no GPS; sem coordenada aproximada) |
+| **Como chegar** | Para cada lacuna: **lista de candidatos** a revendedor (varejo e atacado) na cidade/região, com endereço e telefone cadastrais; exportar CSV; marcar status (contatado, aprovado) | base pública de CNPJ + tabela de prospecção | **não existe** |
+
+**"Como chegar", fonte viável:** a Receita Federal publica a base de CNPJ em dados abertos, com atualização mensal, incluindo
+CNAE, endereço, telefone e e-mail cadastrais. Códigos úteis para suplementos: **4729-6/99** (varejo) e **4637-1/99**
+(atacado). Limites: são **candidatos**, não confirmam que a loja vende o produto nem que está ativa; telefone/e-mail de MEI
+podem ser dado pessoal (LGPD), então tratar com cuidado e com finalidade comercial B2B declarada.
+
+### 10.4 Achado crítico: a telemetria atual NÃO sustenta os relatórios
+Hoje `widget_events` guarda tenant, sessão, tipo, termo, produto, **cidade/UF** e `results_count`. Problemas:
+- com **GPS do navegador**, cidade/UF ficam **nulas** (só o CEP preenche);
+- **sem coordenada aproximada**, não há mapa de calor;
+- **sem distância ao revendedor mais próximo** e sem separar físico de online no registro.
+
+**Telemetria v2 (antes do go-live da New Millen):** acrescentar `lat_approx`/`lng_approx` (arredondadas a ~1 km),
+`cep5` (5 primeiros dígitos, nunca o CEP inteiro), `location_source` (`cep`|`gps`|`none`), `nearest_km`,
+`physical_count`, `online_count`; geocodificação reversa quando vier do GPS. **Por que antes:** dado de uso não se
+reconstrói depois. Privacidade: nada de CEP completo nem coordenada precisa; descrever no aviso de privacidade.
+
+### 10.5 Oferta e preço revisados (hipóteses; decisão final com o Danilo)
+Âncora: **R$ 1.600/mês** (= R$ 19.200/ano) que a New Millen paga hoje. Sem plano básico: duas ofertas, ambas premium.
+
+| Oferta | Preço de lista | O que entrega |
+|---|---|---|
+| **Radar de Cobertura** | **R$ 1.690/mês** | widget no site, painel com os relatórios acima, relatório mensal em PDF, **reunião mensal de cobertura**, atualização de catálogo mensal |
+| **Radar + Expansão** | **R$ 2.690/mês** | tudo do Radar + **listas de prospecção por lacuna** (varejo e atacado), roteiro de abordagem, relatório regional para a equipe comercial |
+| Implantação | **R$ 1.500** | importação e limpeza da base, instalação, treinamento da equipe (cortesia no contrato de 12 meses, mostrada na proposta) |
+
+- **Piloto New Millen (preço de fundador):** Radar a **R$ 1.290/mês por 12 meses** (≈ 19% abaixo do que paga hoje; economia de
+  R$ 3.720/ano), contrato de 12 meses, em troca de depoimento/caso e de ajudar a moldar o painel. Passa para a lista no
+  renovar. Para fechar, prometer **entrega por marcos**, não por data fixa, até o painel existir.
+- **Cenários revistos (hipóteses):** conservador 2–3 clientes ≈ R$ 3–4,5 mil de MRR; realista 6–8 ≈ R$ 9–13 mil; otimista
+  15 ≈ R$ 25 mil (exige parceria/equipe). A seção 6 (Essencial R$ 247) **não** vale mais.
+
+### 10.6 Plano de construção (blocos para o Claude)
+| Bloco | Entrega | Porte | Precisa de OK |
+|---|---|---|---|
+| **B1 Telemetria v2** | colunas novas em `widget_events`, widget grava os campos, testes, geocodificação reversa no GPS | pequeno | **sim** (altera o banco de produção) |
+| **B2 Painel v1** | login por tenant, os 4 relatórios (cobertura, funil, lacunas, mapa) | grande | não |
+| **B3 Prospecção** | importador de CNPJ por município (n8n/script) → tabela de candidatos, tela e CSV | médio | sim (carga de dados) |
+| **B4 Relatório mensal** | PDF/e-mail automático via n8n + roteiro da reunião | pequeno/médio | não |
+Ordem: **B1 → go-live da New Millen com a telemetria já gravando → B2 → B4 → B3.**
+Regra de capacidade: o relatório mensal tem de ser **automático**; senão o tempo do Junior vira o gargalo.
+
+### 10.7 Riscos novos e perguntas para destravar
+Riscos: volume de buscas insuficiente; prometer painel antes de existir; comparar publicamente com o Gofind; amostra
+enviesada (só visitantes do site); privacidade da localização.
+
+**Perguntas ao Danilo/New Millen:** (1) visitas/mês do site e página "onde comprar", e nº de buscas no Gofind hoje; (2) prazo,
+renovação e multa do contrato com o Gofind (janela de troca); (3) quem usa o relatório na New Millen e quais KPIs importam;
+(4) lista atual de revendedores (formato, tamanho, última atualização); (5) quantos produtos/SKUs e em que regiões querem expandir;
+(6) frequência de reunião desejada; (7) o que exatamente achou pouco intuitivo no widget atual (para não repetir).
+
+### Fontes desta seção
+[Gofind: "Mapa de Positivação" e painéis](https://www.projetodraft.com/a-gofind-e-um-localizador-de-produtos-em-lojas-fisicas-do-brasil/) ·
+[Base CNPJ aberta (Toexceed)](https://toexceed.com.br/blog/2026/09/27/base-cnpj-o-que-e-quais-dados-possui-e-como-consultar/) ·
+[Dados abertos da Receita (Socialhub)](https://www.socialhub.pro/blog/dados-abertos-receita-federal-cnpj/) ·
+[CNAE 4729-6/99](https://www.contabilivre.com.br/cnae/4729699-comercio_varejista_de_produtos_alimenticios_em_geral_ou_especializado_em_produtos_alimenticios_nao_especificados_anteriormente) ·
+[CNAE atacado 4637-1/99 (IBGE)](https://concla.ibge.gov.br/busca-online-cnae.html?subclasse=4637199&tipo=cnae&view=subclasse)
