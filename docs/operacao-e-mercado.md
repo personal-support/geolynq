@@ -343,3 +343,70 @@ Arquitetura: manter o arquivo bruto da Receita (vários GB) **na VPS** (n8n/scri
 [OSM: shop=nutrition_supplements](https://wiki.openstreetmap.org/wiki/Tag:shop=nutrition_supplements) ·
 [OSM: shop=health_food](https://wiki.openstreetmap.org/wiki/Tag:shop=health_food) ·
 [Política do Nominatim](https://operations.osmfoundation.org/policies/nominatim/)
+
+## 12. Princípio de produto: o perfil de mercado de cada cliente vem da Receita (2026-10-02)
+
+**Correção:** a Baixada Santista era só a região da demo, **não** o território da New Millen (que não atua lá diretamente), e o
+exemplo da seção 11 não deve virar premissa. A New Millen é cliente **inicial**; o universo é grande. Dado novo: o Gofind dela
+tem **no máximo ~500 acessos/mês**. **Foco que não muda:** empresas que **fabricam** algo e **dependem de pontos de venda**
+(lojas físicas ou online, representantes ou distribuidores) para vender.
+
+### 12.1 Cadastro por CNPJ → perfil de mercado
+Fluxo: **CNPJ do cliente → consulta à Receita → perfil → segmento e canais sugeridos → territórios → confirmação → o sistema
+monta o universo de empresas elegíveis daquele cliente.** Todo o resto (lacunas, candidatos, alertas, relatórios) lê o perfil
+do tenant; nada fixo para suplementos.
+
+- **Dados que vêm do CNPJ** (a API pública BrasilAPI/Minha Receita devolve): razão social, nome fantasia, **CNAE principal e
+  secundários**, porte, situação cadastral, endereço, município/UF, e-mail. Serve também para **validar** que o cliente existe e
+  está ativo.
+- **Cuidado central:** o CNAE do fabricante diz **o que ele faz, não quem o revende**. Marcas que terceirizam a produção aparecem
+  como atacadistas. Logo: **sugerir + confirmar**, com (a) uma **taxonomia de segmentos** (suplementos, cosméticos, pet,
+  ferramentas, bebidas…), cada um ligado a um conjunto de **CNAEs de canal** (varejo, atacado, representantes), mantida e
+  validada por humano e crescendo a cada cliente; (b) pergunta "o que você vende e por quais canais?".
+- **Território** de cada cliente: UFs/municípios onde ele quer vender (padrão: onde já tem revendedores + a sede). Confirmar com o
+  cliente; **não presumir**.
+
+### 12.2 CNPJ como chave dos revendedores (ganho grande)
+Adicionar **CNPJ** à planilha de revendedores e usar `unique(tenant_id, cnpj)`:
+- **resolve a duplicação na reimportação** (decisão em aberto no status);
+- **valida e completa** endereço/CEP/CNAE de cada revendedor;
+- permite **verificação mensal automática**: "3 revendedores da sua base ficaram inativos/baixados na Receita este mês". Isso
+  ataca de frente a reclamação "os dados demoram meses" (frescor automático).
+Sem CNPJ (raro): cadastro manual, marcado como não verificado.
+
+### 12.3 Duas camadas de rede, duas visões
+Marca → **distribuidor/representante** (B2B) → **loja** (B2C). O consumidor só vê lojas; a equipe comercial precisa de **duas visões**:
+cobertura B2C (lojas, por raio de km) e cobertura B2B (distribuidores/representantes, por **território**, não por raio). Online:
+sem raio; o relatório trata "presença em marketplaces/sites" à parte.
+
+### 12.4 Dados e infraestrutura
+- Base da Receita: CSV mensal (Empresas, Estabelecimentos, Sócios, tabelas auxiliares), **~85 GB descompactados** (fonte
+  secundária) → **manter na VPS**, não no Supabase. CNAE secundário vem numa coluna separada por vírgula.
+- **Recorte por tenant** (CNAEs de canal × territórios, só ativos) vai para o Supabase; atualização mensal por n8n/script.
+- API (BrasilAPI) só para **consulta unitária no cadastro**, com cache; é serviço de terceiros: limites e disponibilidade
+  **não verificados**, ter plano B (nossa própria carga).
+- Geocodificação: só dos candidatos das cidades com lacuna (ver 11.1); CEP→coordenada quando possível.
+- LGPD: dado de PJ é público; telefone/e-mail de MEI podem ser pessoais; uso B2B, com política de privacidade e opt-out.
+
+### 12.5 Volume (≤ 500 acessos/mês)
+Reforça a seção 11: **alerta por busca sem cobertura** + **mapa de lacunas por universo**, e relatórios agregados por cidade/UF
+(não por bairro) até o tráfego crescer.
+
+### 12.6 Ordem de construção revista
+**B1 Telemetria v2** (genérica, com `bairro`) → **B0 Perfil do tenant por CNPJ** (cadastro, segmento, canais, territórios,
+CNPJ como chave de revendedor, verificação mensal) → **B3 Candidatos por tenant** → **prova de valor com a New Millen no
+território DELA** → **B2 Painel** → **B4 Relatório mensal**.
+
+### 12.7 Bônus: o mesmo motor gera leads para o próprio GeoLynq
+Com a mesma base: listar **fabricantes/marcas** por CNAE e UF (o nosso cliente ideal) para o Danilo prospectar, qualificando
+pelo sinal "o site tem página 'onde comprar' ou 'seja um revendedor'?".
+
+### 12.8 Perguntas
+(1) **CNPJ da New Millen**; (2) **onde ela atua/quer vender** (UFs, cidades) e **quais canais** usa (lojas, representantes,
+distribuidores; físicos/online); (3) primeira versão da **taxonomia de segmentos** (quais verticais priorizar além de suplementos).
+
+### Fontes desta seção
+[BrasilAPI (docs)](https://brasilapi.com.br/docs) ·
+[Dados abertos CNPJ: guia (Toexceed)](https://toexceed.com.br/blog/2026/09/27/dados-abertos-cnpj-receita-federal-o-guia-completo-para-acessar-e-utilizar/) ·
+[Exemplo de uso do dump (~85 GB)](https://github.com/christiano-gonara/teste-abrasel-dados) ·
+[Layout oficial (Receita Federal)](https://www.gov.br/receitafederal/dados/cnpj-metadados.pdf)

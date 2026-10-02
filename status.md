@@ -24,19 +24,21 @@ e site de amostra "Pódio" em `https://demo.geolynq.personalsupport.tech`, com c
    R$ 1.290 por 12 meses) e perguntas ao Danilo em `docs/operacao-e-mercado.md` seção 10.
    **Cuidado:** o Gofind também vende análise de demanda; o diferencial é frescor + intenção real +
    "como chegar" + usabilidade.
-4. **Plano de construção (revisto em 2026-10-02, ver seção 11 de `docs/operacao-e-mercado.md`):**
-   **B1 Telemetria v2** (agora com `bairro`; **precisa OK do usuário para alterar `widget_events` em
-   produção**) → **protótipo de prova de valor com dados reais da New Millen** (mapa de lacunas da região
-   prioritária cruzando a lista de revendedores deles com a base de CNPJ; é o material de venda) →
-   **B3-lite Prospecção** (candidatos por CNAE/município com score, alerta por e-mail; o arquivo bruto da
-   Receita fica na VPS, só o recorte vai ao Supabase) → **B2 Painel v1** → **B4 Relatório mensal automático**.
-   **Fatos:** New Millen ≈ 1.000 visitas/mês (pico) → ~20–100 buscas/mês; por isso cada busca sem cobertura
-   vira **alerta/lead** e o relatório principal é o **mapa de lacunas por universo (CNAE)**, que não depende
-   de tráfego. **Teto de preço do Junior para a New Millen: R$ 1.000/mês** → piloto R$ 990/mês por 12 meses.
-   **Dados:** Google proíbe guardar geocodificação >30 dias; Nominatim público proíbe uso pesado; dizer "não
-   consta na sua base", nunca "não vende"; contato é da equipe do cliente, sem disparo em massa (LGPD).
-   **Perguntas abertas:** nº real de buscas no Gofind, lista de revendedores da New Millen, CNAEs do canal,
-   região prioritária, quem recebe os alertas.
+4. **Plano de construção (revisto de novo em 2026-10-02; ver seções 11 e 12 de `docs/operacao-e-mercado.md`):**
+   **Princípio:** o perfil de mercado de **cada cliente** vem da Receita no cadastro (CNPJ → CNAE → segmento →
+   canais → territórios) e todo o sistema o respeita; a New Millen é só a cliente inicial (Baixada Santista era
+   só a região da demo; Gofind dela ≤ 500 acessos/mês). **Foco fixo:** fabricantes que dependem de ponto de venda
+   (lojas, representantes, distribuidores; físico ou online). Ordem: **B1 Telemetria v2** (genérica, com
+   `bairro`; **precisa OK do usuário para alterar `widget_events` em produção**) → **B0 Perfil do tenant por CNPJ**
+   (cadastro, taxonomia de segmentos → CNAEs de canal, territórios, **CNPJ como chave de revendedor**
+   `unique(tenant_id, cnpj)`, verificação mensal de situação cadastral) → **B3 Candidatos por tenant** (base da
+   Receita na VPS, recorte por tenant no Supabase) → **prova de valor com a New Millen no território dela** →
+   **B2 Painel** (visões B2C lojas e B2B distribuidores/representantes) → **B4 Relatório mensal automático**.
+   **Cuidados:** o CNAE do fabricante não diz quem o revende (sugerir + confirmar); "não consta na sua base",
+   nunca "não vende"; Google proíbe guardar geocodificação >30 dias; Nominatim público proíbe uso pesado; contato é
+   da equipe do cliente, sem disparo em massa (LGPD). Teto de preço do Junior para a New Millen: R$ 1.000/mês
+   (piloto R$ 990). **Perguntas abertas:** CNPJ e território da New Millen, canais que ela usa, primeiras
+   verticais da taxonomia.
 5. **Fase 5 — painel admin** (`apps/admin`, Next.js 16): login por tenant, status da última importação
    (`import_batches`), lista de produtos/revendedores, preview do widget e dashboard de buscas e
    lacunas (queries do blueprint, Fase 5). **Antes de colocar no ar:** subir o patch do `next`
@@ -267,6 +269,7 @@ do banco agora é schema + migration acima.
 - [ ] Decisão de negócio: oferta e preço para a New Millen (seção 10 de `docs/operacao-e-mercado.md`); a tabela
       antiga (Essencial R$ 247) **não vale mais**
 - [ ] **Telemetria v2** em `widget_events` (B1) — pré-requisito dos relatórios
+- [ ] **B0 Perfil do tenant por CNPJ** (cadastro) e **CNPJ nos revendedores** (resolve a reimportação que duplica)
 - [ ] Widget: exibir atribuição "© OpenStreetMap" (exigência do Nominatim) e cachear CEP→coordenadas
 - [ ] Supabase `geolynq-prod` ainda no plano grátis → Pro antes do 1º cliente pagante
 - [ ] Fase 5 — painel admin (ver "Por onde retomar")
