@@ -18,13 +18,25 @@ português simples o que será feito e por quê, depois entregar comandos pronto
 solto nem de falar de fase futura sem contexto. O que roda no ambiente de nuvem da
 sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos pela VPS.
 
-1. ~~Fase 4.5~~ **feita** (ver "Concluído"). Para atualizar o widget em produção:
-   mudar o código → push na branch → EasyPanel, app `widget`, **Implantações → Implantar**
-   (o deploy é manual; não há webhook/auto-deploy configurado).
+1. ~~Fase 4.5~~ **feita** (ver "Concluído"). **Deploy automático (requisito do usuário):**
+   workflow pronta em `.github/workflows/deploy-widget.yml` (push na `main` que mude
+   `apps/widget/**`, `packages/shared/**` ou lockfile → typecheck + testes → `POST` no
+   webhook de deploy do EasyPanel; teste falhou = nada publica). **Hoje o deploy ainda é
+   manual** (Implantações → Implantar) até concluir os 4 passos:
+   a. EasyPanel, app `widget`, **Implantações**: achar a URL do webhook de deploy
+      (**segredo — não colar em chat nem em código**) e manter o "Auto Deploy" nativo
+      DESLIGADO (senão publica 2x);
+   b. GitHub → repo → Settings → Secrets and variables → Actions → New repository secret:
+      nome `EASYPANEL_WIDGET_DEPLOY_URL`, valor = a URL do passo a;
+   c. merge da `claude/bold-cray-vbbdyb` na `main` (PR; **aguardando OK do usuário**);
+   d. EasyPanel, app `widget`, aba **Fonte**: trocar o Ramo para `main`; depois, na aba
+      Actions do GitHub, rodar a workflow manualmente (Run workflow) e conferir que
+      aparece um deploy novo em Implantações.
+   **Não verificado:** o método HTTP e o formato exato do webhook do EasyPanel (docs
+   inacessíveis daqui). Se o `POST` falhar no primeiro run, o log da Action mostra o erro e
+   ajustamos. Mudanças de banco (migrations) continuam manuais.
 2. Fase 4.1 — **próximo**: site de amostra com o widget instalado (`demo.geolynq.personalsupport.tech`)
 3. Decidir a questão de reimportação (revendedores duplicam — ver "Decisões em aberto")
-4. Decidir quando fazer merge da branch `claude/bold-cray-vbbdyb` na `main` e então
-   apontar o app `widget` do EasyPanel (aba Fonte → Ramo) para `main`
 
 ## Concluído
 - [x] Fase 0 — GitHub criado. **DNS corrigido em 2026-10-02:** o wildcard registrado antes
