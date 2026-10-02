@@ -18,16 +18,16 @@ português simples o que será feito e por quê, depois entregar comandos pronto
 solto nem de falar de fase futura sem contexto. O que roda no ambiente de nuvem da
 sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos pela VPS.
 
-1. ~~Fase 4.5~~ **feita** (ver "Concluído"). **Deploy automático (requisito do usuário) — versão enxuta, em verificação (2026-10-02):**
+1. ~~Fase 4.5~~ **feita** (ver "Concluído"). **Deploy automático (requisito do usuário) — versão enxuta, **VERIFICADA** (2026-10-02):**
    webhook do GitHub (repo → Settings → Webhooks, evento `push`, content-type json, sem
    secret, SSL ligado) apontando para o **Gatilho de Implantação** do app `widget` no
    EasyPanel, usando HTTPS pelo domínio do painel
    (`https://panel.personalsupport.tech/api/deploy/<token>`) e não o `http://IP:3000` que a
    tela mostra (token em texto puro). O token é segredo: foi rotacionado por ter aparecido
    parcialmente em print; nunca colar a URL em chat/código. O `ping` inicial voltou ✓.
-   **Prova pendente:** conferir em EasyPanel → Implantações que o ping e/ou um push
-   geraram deploy novo (✓ verde no GitHub sozinho não prova: se faltar o caminho
-   `/api/deploy/…` o painel também responde 200 sem publicar).
+   **Verificado:** push `c048914` na branch gerou sozinho um deploy novo em EasyPanel →
+   Implantações (nome = mensagem do commit; 5 s, build com cache), sem clique do usuário.
+   O token novo (começa com `2438…`) já está em uso.
    **Limites:** qualquer push na branch publica (sem testes antes, sem filtro de branch/
    caminho). **Antes do 1º cliente real** migrar para a versão com testes:
    `.github/workflows/deploy-widget.yml` (já no repo, só dispara em push na `main`; exige
