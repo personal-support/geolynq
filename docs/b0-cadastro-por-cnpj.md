@@ -74,16 +74,24 @@ create table public.tenant_profiles (
   situacao_cadastral text,
   data_abertura      date,
   porte              text,
-  cnae_principal     text check (cnae_principal ~ '^[0-9]{7}$'),
+  cnae_principal     text check (cnae_principal ~ '^[0-9]{7}$'),   -- a API devolve NÚMERO (1099607): normalizar com lpad(x::text, 7, '0')
+  cnae_principal_desc text,
   cnaes_secundarios  text[] not null default '{}',
   uf                 text check (uf ~ '^[A-Z]{2}$'),
   municipio          text,
-  municipio_ibge     integer,
+  municipio_ibge     integer,                                       -- código IBGE (7 dígitos), ex.: 3509205
+  municipio_receita  integer,                                       -- código interno da Receita (o dump usa este), ex.: 6285
   cep                text check (cep ~ '^[0-9]{8}$'),
   website            text,
   fonte              text not null default 'manual' check (fonte in ('brasilapi','receita_dump','manual')),
   consultado_em      timestamptz,
   created_at         timestamptz not null default now()
+);
+
+-- Catálogo de atividades (código → descrição), carregado da tabela auxiliar da Receita
+create table public.cnae_catalog (
+  cnae      text primary key check (cnae ~ '^[0-9]{7}$'),
+  descricao text not null
 );
 
 -- Segmentos (ponto de partida) e seus CNAEs de canal
@@ -152,6 +160,31 @@ create unique index if not exists resellers_tenant_cnpj_uq on public.resellers (
 - LGPD: o perfil guarda só dados de PJ; os revendedores MEI podem ter nome de pessoa na razão social.
 
 ## 9. Pedidos ao Junior
-(1) Confirmar **"Todos" = Brasil inteiro + todos os canais**; (2) rodar na VPS o comando de consulta do CNPJ (resposta real da API) e
-a checagem de **disco/RAM**; (3) **OK para o B0.1** (migration aditiva); (4) mandar, quando o Danilo tiver, a **lista de revendedores da
-New Millen com CNPJ**.
+(1) Confirmar **"Todos" = Brasil inteiro + todos os canais**; (2) ~~consulta do CNPJ e disco/RAM da VPS~~ (**feito**, seção 10);
+(3) **OK para o B0.1** (migration aditiva, já com os ajustes da seção 10); (4) mandar, quando o Danilo tiver, a **lista de revendedores
+da New Millen com CNPJ**.
+
+## 10. Verificação com a API real e com a VPS (2026-10-02)
+
+**BrasilAPI respondeu da VPS do Junior** (HTTP com dados reais da New Millen). O que a resposta confirma e o que muda:
+
+| Achado | Consequência no desenho |
+|---|---|
+| Campos conferem com o esquema: situação (`2` = ATIVA), porte, endereço, CEP, matriz/filial, data de início | esquema da seção 5 está certo |
+| **CNAE vem como NÚMERO** (`1099607`, `4763602`): códigos que começam com 0 perdem o zero | normalizar com `lpad(codigo::text, 7, '0')` em todo lugar (importador, cadastro, ETL) |
+| Vêm **dois códigos de município**: `codigo_municipio` (**6285**, interno da Receita) e `codigo_municipio_ibge` (**3509205**) | o **dump usa o código da Receita**; guardar os dois e ter um mapeamento Receita ↔ IBGE |
+| **E-mail nulo e telefone `000000000000`** (placeholder) | **contato cadastral da Receita é fraco**: não prometer "lista com telefone"; o "como chegar" precisa de enriquecimento (site, telefone) por outras fontes |
+| Vem `qsa` (sócios: nome, CPF parcial, faixa etária) | **dado pessoal: não guardar**; o perfil só grava dados da empresa |
+| Atividades secundárias: pós alimentícios, bebidas, atacadista de embalagens, **varejo de artigos esportivos (4763-6/02)**, depósito, **envasamento sob contrato (8292-0/00)** | a New Millen também **fabrica para terceiros** (co-packer) e tem varejo próprio; não muda o desenho, mas confirma que o CNAE do fabricante não explica o canal |
+| Resposta traz regime tributário, capital social etc. | ignorar; guardar só o necessário |
+
+**Descrição das atividades:** a API já traz o texto de cada CNAE; para a base inteira usar a tabela auxiliar da Receita (`cnae_catalog`).
+
+### VPS (Hostinger, medida pelo Junior)
+Disco **95,8 GB, 61,9 GB livres**; RAM **7,8 GB** (~5,2 GB disponíveis, sem swap); **2 vCPU**. Hospeda também EasyPanel, n8n e o widget.
+- A base da Receita (~85 GB descompactada, fonte secundária) **não cabe extraída** nos 61,9 GB livres, e a RAM não comporta carga em banco.
+- **Plano viável: ETL em streaming**, um arquivo por vez: baixar o `.zip`, filtrar durante a leitura (`unzip -p | …`, só estabelecimentos
+  ativos, nos CNAEs e territórios que interessam), gravar só o resultado e apagar o zip. Disco necessário ≈ um zip + o recorte.
+  Rodar de madrugada, com prioridade baixa, para não competir com n8n/widget. **Não verificado:** tamanho real de cada arquivo e tempo
+  de execução; medir com um `HEAD` por arquivo antes de agendar.
+- Encoding e separador do CSV seguem o layout oficial (ponto e vírgula, sem cabeçalho, ISO-8859-1): conferir no 1º arquivo.

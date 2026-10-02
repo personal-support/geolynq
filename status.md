@@ -231,6 +231,13 @@ pedir OK. Nunca pedir nem colar tokens/URLs de webhook em chat.
       nome + score de aderência validado em amostra; online sem raio (lacuna de presença); código de atividade
       só entra depois de conferido na base/IBGE, nunca de memória. A API pública de CNPJ e o Gofind/Receita estão
       bloqueados no sandbox: a consulta real sai da VPS do usuário
+- [x] **B0 — verificação com a API real e a VPS** (2026-10-02; `docs/b0-cadastro-por-cnpj.md` seção 10). BrasilAPI respondeu da VPS
+      com os dados reais da New Millen (esquema confere). Achados: o **CNAE vem como número** (perde o zero à esquerda →
+      `lpad(x::text,7,'0')`); há **2 códigos de município** (Receita 6285 × IBGE 3509205; o dump usa o da Receita); **e-mail
+      nulo e telefone `000000000000`** → contato cadastral da Receita é fraco, o "como chegar" exige enriquecimento; `qsa`
+      (sócios) é dado pessoal → não guardar. **VPS:** 95,8 GB (61,9 livres), 7,8 GB RAM, 2 vCPU → a base da Receita (~85 GB)
+      **não cabe extraída**; ETL em **streaming** (um zip por vez, filtrando na leitura, de madrugada). Pendente:
+      "Todos" = Brasil + todos os canais (confirmar) e **OK do usuário para a migration B0.1**
 
 ## Validação da Fase 4 contra o Supabase real (2026-10-01, geolynq-prod)
 Feita via conector MCP do Supabase, como role `anon`, com as mesmas consultas que o
