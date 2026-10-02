@@ -15,6 +15,7 @@ n8n para importação de catálogo, EasyPanel/Hostinger para hospedagem. Bluepri
 - `packages/shared` — tipos e clients Supabase
 - `supabase/migrations` — SQL idempotente aplicado à mão em produção
 - `docs/` — blueprint, schema v2, workflow n8n versionado, planilha-modelo
+- `docs/operacao-e-mercado.md` — fluxo ponta a ponta, onboarding de cliente, pesquisa de mercado, viabilidade e preço (hipóteses a validar)
 
 ## Como trabalhar com o usuário (Junior Lopes)
 - Responda em **português simples e direto**; estruture, dê passos acionáveis, sem jargão solto.

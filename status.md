@@ -17,16 +17,28 @@ e site de amostra "Pódio" em `https://demo.geolynq.personalsupport.tech`, com c
    '3596b3c6-8389-42af-b575-4bbdd69f2f2d';` (hoje há 1 evento; pode rodar mais de uma vez)
 2. **Polimento opcional do widget:** subtítulo "6 revendedores perto de Santos/SP" conta a loja online;
    o certo seria "5 perto de Santos/SP e 1 loja online".
-3. **Fase 5 — painel admin** (`apps/admin`, Next.js 16): login por tenant, status da última importação
+3. **Validação comercial (antes de investir na Fase 5 completa)** — análise e números em
+   `docs/operacao-e-mercado.md`. Perguntar ao Danilo **quanto os 2 clientes pagam hoje ao Gofind**
+   (âncora de preço nº 1; o preço do Gofind não é público); fechar os 2 pilotos **pagos** (preço de
+   fundador); 10 conversas com marcas usando a demo. **Ponto de decisão em 90 dias:** menos de 2
+   clientes pagando → manter enxuto; 2 ou mais → construir a Fase 5. Preço inicial sugerido (hipótese):
+   implantação R$ 800 + Essencial R$ 247/mês; Pro R$ 597/mês só após a Fase 5.
+4. **Fase 5 — painel admin** (`apps/admin`, Next.js 16): login por tenant, status da última importação
    (`import_batches`), lista de produtos/revendedores, preview do widget e dashboard de buscas e
    lacunas (queries do blueprint, Fase 5). **Antes de colocar no ar:** subir o patch do `next`
    (16.3.4 tem alerta crítico; corrigido na 16.3.8).
-4. **Antes do 1º cliente real** (Danilo pode fechar em breve):
+5. **Antes do 1º cliente real** (Danilo pode fechar em breve):
+   - **Supabase para o plano Pro** (US$ 25/mês): o grátis pausa após 1 semana sem uso e derrubaria o widget;
+   - **geocodificação:** cache CEP→coordenadas no banco, **atribuição ao OpenStreetMap no widget** (a
+     política do Nominatim exige; hoje não exibimos) e plano para instância própria/paga em volume
+     (Nominatim público: máx. 1 req/s, sem uso pesado);
+   - **aviso de privacidade + contrato** (LGPD: cliente = controlador, GeoLynq = operador), com revisão jurídica;
+   - monitor de disponibilidade (uptime) dos 2 hosts;
    - trocar o deploy automático por push pela versão **com testes** (workflow pronta, ver abaixo);
    - decidir a reimportação de revendedores (duplicam) e resolver;
    - rate limit em `widget_events` (qualquer um com a chave pública insere);
    - limpar o `demo` (revendedor duplicado + telefone `13999990000`, que pode ser real).
-5. **Prazo duro: o n8n na AWS free tier expira em 10/11/2026.** Migrar o workflow
+6. **Prazo duro: o n8n na AWS free tier expira em 10/11/2026.** Migrar o workflow
    `geolynq-import-catalogo` para a VPS Hostinger com folga (confirmar a data no console AWS).
 
 **Como trabalhar com o usuário (combinado):** ele não usa PC, só a VPS Hostinger (`root@srv1887859`) e
@@ -238,6 +250,9 @@ do banco agora é schema + migration acima.
 - [ ] Quando fazer o merge da branch na `main` (e apontar o EasyPanel para `main`)
 
 ## Pendente
+- [ ] Decisão de negócio: preço, pilotos pagos e ponto de decisão de 90 dias (ver `docs/operacao-e-mercado.md`)
+- [ ] Widget: exibir atribuição "© OpenStreetMap" (exigência do Nominatim) e cachear CEP→coordenadas
+- [ ] Supabase `geolynq-prod` ainda no plano grátis → Pro antes do 1º cliente pagante
 - [ ] Fase 5 — painel admin (ver "Por onde retomar")
 - [ ] Anti-spam em `widget_events` — rate limit no gateway/Nginx
 - [ ] `public.spatial_ref_sys` (PostGIS) sem RLS — risco baixo (só sistemas de coordenadas), advisor
