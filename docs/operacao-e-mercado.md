@@ -270,3 +270,76 @@ renovação e multa do contrato com o Gofind (janela de troca); (3) quem usa o r
 [Dados abertos da Receita (Socialhub)](https://www.socialhub.pro/blog/dados-abertos-receita-federal-cnpj/) ·
 [CNAE 4729-6/99](https://www.contabilivre.com.br/cnae/4729699-comercio_varejista_de_produtos_alimenticios_em_geral_ou_especializado_em_produtos_alimenticios_nao_especificados_anteriormente) ·
 [CNAE atacado 4637-1/99 (IBGE)](https://concla.ibge.gov.br/busca-online-cnae.html?subclasse=4637199&tipo=cnae&view=subclasse)
+
+## 11. Ideias do Junior e parecer (2026-10-02)
+
+**Fatos novos:** a New Millen tem ~**1.000 visitas/mês no pico**; o teto de preço do Junior para ela é **R$ 1.000/mês**;
+o diferencial precisa existir desde o primeiro dia.
+
+**Ideias:** (A) busca sem revendedor na base (ex.: *whey* na Guilhermina, Praia Grande) vira relatório "x buscas do produto y no
+bairro z, sem revendedor" **+ lista de empresas do CNAE do cliente num raio da busca**; (B) mesmo havendo revendedores
+(ex.: 5 buscas de *creatina* no Aparecida, Santos, 3 revendedores), mostrar abaixo as empresas elegíveis que "parecem não vender" o
+produto; (C) enriquecer a base da Receita com dados públicos mais atuais (site, endereço).
+
+### 11.1 Parecer
+**É a melhor ideia até agora**, porque transforma "perdemos uma venda" em "aqui está quem abordar". Três ajustes:
+
+1. **Volume.** 1.000 visitas/mês ≈ **20 a 100 buscas/mês** (hipótese: 2–10% usam o widget; confirmar com o nº real de buscas no
+   Gofind). Em nível bairro × produto quase toda célula terá 0 a 2 buscas, então **estatística de bairro não aparece por
+   meses**. Saída: (a) cada busca sem cobertura vira um **alerta/lead imediato** (e-mail ou WhatsApp para a equipe
+   comercial, já com os candidatos); (b) o relatório principal passa a ser o **mapa de lacunas por universo (CNAE)**, que **não
+   depende de tráfego**: onde existem empresas elegíveis e a marca não tem ninguém; as buscas só **priorizam**.
+2. **Linguagem e honestidade do dado.** Não dizer "não vendem"; dizer **"não constam na sua base"**. Não sabemos se vendem
+   (podem comprar via distribuidor que a marca não lista). Incluir o **ciclo de feedback**: a equipe marca cada candidato
+   (*vende / não vende / contatado / sem interesse*), o que melhora a base e vira ativo próprio (um fosso contra o Gofind).
+   Métrica nova: **penetração local** = revendedores da base ÷ empresas elegíveis no raio (ex.: 3 de 28 = 11%). Usar um
+   **score de aderência** (CNAE principal pesa mais que secundário; só situação *ativa*; porte; tempo de atividade).
+3. **Dados públicos: o que dá e o que não dá.**
+   - **Receita (CNPJ):** mensal; endereço pode estar defasado; traz CNAE principal e secundários, telefone, e-mail;
+     telefone/e-mail de MEI podem ser dado pessoal (LGPD).
+   - **OpenStreetMap:** existem as tags `shop=nutrition_supplements` e `shop=health_food`; gratuito (ODbL, com
+     atribuição); **cobertura no Brasil precisa ser medida** antes de prometer.
+   - **Google:** os termos **proíbem guardar resultados de geocodificação por mais de 30 dias** (exceção estreita, só
+     para a funcionalidade direta do usuário final); raspar o Google Maps viola os termos. Usar só sob demanda e sem armazenar.
+   - **Sites/endereços atuais:** só o que a própria empresa publica ou o cliente informa; verificação manual para as
+     lacunas prioritárias, não em massa.
+   - **Geocodificar candidatos em massa:** o Nominatim público proíbe uso pesado e o Google não permite guardar. Opções:
+     Nominatim próprio na VPS (precisa de RAM/disco), provedor pago que permita armazenar, ou geocodificar **só os
+     candidatos das cidades com lacuna** (volume pequeno).
+   - **Contato:** a lista é para a **equipe do cliente ligar/visitar**; nada de disparo em massa por WhatsApp (LGPD/spam).
+
+### 11.2 Como fica (exemplos de saída)
+- **Alerta imediato:** "Busca de *whey*, bairro Guilhermina (Praia Grande): **0 revendedores** na base. **14 empresas elegíveis**
+  em 3 km. [lista com endereço e telefone cadastral]".
+- **Mapa de lacunas (mensal):** por cidade/bairro: empresas elegíveis × revendedores da base × buscas; ordenado por
+  oportunidade.
+- **Penetração local:** "Aparecida (Santos): 3 de 28 elegíveis na base (11%); 5 buscas de *creatina* no mês; 25 candidatos
+  **não constam** na sua base. [lista]".
+
+### 11.3 Preço revisto para a New Millen
+Teto de R$ 1.000: **piloto a R$ 990/mês por 12 meses** (38% abaixo dos R$ 1.600 de hoje; economia de R$ 7.320/ano), com
+contrapartidas: depoimento/caso, co-design do painel e validação dos candidatos (alimenta o feedback). **Preço de fundador não é
+preço de lista:** a lista das ofertas Radar/Expansão (seção 10.5) segue como hipótese para os próximos clientes e depende de o
+mapa de lacunas mostrar valor.
+
+### 11.4 Ordem de construção revista
+1. **B1 Telemetria v2**, agora **incluindo `bairro`** (o ViaCEP já devolve) além de cidade/UF, coordenada aproximada, `cep5`,
+   `nearest_km`, contagens físico/online.
+2. **Protótipo de prova de valor com dados reais da New Millen** (antes do painel): mapa de lacunas da região prioritária
+   (ex.: Baixada Santista) em PDF/planilha, cruzando a lista de revendedores deles com a base de CNPJ. É o material de venda mais forte.
+3. **B3-lite Prospecção:** carga de CNPJ por município/CNAE, candidatos com score, alerta por e-mail.
+4. **B2 Painel v1** e **B4 Relatório mensal automático**.
+Arquitetura: manter o arquivo bruto da Receita (vários GB) **na VPS** (n8n/script) e carregar no Supabase só o recorte
+(CNAE × municípios do cliente), para não estourar o banco.
+
+### 11.5 Perguntas que destravam
+(1) Nº real de buscas/mês no Gofind e de visitas na página "onde comprar"; (2) lista atual de revendedores da New Millen
+(com endereço); (3) **CNAEs do canal** deles (varejo de suplementos? farmácias? academias? atacado?); (4) região prioritária;
+(5) quem recebe os alertas e por qual canal.
+
+### Fontes desta seção
+[Google Maps: termos do Geocoding (cache de 30 dias)](https://developers.google.com/maps/documentation/geocoding/policies) ·
+[Google Maps Platform: termos específicos](https://cloud.google.com/maps-platform/terms/maps-service-terms) ·
+[OSM: shop=nutrition_supplements](https://wiki.openstreetmap.org/wiki/Tag:shop=nutrition_supplements) ·
+[OSM: shop=health_food](https://wiki.openstreetmap.org/wiki/Tag:shop=health_food) ·
+[Política do Nominatim](https://operations.osmfoundation.org/policies/nominatim/)

@@ -24,11 +24,19 @@ e site de amostra "Pódio" em `https://demo.geolynq.personalsupport.tech`, com c
    R$ 1.290 por 12 meses) e perguntas ao Danilo em `docs/operacao-e-mercado.md` seção 10.
    **Cuidado:** o Gofind também vende análise de demanda; o diferencial é frescor + intenção real +
    "como chegar" + usabilidade.
-4. **Plano de construção (em ordem):** **B1 Telemetria v2** (a telemetria atual não sustenta os
-   relatórios: cidade nula no GPS, sem coordenada aproximada, sem distância ao revendedor; **precisa OK
-   do usuário para alterar `widget_events` em produção**) → go-live da New Millen já gravando →
-   **B2 Painel v1** (login + 4 relatórios) → **B4 Relatório mensal automático** → **B3 Prospecção**
-   (importador de CNPJ por município; CNAE 4729-6/99 varejo e 4637-1/99 atacado).
+4. **Plano de construção (revisto em 2026-10-02, ver seção 11 de `docs/operacao-e-mercado.md`):**
+   **B1 Telemetria v2** (agora com `bairro`; **precisa OK do usuário para alterar `widget_events` em
+   produção**) → **protótipo de prova de valor com dados reais da New Millen** (mapa de lacunas da região
+   prioritária cruzando a lista de revendedores deles com a base de CNPJ; é o material de venda) →
+   **B3-lite Prospecção** (candidatos por CNAE/município com score, alerta por e-mail; o arquivo bruto da
+   Receita fica na VPS, só o recorte vai ao Supabase) → **B2 Painel v1** → **B4 Relatório mensal automático**.
+   **Fatos:** New Millen ≈ 1.000 visitas/mês (pico) → ~20–100 buscas/mês; por isso cada busca sem cobertura
+   vira **alerta/lead** e o relatório principal é o **mapa de lacunas por universo (CNAE)**, que não depende
+   de tráfego. **Teto de preço do Junior para a New Millen: R$ 1.000/mês** → piloto R$ 990/mês por 12 meses.
+   **Dados:** Google proíbe guardar geocodificação >30 dias; Nominatim público proíbe uso pesado; dizer "não
+   consta na sua base", nunca "não vende"; contato é da equipe do cliente, sem disparo em massa (LGPD).
+   **Perguntas abertas:** nº real de buscas no Gofind, lista de revendedores da New Millen, CNAEs do canal,
+   região prioritária, quem recebe os alertas.
 5. **Fase 5 — painel admin** (`apps/admin`, Next.js 16): login por tenant, status da última importação
    (`import_batches`), lista de produtos/revendedores, preview do widget e dashboard de buscas e
    lacunas (queries do blueprint, Fase 5). **Antes de colocar no ar:** subir o patch do `next`
