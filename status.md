@@ -18,23 +18,22 @@ português simples o que será feito e por quê, depois entregar comandos pronto
 solto nem de falar de fase futura sem contexto. O que roda no ambiente de nuvem da
 sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos pela VPS.
 
-1. ~~Fase 4.5~~ **feita** (ver "Concluído"). **Deploy automático (requisito do usuário):**
-   workflow pronta em `.github/workflows/deploy-widget.yml` (push na `main` que mude
-   `apps/widget/**`, `packages/shared/**` ou lockfile → typecheck + testes → `POST` no
-   webhook de deploy do EasyPanel; teste falhou = nada publica). **Hoje o deploy ainda é
-   manual** (Implantações → Implantar) até concluir os 4 passos:
-   a. EasyPanel, app `widget`, **Implantações**: achar a URL do webhook de deploy
-      (**segredo — não colar em chat nem em código**) e manter o "Auto Deploy" nativo
-      DESLIGADO (senão publica 2x);
-   b. GitHub → repo → Settings → Secrets and variables → Actions → New repository secret:
-      nome `EASYPANEL_WIDGET_DEPLOY_URL`, valor = a URL do passo a;
-   c. merge da `claude/bold-cray-vbbdyb` na `main` (PR; **aguardando OK do usuário**);
-   d. EasyPanel, app `widget`, aba **Fonte**: trocar o Ramo para `main`; depois, na aba
-      Actions do GitHub, rodar a workflow manualmente (Run workflow) e conferir que
-      aparece um deploy novo em Implantações.
-   **Não verificado:** o método HTTP e o formato exato do webhook do EasyPanel (docs
-   inacessíveis daqui). Se o `POST` falhar no primeiro run, o log da Action mostra o erro e
-   ajustamos. Mudanças de banco (migrations) continuam manuais.
+1. ~~Fase 4.5~~ **feita** (ver "Concluído"). **Deploy automático (requisito do usuário) — versão enxuta, em verificação (2026-10-02):**
+   webhook do GitHub (repo → Settings → Webhooks, evento `push`, content-type json, sem
+   secret, SSL ligado) apontando para o **Gatilho de Implantação** do app `widget` no
+   EasyPanel, usando HTTPS pelo domínio do painel
+   (`https://panel.personalsupport.tech/api/deploy/<token>`) e não o `http://IP:3000` que a
+   tela mostra (token em texto puro). O token é segredo: foi rotacionado por ter aparecido
+   parcialmente em print; nunca colar a URL em chat/código. O `ping` inicial voltou ✓.
+   **Prova pendente:** conferir em EasyPanel → Implantações que o ping e/ou um push
+   geraram deploy novo (✓ verde no GitHub sozinho não prova: se faltar o caminho
+   `/api/deploy/…` o painel também responde 200 sem publicar).
+   **Limites:** qualquer push na branch publica (sem testes antes, sem filtro de branch/
+   caminho). **Antes do 1º cliente real** migrar para a versão com testes:
+   `.github/workflows/deploy-widget.yml` (já no repo, só dispara em push na `main`; exige
+   secret `EASYPANEL_WIDGET_DEPLOY_URL`, merge na `main` e Ramo `main` no EasyPanel; ao
+   ativá-la, REMOVER o webhook do GitHub para não publicar 2x). Mudanças de banco
+   (migrations) continuam manuais.
 2. Fase 4.1 — **próximo**: site de amostra com o widget instalado (`demo.geolynq.personalsupport.tech`)
 3. Decidir a questão de reimportação (revendedores duplicam — ver "Decisões em aberto")
 
