@@ -55,7 +55,7 @@ function h<K extends keyof HTMLElementTagNameMap>(
 }
 
 export class GeoLynqWidget extends HTMLElement {
-  static observedAttributes = ["tenant", "color"];
+  static observedAttributes = ["tenant", "color", "product"];
 
   private readonly root = this.attachShadow({ mode: "open" });
   private readonly api = new GeoLynqApi(
@@ -73,7 +73,8 @@ export class GeoLynqWidget extends HTMLElement {
   private resellers: ResellerResult[] | null = null;
   private busy = false;
   private error: string | null = null;
-  private focusTarget: string | null = "term";
+  /** Só recebe foco depois de uma ação do usuário; no carregamento a página do site não pode rolar. */
+  private focusTarget: string | null = null;
   /** Invalida respostas atrasadas quando o usuário já seguiu em frente (ou trocou de tenant). */
   private token = 0;
   private started = false;
@@ -85,7 +86,7 @@ export class GeoLynqWidget extends HTMLElement {
 
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     if (!this.started || oldValue === newValue) return;
-    if (name === "tenant") void this.load();
+    if (name === "tenant" || name === "product") void this.load();
     else this.render();
   }
 
@@ -106,12 +107,35 @@ export class GeoLynqWidget extends HTMLElement {
       this.tenant = tenant;
       this.status = tenant ? "ready" : "unavailable";
       if (!tenant) console.error(`[geolynq] tenant '${slug}' não encontrado ou inativo`);
+      await this.preselectProduct(tenant, run);
     } catch (err) {
       if (run !== this.token) return;
       console.error("[geolynq] falha ao carregar o tenant", err);
       this.status = "unavailable";
     }
     this.render();
+  }
+
+  /**
+   * Página de produto: `<geolynq-widget product="SKU">` abre direto na etapa de localização.
+   * SKU inexistente ou falha de rede não quebram nada: o widget cai na busca normal.
+   */
+  private async preselectProduct(tenant: TenantPublic | null, run: number): Promise<void> {
+    const sku = this.getAttribute("product")?.trim();
+    if (!tenant || !sku) return;
+    try {
+      const product = await this.api.getProductBySku(tenant.id, sku);
+      if (run !== this.token) return;
+      if (product) {
+        this.product = product;
+        this.view = "location";
+      } else {
+        console.error(`[geolynq] produto '${sku}' não encontrado no catálogo do tenant`);
+      }
+    } catch (err) {
+      if (run !== this.token) return;
+      console.error("[geolynq] falha ao carregar o produto", err);
+    }
   }
 
   private reset(): void {
@@ -123,7 +147,7 @@ export class GeoLynqWidget extends HTMLElement {
     this.resellers = null;
     this.busy = false;
     this.error = null;
-    this.focusTarget = "term";
+    this.focusTarget = null;
   }
 
   // ---- ações -------------------------------------------------------------

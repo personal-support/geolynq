@@ -34,7 +34,12 @@ sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos
    secret `EASYPANEL_WIDGET_DEPLOY_URL`, merge na `main` e Ramo `main` no EasyPanel; ao
    ativá-la, REMOVER o webhook do GitHub para não publicar 2x). Mudanças de banco
    (migrations) continuam manuais.
-2. Fase 4.1 — **próximo**: site de amostra com o widget instalado (`demo.geolynq.personalsupport.tech`)
+2. Fase 4.1 — **código pronto e enviado; falta ativar o endereço** (passo do usuário): EasyPanel →
+   app `widget` → **Domínios** → adicionar `demo.geolynq.personalsupport.tech`, porta 80,
+   HTTPS ligado (DNS já cobre pelo curinga `*.geolynq`). Depois conferir na VPS:
+   `curl -sI --resolve demo.geolynq.personalsupport.tech:443:179.198.116.157 https://demo.geolynq.personalsupport.tech/`
+   (200, `x-robots-tag: noindex`) e abrir no navegador para testar o widget de verdade
+   (Nominatim/ViaCEP/Supabase reais, só testados com simulação)
 3. Decidir a questão de reimportação (revendedores duplicam — ver "Decisões em aberto")
 
 ## Concluído
@@ -110,6 +115,26 @@ sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos
       função. **Pendente:** depois que o widget novo estiver no ar e conferido, remover a
       antiga: `drop function public.widget_nearest_resellers(uuid, uuid, double precision,
       double precision, int);` (rodar à mão no SQL Editor; o conector trava em DROP)
+- [x] **Fase 4.1 — site de amostra "Pódio"** (2026-10-02; código no repo, **ainda não no ar**).
+      `apps/demo/`: gerador Node sem dependências (`build.mjs`, `products.json` espelhando os
+      12 SKUs do tenant `demo`, `styles.css`) → HTML estático: home com o widget ao vivo no
+      herói + catálogo por categoria + "Roteiro da demonstração" (5 passos para quem apresenta;
+      inclui o snippet de instalação) e 12 páginas de produto com o widget já no item
+      (`product="SKU"`). Marca/produtos fictícios, faixa "Site de demonstração" em todas as
+      páginas, `noindex` (meta + `X-Robots-Tag` + `robots.txt`). Visual: rótulo de pote
+      (Archivo larga + Hanken Grotesk + IBM Plex Mono via Google Fonts; cobalto `#1F3FFF`,
+      amarelo `#FFD43B`, fundo `#F2F4EF`). Verificado em Chromium (desktop e 390 px, sem
+      overflow horizontal) com Supabase simulado; **fontes não puderam ser conferidas** (o
+      ambiente não baixa os arquivos de fonte; as capturas usaram fonte substituta).
+      Hospedagem: **mesmo container do widget**, nginx por nome de host
+      (`widget.geolynq…` → bundle; `demo.geolynq…` → site; host desconhecido/healthcheck →
+      widget). `apps/widget/Dockerfile` agora também roda `node apps/demo/build.mjs` e faz
+      `RUN nginx -t` (config inválida derruba o BUILD, não o container no ar). `nginx.conf`
+      testado com nginx 1.24 real: 12 páginas 200, `/` 200, 404 próprio, `/v1/*` só no host do
+      widget, 0 erros no log (isso pegou um bug: `/` dava 404 sem `index`)
+- [x] **Widget: atributo `product="SKU"`** abre direto na etapa de CEP (SKU inexistente cai
+      na busca normal) e **correção de foco**: o widget não rouba mais o foco/rolagem da página
+      no carregamento (antes focava o campo de busca ao montar). 36 verificações E2E (eram 30)
 
 ## Validação da Fase 4 contra o Supabase real (2026-10-01, geolynq-prod)
 Feita via conector MCP do Supabase, como role `anon`, com as mesmas consultas que o

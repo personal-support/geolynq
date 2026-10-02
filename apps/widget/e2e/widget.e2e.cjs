@@ -14,15 +14,15 @@ const events = [], supabaseCalls = [];
 const results = [];
 const check = (n, ok, x='') => { results.push(ok); console.log((ok?'PASS ':'FAIL ')+n+(x?'  -> '+x:'')); };
 // ISO-8859-1 de propósito: simula site hospedeiro antigo, sem charset utf-8 no JS
-const pageHtml = (t) => `<!doctype html><html><head><meta charset="iso-8859-1"><style>
+const pageHtml = (t, p) => `<!doctype html><html><head><meta charset="iso-8859-1"><style>
  button,input,h2,label,p,span{color:red!important;font-family:"Comic Sans MS"!important;font-size:30px!important}</style></head>
- <body><h1>Host</h1><geolynq-widget tenant="${t}" color="#E84E0E"></geolynq-widget><script src="/v1/embed.js" defer></script></body></html>`;
+ <body><h1>Host</h1><geolynq-widget tenant="${t}" color="#E84E0E"${p ? ` product="${p}"` : ''}></geolynq-widget><script src="/v1/embed.js" defer></script></body></html>`;
 
 async function setup(ctx) {
   const page = await ctx.newPage();
   await page.route('http://host.test/**', (r) => {
     const u = new URL(r.request().url());
-    if (u.pathname === '/page') return r.fulfill({ headers: { 'content-type': 'text/html; charset=iso-8859-1' }, body: pageHtml(u.searchParams.get('t')) });
+    if (u.pathname === '/page') return r.fulfill({ headers: { 'content-type': 'text/html; charset=iso-8859-1' }, body: pageHtml(u.searchParams.get('t'), u.searchParams.get('p')) });
     if (u.pathname === '/v1/embed.js') return r.fulfill({ headers: { 'content-type': 'text/javascript' }, body: fs.readFileSync(BUNDLE) });
     return r.fulfill({ status: 404, body: '' });
   });
@@ -36,6 +36,8 @@ async function setup(ctx) {
     if (u.pathname.endsWith('/rpc/widget_get_tenant')) return json(body.p_slug === 'demo' ? [{ id: TENANT_ID, name: 'Demo', slug: 'demo', primary_color: null, logo_url: null }] : []);
     if (u.pathname.endsWith('/products')) {
       const q = decodeURIComponent(u.search);
+      if (/sku=eq\.WPI-900/.test(q)) return json([{ id: PRODUCT_ID, sku: 'WPI-900', name: 'Whey Protein Isolado 900g', category: 'Proteínas' }]);
+      if (/sku=eq\./.test(q)) return json([]);
       if (/whey/i.test(q)) return json([{ id: PRODUCT_ID, sku: 'WPI-900', name: 'Whey Protein Isolado 900g', category: 'Proteínas' }]);
       if (/barra/i.test(q)) return json([{ id: 'p-far', sku: 'BAR-012', name: 'Barra de Proteína', category: 'proteina' }]);
       if (/hiper/i.test(q)) return json([{ id: 'p-none', sku: 'HIP-3000', name: 'Hipercalórico 3kg', category: 'proteina' }]);
@@ -64,6 +66,7 @@ async function setup(ctx) {
   await page.goto('http://host.test/page?t=demo');
   await sel('input#gl-term').waitFor({ timeout: 10000 });
   check('widget carrega tenant e mostra a busca', true);
+  check('não rouba o foco da página no carregamento', await page.evaluate(() => document.activeElement === document.body));
   check('texto com acento íntegro em página ISO-8859-1', /Qual produto você procura\?/.test(await sel('label').innerText()), await sel('label').innerText());
 
   const st = await sel('input#gl-term').evaluate(e => { const s = getComputedStyle(e); return { ff: s.fontFamily, fs: s.fontSize, c: s.color }; });
@@ -141,6 +144,23 @@ async function setup(ctx) {
   await page.waitForTimeout(300);
   const eNone = events.find(e => e.event_type === 'search' && e.product_id === 'p-none');
   check('lacuna registrada: product_id + results_count = 0', !!eNone && eNone.results_count === 0, JSON.stringify(eNone));
+
+  // página de produto: product="SKU" abre direto na localização, sem pedir o produto de novo
+  const p4 = await setup(ctx);
+  await p4.goto('http://host.test/page?t=demo&p=WPI-900');
+  await sel2(p4, 'input#gl-cep').waitFor({ timeout: 10000 });
+  check('product="SKU": abre já na etapa de CEP, com o produto escolhido', /Whey Protein Isolado 900g/.test(await sel2(p4, '.chip').innerText()), await sel2(p4, '.chip').innerText());
+  check('product="SKU": não mostra a busca de produto', (await sel2(p4, 'input#gl-term').count()) === 0);
+  check('product="SKU": não rouba o foco no carregamento', await p4.evaluate(() => document.activeElement === document.body));
+  await sel2(p4, 'input#gl-cep').fill('11060-001'); await sel2(p4, 'form button[type=submit]').click();
+  await sel2(p4, 'article.card').first().waitFor({ timeout: 10000 });
+  check('product="SKU": CEP leva aos revendedores desse produto', /Farmácia Saúde Total/.test(await sel2(p4, 'article.card').first().innerText()));
+
+  // SKU inexistente: cai na busca normal (nunca deixa o widget quebrado)
+  const p5 = await setup(ctx);
+  await p5.goto('http://host.test/page?t=demo&p=NAO-EXISTE');
+  await sel2(p5, 'input#gl-term').waitFor({ timeout: 10000 });
+  check('product="SKU" inexistente: cai na busca normal', true);
 
   // tenant inexistente
   const p2 = await setup(ctx);

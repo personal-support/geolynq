@@ -78,6 +78,19 @@ export class GeoLynqApi {
     return rows[0] ?? null;
   }
 
+  /** Produto exato por SKU (atributo `product` do widget). SKU fora do padrão é ignorado. */
+  async getProductBySku(tenantId: string, sku: string): Promise<ProductPublic | null> {
+    if (!/^[A-Za-z0-9._-]{1,40}$/.test(sku)) return null;
+    const params = new URLSearchParams({
+      select: "id,sku,name,category",
+      tenant_id: `eq.${tenantId}`,
+      sku: `eq.${sku}`,
+      limit: "1",
+    });
+    const rows = await this.request<ProductPublic[]>(`products?${params}`);
+    return rows[0] ?? null;
+  }
+
   async searchProducts(tenantId: string, term: string): Promise<ProductPublic[]> {
     const clean = sanitizeSearchTerm(term);
     if (!clean) return [];
