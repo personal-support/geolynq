@@ -1,46 +1,68 @@
 # Status — GeoLynq
 
 ## Última atualização
-2026-10-02
+2026-10-02 — **pausa**: usuário volta depois. Tudo commitado e enviado (branch `claude/bold-cray-vbbdyb`).
 
 ## Fase atual
-Fase 4 e 4.5 **concluídas**: widget validado contra o Supabase real (2026-10-01) e **no ar**
-em `https://widget.geolynq.personalsupport.tech/v1/embed.js` (2026-10-02, HTTPS válido,
-verificado por `curl`). Próximo: Fase 4.1 (site de amostra com o widget instalado).
+Fases 0 a 4.5 e 4.1 **concluídas e no ar**: widget em `https://widget.geolynq.personalsupport.tech/v1/embed.js`
+e site de amostra "Pódio" em `https://demo.geolynq.personalsupport.tech`, com catálogo fictício
+(12 produtos, 12 revendedores), raio de busca de 100 km e deploy automático por push.
+**Próximo grande passo: Fase 5 — painel admin** (onde o cliente vê buscas e lacunas de cobertura).
 
-## Por onde retomar
-**Retomada em 2026-10-02.** Fase 4.5 concluída; nada em andamento.
+## Por onde retomar (em ordem)
+1. **Fechar o teste da demo** no navegador e no celular. Já confirmado: Whey + CEP de Santos com
+   dados reais (raio e ordenação ok). **Falta olhar:** glutamina (só SP, ~55 km), hipercalórico
+   (sem revendedor → mensagem do raio), página de produto (widget já no item), celular, fontes.
+   Depois zerar os eventos de teste (SQL Editor): `delete from public.widget_events where tenant_id =
+   '3596b3c6-8389-42af-b575-4bbdd69f2f2d';` (hoje há 1 evento; pode rodar mais de uma vez)
+2. **Polimento opcional do widget:** subtítulo "6 revendedores perto de Santos/SP" conta a loja online;
+   o certo seria "5 perto de Santos/SP e 1 loja online".
+3. **Fase 5 — painel admin** (`apps/admin`, Next.js 16): login por tenant, status da última importação
+   (`import_batches`), lista de produtos/revendedores, preview do widget e dashboard de buscas e
+   lacunas (queries do blueprint, Fase 5). **Antes de colocar no ar:** subir o patch do `next`
+   (16.3.4 tem alerta crítico; corrigido na 16.3.8).
+4. **Antes do 1º cliente real** (Danilo pode fechar em breve):
+   - trocar o deploy automático por push pela versão **com testes** (workflow pronta, ver abaixo);
+   - decidir a reimportação de revendedores (duplicam) e resolver;
+   - rate limit em `widget_events` (qualquer um com a chave pública insere);
+   - limpar o `demo` (revendedor duplicado + telefone `13999990000`, que pode ser real).
+5. **Prazo duro: o n8n na AWS free tier expira em 10/11/2026.** Migrar o workflow
+   `geolynq-import-catalogo` para a VPS Hostinger com folga (confirmar a data no console AWS).
 
-**Como trabalhar com o usuário (combinado nesta sessão):** ele não usa PC, só a VPS
-Hostinger (`root@srv1887859`, EasyPanel). Para qualquer passo na VPS: primeiro explicar em
-português simples o que será feito e por quê, depois entregar comandos prontos para colar
-(um bloco por vez, com o resultado esperado), e pedir a saída de volta. Nada de jargão
-solto nem de falar de fase futura sem contexto. O que roda no ambiente de nuvem da
-sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos pela VPS.
+**Como trabalhar com o usuário (combinado):** ele não usa PC, só a VPS Hostinger (`root@srv1887859`) e
+o EasyPanel. Para qualquer passo na VPS ou no EasyPanel: primeiro explicar em português simples o que
+será feito e por quê; depois comandos prontos para colar, um bloco por vez, com o resultado esperado,
+e pedir a saída de volta. Sem jargão solto. Antes de gravar no banco de **produção** ou abrir PR,
+pedir OK. Nunca pedir nem colar tokens/URLs de webhook em chat.
 
-1. ~~Fase 4.5~~ **feita** (ver "Concluído"). **Deploy automático (requisito do usuário) — versão enxuta, **VERIFICADA** (2026-10-02):**
-   webhook do GitHub (repo → Settings → Webhooks, evento `push`, content-type json, sem
-   secret, SSL ligado) apontando para o **Gatilho de Implantação** do app `widget` no
-   EasyPanel, usando HTTPS pelo domínio do painel
-   (`https://panel.personalsupport.tech/api/deploy/<token>`) e não o `http://IP:3000` que a
-   tela mostra (token em texto puro). O token é segredo: foi rotacionado por ter aparecido
-   parcialmente em print; nunca colar a URL em chat/código. O `ping` inicial voltou ✓.
-   **Verificado:** push `c048914` na branch gerou sozinho um deploy novo em EasyPanel →
-   Implantações (nome = mensagem do commit; 5 s, build com cache), sem clique do usuário.
-   O token novo (começa com `2438…`) já está em uso.
-   **Limites:** qualquer push na branch publica (sem testes antes, sem filtro de branch/
-   caminho). **Antes do 1º cliente real** migrar para a versão com testes:
-   `.github/workflows/deploy-widget.yml` (já no repo, só dispara em push na `main`; exige
-   secret `EASYPANEL_WIDGET_DEPLOY_URL`, merge na `main` e Ramo `main` no EasyPanel; ao
-   ativá-la, REMOVER o webhook do GitHub para não publicar 2x). Mudanças de banco
-   (migrations) continuam manuais.
-2. ~~Fase 4.1~~ **no ar** (ver "Concluído"). A função antiga `widget_nearest_resellers` **já foi
-   removida** (confirmado em 2026-10-02: só existem `widget_get_tenant` e
-   `widget_resellers_in_radius`, ambas sem EXECUTE para PUBLIC). Falta só, quando terminar de
-   testar a demo (SQL Editor do `geolynq-prod`; o conector MCP trava em DELETE/DROP):
-   `delete from public.widget_events where tenant_id = '3596b3c6-8389-42af-b575-4bbdd69f2f2d';`
-   (pode rodar mais de uma vez; hoje há 1 evento de teste)
-3. Decidir a questão de reimportação (revendedores duplicam — ver "Decisões em aberto")
+## Referência rápida
+| O quê | Valor |
+|---|---|
+| Repositório | `github.com/personal-support/geolynq` (privado). Branch de trabalho `claude/bold-cray-vbbdyb`; a `main` **ainda não tem** o widget (PR nº 1 foi fechado sem merge) |
+| Supabase (prod) | projeto `geolynq-prod`, ref `vshlsisnuaugeceafipt`, sa-east-1, URL `https://vshlsisnuaugeceafipt.supabase.co`. Projeto antigo `geolynq` (ca-central-1) está pausado |
+| Tenant demo | slug `demo`, id `3596b3c6-8389-42af-b575-4bbdd69f2f2d` |
+| VPS / DNS | Hostinger, IP `179.198.116.157`. DNS na Hostinger: A `*.geolynq` e A `geolynq` → IP da VPS (o curinga **não** cobre a raiz) |
+| EasyPanel | `https://panel.personalsupport.tech` → projeto `geolynq` → app `widget` (serve os 2 hosts: `widget.` e `demo.`) |
+| Deploy | push na branch → webhook do GitHub → Gatilho de Implantação do EasyPanel (HTTPS pelo domínio do painel). O Dockerfile faz `nginx -t`: config inválida derruba o build, não o container no ar |
+| n8n | `https://automacoes-n8n.tvywld.easypanel.host`, workflow `geolynq-import-catalogo` (id `2ZPDQymNwVSENTIf`, trigger manual); planilha-modelo no Google Sheets id `18rF_rlwS-wYHASnW9Tbd-FQI0Ko9s1lUHTTSe5T8s_g` |
+| Testes do widget | `npm run typecheck -w @geolynq/widget` · `npm test -w @geolynq/widget` (13) · E2E: buildar com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` e então `npm run e2e -w @geolynq/widget` (36). Site: `node apps/demo/build.mjs` |
+| Segredos | chave `sb_publishable_…` é pública (está no Dockerfile como `ARG`). `service_role` só no EasyPanel (admin futuro) e no n8n. A URL do gatilho de deploy é secreta |
+
+## Armadilhas já enfrentadas (não repetir)
+- **Conector Supabase `execute_sql`** dá timeout (60 s) em `DELETE`, `DROP` e blocos `DO $$`; `SELECT`,
+  `INSERT` e `CREATE OR REPLACE FUNCTION` funcionam. Após timeout, **conferir o estado** (nada aplica
+  pela metade em transação). `DROP`/`DELETE` ficam para o usuário no SQL Editor.
+- **Sandbox da sessão** não alcança `*.supabase.co`, nem os domínios do usuário (403 do proxy), nem
+  `easypanel.io`; não tem daemon Docker. Testes HTTP reais são feitos pela VPS do usuário. Dá para
+  instalar nginx (`apt-get update && apt-get install -y nginx-light`) e testar `nginx.conf` de verdade;
+  Chromium/Playwright funcionam (fontes do Google não carregam lá).
+- **EasyPanel (PT-BR):** aba Fonte → **Git** (não "Github"), URL `git@github.com:…`, deploy key
+  **somente leitura**; Construção → Dockerfile `apps/widget/Dockerfile`, caminho de build `/`.
+- **DNS curinga** `*.geolynq` não cobre `geolynq.` sozinho; o `getent` da VPS guarda NXDOMAIN por até 10 min.
+- **E2E** falha com timeout se o bundle for buildado sem as variáveis `VITE_*`.
+- **Deploy com testes (para o 1º cliente):** `.github/workflows/deploy-widget.yml` só dispara em push na
+  `main`; exige secret `EASYPANEL_WIDGET_DEPLOY_URL`, merge na `main` e Ramo `main` no EasyPanel, e o
+  webhook do GitHub tem de ser removido ao ativá-la (senão publica 2x).
 
 ## Concluído
 - [x] Fase 0 — GitHub criado. **DNS corrigido em 2026-10-02:** o wildcard registrado antes
@@ -88,6 +110,15 @@ sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos
       Supabase (15.090 bytes). Primeiro build real do Dockerfile passou sem ajuste.
       Raiz `/` responde 404 **de propósito** (só `/v1/*` e `/healthz`). Robôs de varredura
       já sondam o domínio — esperado, nada exposto além do widget
+- [x] **Deploy automático por push (versão enxuta)** (2026-10-02). Webhook do GitHub (repo →
+      Settings → Webhooks; evento `push`; content-type json; sem secret; SSL ligado) apontando para
+      o **Gatilho de Implantação** do app `widget` no EasyPanel, usando **HTTPS pelo domínio do
+      painel** (`https://panel.personalsupport.tech/api/deploy/<token>`) e não o `http://IP:3000`
+      que a tela mostra (token em texto puro). O token foi rotacionado por ter aparecido parcialmente
+      num print; **nunca colar a URL em chat ou código**. Verificado: um push na branch gerou sozinho
+      um deploy novo em EasyPanel → Implantações (nome = mensagem do commit; ~5 s com cache).
+      Limites: qualquer push na branch publica (sem testes, sem filtro de caminho). Versão com
+      testes pronta em `.github/workflows/deploy-widget.yml` (ver "Armadilhas já enfrentadas")
 - [x] **Catálogo fictício do tenant `demo`** (2026-10-02, direto no `geolynq-prod`, só INSERT
       idempotente; nada existente foi alterado/apagado): +11 produtos (SKUs WPC-900, CRE-300,
       BCA-120, PRE-300, ALB-500, MVA-060, OM3-120, COL-300, GLU-300, BAR-012, HIP-3000 → total 12 com o
@@ -192,48 +223,50 @@ Validado como role `anon` no geolynq-prod: lê produtos/revendedores/endereços/
 do banco agora é schema + migration acima.
 
 ## Decisões em aberto (usuário decide)
-- [ ] Limpeza do tenant `demo` antes de mostrar a cliente: revendedor duplicado "Farmácia
-      Saúde Total" (id `814f5182-…`, sem cobertura, não aparece nas buscas) e o telefone/
-      WhatsApp `13999990000` dos 2 registros dele (pode ser número real → trocar por
-      inválido ou pelo número do Danilo para demonstrar o botão de WhatsApp)
-- [ ] **Reimportação de revendedores duplica registros.** `products` tem
-      `unique(tenant_id, sku)` (duplicata vira erro por linha), mas `resellers` não tem
-      constraint única — reimportar a mesma planilha cria revendedores duplicados em
-      silêncio (já visto no tenant `demo`: 2× "Farmácia Saúde Total", das execuções #97/#98).
-      O registro anterior neste arquivo dizia que duplicata era sempre erro — vale só
-      para produtos e cobertura. Opções: `unique(tenant_id, name)` + `upsert`, ou chave
-      de negócio (nome + CEP). Resolver antes do 1º cliente real.
-- [ ] Busca de produto é sensível a acento ("proteina" não acha "Proteína"). Resolver com
-      `unaccent` + RPC de busca quando houver catálogo real.
+- [ ] **Reimportação de revendedores duplica registros.** `products` tem `unique(tenant_id, sku)`
+      (duplicata vira erro por linha), mas `resellers` não tem constraint única — reimportar a mesma
+      planilha cria revendedores duplicados em silêncio (visto no `demo`: 2× "Farmácia Saúde
+      Total", execuções #97/#98). Opções: `unique(tenant_id, name)` + `upsert`, ou chave de negócio
+      (nome + CEP). Resolver antes do 1º cliente real.
+- [ ] Limpeza do `demo`: revendedor duplicado `814f5182-…` (sem cobertura, não aparece nas buscas) e
+      telefone/WhatsApp `13999990000` dos 2 registros (pode ser número real → trocar por inválido ou
+      pelo número do Danilo, para demonstrar o botão de WhatsApp)
+- [ ] Loja online conta como cobertura? Hoje aparece ao usuário mas **não** entra no `results_count`
+      (a lacuna local continua detectável). Mudar é uma linha em `countNearby` (`util.ts`)
+- [ ] Busca de produto é sensível a acento ("proteina" não acha "Proteína"). Resolver com `unaccent` + RPC
+      de busca quando houver catálogo real.
+- [ ] Quando fazer o merge da branch na `main` (e apontar o EasyPanel para `main`)
 
 ## Pendente
-- [ ] Fase 4.1 — site de amostra (em paralelo à Fase 5)
-- [ ] Fase 5 — painel admin
-- [ ] Limpar os dados de teste do tenant `demo` (revendedor duplicado) antes de mostrar a cliente
-- [ ] Anti-spam em `widget_events` (qualquer um com a anon key pode inserir) — rate limit
-      no gateway/Nginx quando o widget estiver público
-- [ ] `public.spatial_ref_sys` (PostGIS) sem RLS — risco baixo (só sistemas de coordenadas),
-      advisor marca como crítico; decidir entre `ENABLE ROW LEVEL SECURITY` ou mover PostGIS
-      para o schema `extensions`
-- [ ] `npm audit`: **`next` 16.3.4 do `apps/admin` com alerta crítico** (RCE em
-      `next/og` ImageResponse; corrigido na 16.3.8) — subir patch antes do deploy do admin.
-      Mais `brace-expansion` (high, transitivo) com fix disponível
+- [ ] Fase 5 — painel admin (ver "Por onde retomar")
+- [ ] Anti-spam em `widget_events` — rate limit no gateway/Nginx
+- [ ] `public.spatial_ref_sys` (PostGIS) sem RLS — risco baixo (só sistemas de coordenadas), advisor
+      marca como crítico; decidir entre `ENABLE ROW LEVEL SECURITY` ou mover PostGIS para o schema
+      `extensions`
+- [ ] `npm audit`: `next` 16.3.4 do `apps/admin` (RCE em `next/og`, corrigido na 16.3.8) e
+      `brace-expansion` (high, transitivo) — subir antes do deploy do admin
+- [ ] Migrar o n8n da AWS para a VPS Hostinger antes de 10/11/2026
+- [ ] `docs/schema-locator-v2.sql` ainda tem as policies antigas; a fonte de verdade do banco é schema
+      + `supabase/migrations/*` (inclui `widget_resellers_in_radius`)
 
 ## Decisões tomadas
 - Widget fala com o PostgREST via `fetch`, sem supabase-js (bundle pequeno em site de terceiro)
-- Banco de leitura pública do widget: tabelas continuam fechadas; `tenants` só via RPC de
-  5 campos; busca de revendedores é RPC `SECURITY INVOKER` (RLS continua valendo)
-- Chave no bundle: `sb_publishable_…` (feita para navegador); nunca service_role
-- Sem geolynq-dev por enquanto — free tier só permite 2 projetos ativos
-- Fase 3 segue no n8n atual (AWS free tier); migrar pra VPS Hostinger perto do prazo
-- Migration da Fase 4 aplicada via `execute_sql`, não `apply_migration` (3 timeouts da
-  ferramenta, sem lock no banco) → **não consta no histórico `supabase_migrations`**;
-  arquivo no repo é idempotente
+- Leitura pública do widget: tabelas continuam fechadas; `tenants` só via RPC de 5 campos; busca de
+  revendedores é RPC `SECURITY INVOKER` (RLS continua valendo)
+- Chave no bundle: `sb_publishable_…`, só no header `apikey`; nunca `service_role`
+- Raio padrão 100 km; loja online sempre elegível (sem distância, por último); `results_count` conta
+  só físicos no raio
+- Widget e demo no **mesmo container** (nginx por host), conforme o blueprint
+- Deploy automático **enxuto** (qualquer push na branch publica) até o 1º cliente real
+- Sem `geolynq-dev` por enquanto — free tier só permite 2 projetos ativos
+- Fase 3 segue no n8n atual (AWS free tier); migrar perto do prazo
+- Migrations aplicadas via `execute_sql` (não `apply_migration`, que deu timeout) → **não constam em
+  `supabase_migrations`**; os arquivos em `supabase/migrations/` são idempotentes
+- Primeiro projeto Supabase saiu na região errada (ca-central-1) — pausado, não apagado
 
 ## Bloqueios
-- [ ] **Egress do ambiente de nuvem bloqueia `*.supabase.co`** (gateway responde 403 ao
-      CONNECT) — impede testar o widget contra o banco real a partir desta sessão. Liberar em
-      Network access do ambiente (menu do ambiente na barra de título da sessão → Edit),
-      ou testar localmente. As tools MCP do Supabase funcionam (caminho diferente).
-- [ ] n8n atual roda em conta AWS free tier — acesso expira em 10/11/2026. Migrar o
-      workflow pra VPS Hostinger com folga. Conferir a data exata no console AWS.
+- [ ] n8n atual roda em conta AWS free tier — acesso expira em **10/11/2026**. Migrar o workflow pra
+      VPS Hostinger com folga. Conferir a data exata no console AWS.
+- [ ] O ambiente de nuvem da sessão não alcança `*.supabase.co` nem os domínios do projeto (ver
+      "Armadilhas"); é uma limitação do ambiente, contornada pela VPS do usuário. Liberar em Network
+      access do ambiente (menu do ambiente → Edit) só se quiser testes HTTP reais daqui.
