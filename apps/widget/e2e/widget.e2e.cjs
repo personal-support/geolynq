@@ -31,11 +31,19 @@ async function setup(ctx) {
     const rq = r.request(), u = new URL(rq.url());
     if (rq.method() === 'OPTIONS') return r.fulfill({ status: 204, headers: cors });
     const body = rq.postData() ? JSON.parse(rq.postData()) : null;
-    supabaseCalls.push({ path: u.pathname.replace('/rest/v1/',''), apikey: rq.headers()['apikey'], auth: rq.headers()['authorization'], q: u.search });
+    supabaseCalls.push({ path: u.pathname.replace('/rest/v1/',''), apikey: rq.headers()['apikey'], auth: rq.headers()['authorization'], q: u.search, body });
     const json = (j, status=200) => r.fulfill({ status, headers: cors, json: j });
     if (u.pathname.endsWith('/rpc/widget_get_tenant')) return json(body.p_slug === 'demo' ? [{ id: TENANT_ID, name: 'Demo', slug: 'demo', primary_color: null, logo_url: null }] : []);
-    if (u.pathname.endsWith('/products')) return json(/whey/i.test(decodeURIComponent(u.search)) ? [{ id: PRODUCT_ID, sku: 'WPI-900', name: 'Whey Protein Isolado 900g', category: 'Proteínas' }] : []);
-    if (u.pathname.endsWith('/rpc/widget_nearest_resellers')) return json([{ reseller_id: 'r-1', name: 'Farmácia Saúde Total', type: 'farmacia', phone: '(13) 3222-1111', whatsapp: '(13) 99999-8888', website: 'javascript:alert(1)', street: 'Av Ana Costa', number: '100', neighborhood: 'Gonzaga', city: 'Santos', state: 'SP', latitude: -23.96, longitude: -46.33, distance_km: body.p_lat ? 0.2 : null }]);
+    if (u.pathname.endsWith('/products')) {
+      const q = decodeURIComponent(u.search);
+      if (/whey/i.test(q)) return json([{ id: PRODUCT_ID, sku: 'WPI-900', name: 'Whey Protein Isolado 900g', category: 'Proteínas' }]);
+      if (/barra/i.test(q)) return json([{ id: 'p-far', sku: 'BAR-012', name: 'Barra de Proteína', category: 'proteina' }]);
+      if (/hiper/i.test(q)) return json([{ id: 'p-none', sku: 'HIP-3000', name: 'Hipercalórico 3kg', category: 'proteina' }]);
+      return json([]);
+    }
+    if (u.pathname.endsWith('/rpc/widget_resellers_in_radius') && body.p_product_id === 'p-none') return json([]);
+    if (u.pathname.endsWith('/rpc/widget_resellers_in_radius') && body.p_product_id === 'p-far') return json([{ reseller_id: 'r-2', name: 'Loja Online Demo', type: 'online', phone: null, whatsapp: null, website: 'https://example.com/loja', street: 'Av Faria Lima', number: '3000', neighborhood: 'Itaim', city: 'São Paulo', state: 'SP', latitude: -23.58, longitude: -46.67, distance_km: null }]);
+    if (u.pathname.endsWith('/rpc/widget_resellers_in_radius')) return json([{ reseller_id: 'r-1', name: 'Farmácia Saúde Total', type: 'farmacia', phone: '(13) 3222-1111', whatsapp: '(13) 99999-8888', website: 'javascript:alert(1)', street: 'Av Ana Costa', number: '100', neighborhood: 'Gonzaga', city: 'Santos', state: 'SP', latitude: -23.96, longitude: -46.33, distance_km: body.p_lat ? 0.2 : null }]);
     if (u.pathname.endsWith('/widget_events')) { events.push(body); return r.fulfill({ status: 201, headers: cors, body: '' }); }
     return json({ message: 'unexpected' }, 400);
   });
@@ -105,6 +113,34 @@ async function setup(ctx) {
   const sid = await page.evaluate(() => JSON.parse(localStorage.getItem('geolynq_sid')));
   check('session_id persistido ~30 dias no localStorage', sid.id === ev[0].session_id && sid.exp - Date.now() > 29 * 864e5);
   check('requisições usam só apikey, sem Authorization/service_role', supabaseCalls.every(c => !!c.apikey && !c.auth), supabaseCalls[0].apikey.slice(0,20)+'…');
+
+  // raio máximo: a RPC nova recebe p_max_km=100 (e a antiga, sem raio, nunca mais é chamada)
+  const radiusCall = supabaseCalls.find(c => c.path === 'rpc/widget_resellers_in_radius');
+  check('busca de revendedores usa a RPC com raio e envia p_max_km = 100', !!radiusCall && radiusCall.body.p_max_km === 100, JSON.stringify(radiusCall && radiusCall.body));
+  check('RPC antiga (sem raio) não é mais chamada', !supabaseCalls.some(c => c.path === 'rpc/widget_nearest_resellers'));
+
+  // produto vendido só online, com localização: mostra a loja online com aviso e registra lacuna local
+  const goSearch = async (term) => { await sel('button:has-text("Nova busca")').click(); await sel('input#gl-term').fill(term); await sel('button[type=submit]').click(); await sel('button.pick').first().waitFor({ timeout: 10000 }); await sel('button.pick').first().click(); await sel('input#gl-cep').fill('11060-001'); await sel('form button[type=submit]').click(); };
+  await goSearch('barra');
+  await sel('article.card').first().waitFor({ timeout: 10000 });
+  const subOnline = await sel('p[aria-live=polite]').innerText();
+  check('só online: avisa que não há físico dentro do raio', /Nenhum revendedor físico em até 100 km de Santos/.test(subOnline), subOnline);
+  const cardOnline = await sel('article.card').first().innerText();
+  check('loja online: sem distância e sem endereço', /Loja Online Demo/.test(cardOnline) && !/\ba \d/.test(cardOnline) && !/Faria Lima/.test(cardOnline), cardOnline.replace(/\n/g,' | '));
+  const hrefsOnline = await sel('article.card a').evaluateAll(as => as.map(a => a.textContent));
+  check('loja online: sem botão "Como chegar"', !hrefsOnline.includes('Como chegar'), hrefsOnline.join(','));
+  await page.waitForTimeout(300);
+  const eFar = events.find(e => e.event_type === 'search' && e.product_id === 'p-far');
+  check('lacuna local registrada mesmo com loja online (results_count = 0)', !!eFar && eFar.results_count === 0, JSON.stringify(eFar));
+
+  // produto sem nenhum revendedor, com localização: mensagem com o raio
+  await goSearch('hiper');
+  await sel('.msg').waitFor({ timeout: 10000 });
+  const msgNone = await sel('.msg').innerText();
+  check('sem revendedor no raio: mensagem cita 100 km e a cidade', /Nenhum revendedor encontrado em até 100 km de Santos/.test(msgNone), msgNone);
+  await page.waitForTimeout(300);
+  const eNone = events.find(e => e.event_type === 'search' && e.product_id === 'p-none');
+  check('lacuna registrada: product_id + results_count = 0', !!eNone && eNone.results_count === 0, JSON.stringify(eNone));
 
   // tenant inexistente
   const p2 = await setup(ctx);

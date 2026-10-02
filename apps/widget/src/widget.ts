@@ -10,6 +10,8 @@ import {
 } from "./api";
 import { STYLES } from "./styles";
 import {
+  MAX_RADIUS_KM,
+  countNearby,
   formatDistance,
   mapsLink,
   parseCep,
@@ -221,13 +223,15 @@ export class GeoLynqWidget extends HTMLElement {
       this.view = "results";
       this.focusTarget = "heading";
       // product_id + results_count = 0 → produto existe, ninguém vende perto (coverage gap).
+      // results_count conta só revendedores físicos dentro do raio: a loja online aparece pro
+      // usuário, mas não esconde a lacuna de cobertura local.
       this.log({
         event_type: "search",
         query_text: sanitizeSearchTerm(this.term) || product.name,
         product_id: product.id,
         city: point?.city ?? null,
         state: point?.state ?? null,
-        results_count: resellers.length,
+        results_count: countNearby(resellers),
       });
     } catch {
       if (run !== this.token) return;
@@ -422,25 +426,30 @@ export class GeoLynqWidget extends HTMLElement {
 
   private renderResults(): Node {
     const resellers = this.resellers ?? [];
-    const where = this.point?.city ? ` perto de ${this.point.city}/${this.point.state}` : "";
+    const located = this.point !== null;
+    const city = this.point?.city ?? null;
+    const where = city ? ` perto de ${city}/${this.point?.state}` : "";
+
+    let subText = "";
+    if (resellers.length > 0) {
+      subText =
+        located && countNearby(resellers) === 0
+          ? `Nenhum revendedor físico em até ${MAX_RADIUS_KM} km de ${city ?? "você"}. Veja as opções online:`
+          : `${resellers.length} ${resellers.length === 1 ? "revendedor" : "revendedores"}${where}`;
+    }
+
+    // Sem localização a busca não filtra por distância: lista vazia = nenhum revendedor cadastrado.
+    const emptyText = located
+      ? `Nenhum revendedor encontrado em até ${MAX_RADIUS_KM} km de ${city ?? "você"}. Tente outro produto ou outra localização.`
+      : "Ainda não há revendedores cadastrados para este produto. Tente outro produto ou volte mais tarde.";
 
     const heading = h("h2", { tabindex: "-1", "data-focus": "heading" }, this.product?.name ?? "");
-    const sub = h(
-      "p",
-      { class: "muted", "aria-live": "polite" },
-      resellers.length > 0
-        ? `${resellers.length} ${resellers.length === 1 ? "revendedor" : "revendedores"}${where}`
-        : "",
-    );
+    const sub = h("p", { class: "muted", "aria-live": "polite" }, subText);
 
     const body =
       resellers.length > 0
         ? h("div", { class: "stack" }, ...resellers.map((r) => this.renderReseller(r)))
-        : h(
-            "p",
-            { class: "msg", role: "status" },
-            "Ainda não há revendedores cadastrados para este produto. Tente outro produto ou volte mais tarde.",
-          );
+        : h("p", { class: "msg", role: "status" }, emptyText);
 
     return h(
       "div",

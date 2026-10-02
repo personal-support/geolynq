@@ -93,6 +93,23 @@ sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos
       `example.com`. Histórias de demo embutidas: Whey/Creatina em quase todo lugar; Glutamina
       só em SP; Barra só com distribuidor + online; **HIP-3000 sem nenhum revendedor** (caso
       "produto sem cobertura"). Validado como `anon` via `widget_nearest_resellers`
+- [x] **Raio máximo de busca (100 km)** (2026-10-02). Banco: função nova
+      `widget_resellers_in_radius(p_tenant_id, p_product_id, p_lat, p_lng, p_limit, p_max_km
+      default 100)` (SECURITY INVOKER; execute só para anon/authenticated), arquivo
+      `supabase/migrations/20261002000000_widget_max_radius.sql`. Regras: com localização só
+      físico com distância <= raio (físico sem coordenadas fica de fora); `type = 'online'`
+      sempre entra, sem distância e por último; sem localização não filtra. Widget: chama a
+      RPC nova enviando `p_max_km = 100` (`MAX_RADIUS_KM` em `util.ts`), mensagens "Nenhum
+      revendedor encontrado em até 100 km de <cidade>" e "Nenhum revendedor físico em até 100
+      km… Veja as opções online:". **Telemetria:** `results_count` agora conta só físicos no raio
+      (`countNearby`) — loja online aparece pro usuário mas não esconde a lacuna de cobertura
+      local (o relatório "produto existe, ninguém vende perto" passa a funcionar). Validado
+      como `anon` no banco real e por 30 verificações E2E (eram 22) + 13 unitários (eram 11).
+      Por que nome novo e não substituir a função antiga: o `DROP` em transação deu timeout no
+      conector (nada aplicado, banco intacto); com nome novo o widget publicado nunca fica sem
+      função. **Pendente:** depois que o widget novo estiver no ar e conferido, remover a
+      antiga: `drop function public.widget_nearest_resellers(uuid, uuid, double precision,
+      double precision, int);` (rodar à mão no SQL Editor; o conector trava em DROP)
 
 ## Validação da Fase 4 contra o Supabase real (2026-10-01, geolynq-prod)
 Feita via conector MCP do Supabase, como role `anon`, com as mesmas consultas que o
@@ -141,13 +158,6 @@ Validado como role `anon` no geolynq-prod: lê produtos/revendedores/endereços/
 do banco agora é schema + migration acima.
 
 ## Decisões em aberto (usuário decide)
-- [ ] **Raio máximo de busca no widget (afeta a demo e o relatório de lacuna de cobertura).**
-      `widget_nearest_resellers` devolve os N mais próximos *sem limite de distância*: de
-      Salvador, a Barra de Proteína aparece com revendedor a 1.423 km, e o widget loga
-      `results_count > 0`. Efeito: a busca "produto existe mas ninguém vende perto" (o
-      argumento mais forte do blueprint, Fase 5) **nunca dispara** para produto com ao menos
-      1 revendedor no país. Proposta: parâmetro `p_max_km` (padrão ~100 km, configurável por
-      tenant) na RPC + mensagem "nenhum revendedor perto de você" no widget
 - [ ] Limpeza do tenant `demo` antes de mostrar a cliente: revendedor duplicado "Farmácia
       Saúde Total" (id `814f5182-…`, sem cobertura, não aparece nas buscas) e o telefone/
       WhatsApp `13999990000` dos 2 registros dele (pode ser número real → trocar por

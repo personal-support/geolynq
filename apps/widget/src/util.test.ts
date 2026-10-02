@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  MAX_RADIUS_KM,
+  countNearby,
   formatDistance,
   getSessionId,
   isValidColor,
@@ -94,5 +96,18 @@ describe("getSessionId", () => {
     const first = getSessionId(t0);
     expect(getSessionId(t0 + 29 * 86_400_000)).toBe(first);
     expect(getSessionId(t0 + 31 * 86_400_000)).not.toBe(first);
+  });
+});
+
+describe("raio máximo e lacuna de cobertura", () => {
+  it("o raio padrão do widget é 100 km (mesmo valor do filtro no banco)", () => {
+    expect(MAX_RADIUS_KM).toBe(100);
+  });
+
+  it("loja online não conta como cobertura próxima", () => {
+    expect(countNearby([])).toBe(0);
+    expect(countNearby([{ type: "online" }])).toBe(0);
+    expect(countNearby([{ type: "online" }, { type: "loja_fisica" }, { type: "farmacia" }])).toBe(2);
+    expect(countNearby([{ type: "distribuidor" }, { type: "outro" }])).toBe(2);
   });
 });

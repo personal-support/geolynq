@@ -66,6 +66,21 @@ export function mapsLink(lat: number | null, lng: number | null, fallbackQuery: 
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
 
+/**
+ * Raio máximo (km) da busca de revendedores físicos. Fica aqui (e é enviado à RPC como
+ * `p_max_km`) para a mensagem do widget e o filtro do banco nunca divergirem.
+ */
+export const MAX_RADIUS_KM = 100;
+
+/**
+ * Quantos resultados são "perto de verdade": loja online atende qualquer lugar, então não
+ * conta. É o que vira `results_count` na telemetria — assim "produto existe, mas ninguém
+ * vende perto" (results_count = 0) continua detectável mesmo quando só há loja online.
+ */
+export function countNearby(resellers: ReadonlyArray<{ type: string }>): number {
+  return resellers.filter((r) => r.type !== "online").length;
+}
+
 export function formatDistance(km: number | null): string | null {
   if (km === null || Number.isNaN(km)) return null;
   if (km < 1) return `${Math.max(1, Math.round(km * 10)) * 100} m`;

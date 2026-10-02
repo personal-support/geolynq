@@ -1,5 +1,5 @@
 import type { Product, Tenant, WidgetEventType } from "@geolynq/shared";
-import { getSessionId, parseCep, sanitizeSearchTerm } from "./util";
+import { getSessionId, MAX_RADIUS_KM, parseCep, sanitizeSearchTerm } from "./util";
 
 export type TenantPublic = Pick<Tenant, "id" | "name" | "slug" | "primary_color" | "logo_url">;
 export type ProductPublic = Pick<Product, "id" | "sku" | "name" | "category">;
@@ -96,7 +96,7 @@ export class GeoLynqApi {
     productId: string,
     point: GeoPoint | null,
   ): Promise<ResellerResult[]> {
-    return this.request<ResellerResult[]>("rpc/widget_nearest_resellers", {
+    return this.request<ResellerResult[]>("rpc/widget_resellers_in_radius", {
       method: "POST",
       body: JSON.stringify({
         p_tenant_id: tenantId,
@@ -104,6 +104,7 @@ export class GeoLynqApi {
         p_lat: point?.lat ?? null,
         p_lng: point?.lng ?? null,
         p_limit: 10,
+        p_max_km: MAX_RADIUS_KM,
       }),
     });
   }
