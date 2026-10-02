@@ -34,12 +34,12 @@ sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos
    secret `EASYPANEL_WIDGET_DEPLOY_URL`, merge na `main` e Ramo `main` no EasyPanel; ao
    ativá-la, REMOVER o webhook do GitHub para não publicar 2x). Mudanças de banco
    (migrations) continuam manuais.
-2. ~~Fase 4.1~~ **no ar** (ver "Concluído"). Falta só (usuário, SQL Editor do `geolynq-prod`; o
-   conector MCP trava em DELETE/DROP):
-   a. `delete from public.widget_events where tenant_id = '3596b3c6-8389-42af-b575-4bbdd69f2f2d';`
-      (apaga as buscas de teste da demo; fazer **depois** de terminar de testar)
-   b. `drop function public.widget_nearest_resellers(uuid, uuid, double precision, double precision, int);`
-      (função antiga sem raio; o widget novo já está no ar e usa a `widget_resellers_in_radius`)
+2. ~~Fase 4.1~~ **no ar** (ver "Concluído"). A função antiga `widget_nearest_resellers` **já foi
+   removida** (confirmado em 2026-10-02: só existem `widget_get_tenant` e
+   `widget_resellers_in_radius`, ambas sem EXECUTE para PUBLIC). Falta só, quando terminar de
+   testar a demo (SQL Editor do `geolynq-prod`; o conector MCP trava em DELETE/DROP):
+   `delete from public.widget_events where tenant_id = '3596b3c6-8389-42af-b575-4bbdd69f2f2d';`
+   (pode rodar mais de uma vez; hoje há 1 evento de teste)
 3. Decidir a questão de reimportação (revendedores duplicam — ver "Decisões em aberto")
 
 ## Concluído
@@ -112,9 +112,7 @@ sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos
       como `anon` no banco real e por 30 verificações E2E (eram 22) + 13 unitários (eram 11).
       Por que nome novo e não substituir a função antiga: o `DROP` em transação deu timeout no
       conector (nada aplicado, banco intacto); com nome novo o widget publicado nunca fica sem
-      função. **Pendente:** depois que o widget novo estiver no ar e conferido, remover a
-      antiga: `drop function public.widget_nearest_resellers(uuid, uuid, double precision,
-      double precision, int);` (rodar à mão no SQL Editor; o conector trava em DROP)
+      função. A antiga foi removida à mão no SQL Editor depois que o widget novo entrou no ar
 - [x] **Fase 4.1 — site de amostra "Pódio"** (2026-10-02; **NO AR** em https://demo.geolynq.personalsupport.tech).
       `apps/demo/`: gerador Node sem dependências (`build.mjs`, `products.json` espelhando os
       12 SKUs do tenant `demo`, `styles.css`) → HTML estático: home com o widget ao vivo no
