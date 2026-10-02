@@ -33,7 +33,7 @@ universo da Receita); (3) **motor de dados + backoffice** (cadastro por CNPJ, se
    canais → territórios) e todo o sistema o respeita; a New Millen é só a cliente inicial (Baixada Santista era
    só a região da demo; Gofind dela ≤ 500 acessos/mês). **Foco fixo:** fabricantes que dependem de ponto de venda
    (lojas, representantes, distribuidores; físico ou online). Ordem: ~~B1 Telemetria v2~~ (**FEITO e no ar em 2026-10-02**, ver
-   "Concluído") → **B0 Perfil do tenant por CNPJ** (**B0.1 estrutura APLICADA em 2026-10-02**; **B0.2 FEITO (função `provision_tenant` + segmento "suplementos"); próximo: B0.3 workflow n8n de cadastro por CNPJ + importador com CNPJ/upsert**, depois B0.4 (só quando o Junior mandar os dados da New Millen) e B0.5 workflow n8n/importador; desenho em `docs/b0-cadastro-por-cnpj.md`; cadastro, taxonomia de segmentos → CNAEs de canal, territórios, **CNPJ como chave de revendedor**
+   "Concluído") → **B0 Perfil do tenant por CNPJ** (**B0.1 estrutura APLICADA em 2026-10-02**; **B0.2 FEITO (função `provision_tenant` + segmento "suplementos"); B0.3 FEITO em modo de teste (workflow de cadastro, importador v2 e `import_reseller`, nada ativado; falta o Junior vincular a credencial service_role nos nós HTTP do n8n); próximo: B0.4 (só quando o Junior mandar os dados da New Millen) e B0.5 (ETL da Receita na VPS + perfil de canal medido)** workflow n8n/importador; desenho em `docs/b0-cadastro-por-cnpj.md`; cadastro, taxonomia de segmentos → CNAEs de canal, territórios, **CNPJ como chave de revendedor**
    `unique(tenant_id, cnpj)`, verificação mensal de situação cadastral) → **B3 Candidatos por tenant** (base da
    Receita na VPS, recorte por tenant no Supabase) → **prova de valor com a New Millen no território dela** →
    **B2 Painel** (visões B2C lojas e B2B distribuidores/representantes) → **B4 Relatório mensal automático**.
@@ -257,6 +257,11 @@ pedir OK. Nunca pedir nem colar tokens/URLs de webhook em chat.
       que eu sugeri não existe). 10 CNAEs de canal; **escolha e pesos são julgamento meu**, só ponto de partida até o perfil medido (B0.5). Dados reais
       gravados: 16 em `cnae_catalog`, 1 em `segments`, 10 em `segment_channel_cnaes`. Armadilha de teste: SELECT no mesmo comando que uma função que grava
       não enxerga o que ela gravou; teste em comando separado.
+- [x] **B0.3 — cadastro por CNPJ e importador v2 no n8n** (2026-10-02; detalhes, o que foi e o que NÃO foi verificado em `docs/b0-cadastro-por-cnpj.md` seção 7).
+      Banco: `import_reseller` (upsert por tenant+CNPJ dentro do Postgres, só service_role; migration `20261003030000_b0_import_reseller.sql`). n8n (inativos, criados na conta do Junior):
+      **Cadastro de Cliente por CNPJ** `toU5IgMP0wvoaE1b` (rodou de verdade em modo conferência contra a BrasilAPI com o CNPJ da New Millen, nada gravado) e **Import Catálogo v2 (CNPJ)**
+      `vCFeM2DItVsorH5f` (lógica testada com dados simulados; 3 defeitos do v1 corrigidos). Planilha-modelo com colunas `cnpj` e `cnpj_revendedor`. **A New Millen continua NÃO cadastrada.**
+      Limites do que foi provado: nenhum nó rodou ainda com credencial Supabase real, nem Google Sheets real, nem Nominatim a 1/s. Risco LGPD: histórico de execução do n8n guarda o quadro societário.
 
 ## Validação da Fase 4 contra o Supabase real (2026-10-01, geolynq-prod)
 Feita via conector MCP do Supabase, como role `anon`, com as mesmas consultas que o

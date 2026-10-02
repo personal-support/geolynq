@@ -176,7 +176,30 @@ create unique index if not exists resellers_tenant_cnpj_uq on public.resellers (
      até o perfil medido do cliente (B0.5). Fora do canal de propósito: 4789099, supermercados/mercearias (4711301, 4711302, 4712100) e hortifrúti (4724500).
      Verificado: 16 no catálogo, 10 canais sem nenhum órfão do catálogo, `anon` sem leitura, `provision_tenant` vinculando o segmento (em rollback).
      **Não verificado:** se esses canais realmente cobrem os revendedores da New Millen (depende da lista com CNPJ do Danilo).
-3. **B0.3** Workflow n8n de cadastro por CNPJ + atualização do importador (CNPJ, upsert) e da planilha-modelo.
+3. **B0.3 FEITO (2026-10-02, em modo de teste; nada ativado):** workflow de cadastro por CNPJ + importador v2 + planilha-modelo + função `import_reseller`.
+   - **Banco:** `supabase/migrations/20261003030000_b0_import_reseller.sql`. Upsert por `(tenant, CNPJ)` **dentro do Postgres**, porque o upsert do PostgREST/n8n
+     não consegue usar o índice único **parcial** `resellers_tenant_cnpj_uq`. Só `service_role`. Reimportar atualiza em vez de duplicar; se a nova geocodificação falha
+     e o endereço não mudou, mantém as coordenadas antigas. Testada em rollback (inserção, reimportação sem duplicar, coordenada preservada, CNPJ ruim e tipo ruim recusados).
+   - **n8n `GeoLynq — Cadastro de Cliente por CNPJ`** (id `toU5IgMP0wvoaE1b`, inativo; fonte versionada em `docs/n8n-geolynq-cadastro-cliente.workflow.ts`): valida CNPJ
+     (matriz, dígito), consulta a BrasilAPI, mapeia o perfil e chama `provision_tenant`. **Nasce com `gravar = false`** (só mostra o que gravaria).
+     **Verificado de verdade:** rodou no n8n da VPS contra a BrasilAPI real com o CNPJ da New Millen em modo conferência (**nada gravado**): razão social, fantasia, situação,
+     CNAE 1099607 + 7 secundários, Cajamar/SP, códigos 3509205 (IBGE) e 6285 (Receita) mapearam certo, lista de avisos vazia. Nomes reais dos campos da API:
+     `descricao_situacao_cadastral` ("ATIVA"), `cnae_fiscal` (número), `cnaes_secundarios[].codigo`, `codigo_municipio` (Receita), `codigo_municipio_ibge`, `data_inicio_atividade`, `porte`.
+   - **n8n `GeoLynq — Import Catálogo v2 (CNPJ)`** (id `vCFeM2DItVsorH5f`, inativo; fonte `docs/n8n-geolynq-import-catalogo-v2.workflow.ts`). Mudanças sobre o v1:
+     coluna `cnpj` (validada, normalizada, zero à esquerda recuperado, duplicado no lote recusado, obrigatória salvo `exigir_cnpj = false` no tenant demo);
+     produtos, revendedores e cobertura **reimportáveis** (upsert); cobertura por `cnpj_revendedor` ou nome (nome ambíguo é recusado); geocodificação a **1 req/s** (política do Nominatim).
+     **Defeitos do v1 corrigidos:** (a) linha sem resultado no Nominatim sumia do fluxo (resposta vazia = zero itens); (b) erros de gravação dos nós do Supabase não entravam no resumo
+     (lote ficaria "success" com falha); (c) o ViaCEP era chamado e a resposta ignorada (removido); (d) etapa que não roda por falta de linha válida agora aparece no resumo.
+     **Verificado:** grafo válido (20 nós) e a lógica dos nós de código com dados simulados (13 linhas: CNPJ com máscara, numérico, repetido, dígito errado, vazio, tipo inválido, geocodificação
+     que falhou, cobertura por CNPJ e por nome, produto/revendedor inexistente; resumo "partial", 8 erros certos). **Não verificado:** leitura real do Google Sheets, Nominatim real a 1/s,
+     autenticação real contra o Supabase (nenhum nó de gravação rodou com credencial) e o pareamento de itens com respostas HTTP reais (no teste os nós HTTP foram simulados).
+   - **Planilha-modelo** `docs/geolynq-catalogo-modelo.xlsx`: aba Revendedores ganhou `cnpj` (1ª coluna) e Cobertura `cnpj_revendedor`, ambas em formato Texto.
+   - **Limitação conhecida:** se **nenhum** produto for válido, as etapas seguintes não rodam (o resumo avisa "etapa não executada"). O v1 antigo (`2ZPDQymNwVSENTIf`) segue inativo e
+     nunca foi executado; arquivar depois que o v2 rodar de verdade.
+   - **Risco LGPD:** a resposta crua da BrasilAPI traz o **quadro societário (nomes de sócios, CPF mascarado)**. O mapeamento **não grava** isso no banco, mas o histórico de execuções
+     do n8n guarda a resposta crua (na sua VPS). Considerar reduzir a retenção das execuções desse workflow antes de cadastrar clientes de terceiros.
+   - **Pendências do Junior:** (1) no n8n, abrir o nó "Cadastrar Cliente (provision_tenant)" e os nós HTTP do importador e escolher a credencial **"Supabase account"**; confirmar que ela guarda a
+     chave **service_role** (a chave anon não passa: as funções são só do service_role). (2) escolher a planilha real nos 3 nós "Ler Aba ...".
 4. **B0.4** Cadastro da New Millen como tenant real (só quando o Junior mandar).
 5. **B0.5** ETL da Receita na VPS + perfil de canal medido + verificação mensal (continua no B3).
 
