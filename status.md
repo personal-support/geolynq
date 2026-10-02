@@ -83,6 +83,16 @@ sessão não alcança `*.supabase.co`; testes HTTP contra o Supabase são feitos
       Supabase (15.090 bytes). Primeiro build real do Dockerfile passou sem ajuste.
       Raiz `/` responde 404 **de propósito** (só `/v1/*` e `/healthz`). Robôs de varredura
       já sondam o domínio — esperado, nada exposto além do widget
+- [x] **Catálogo fictício do tenant `demo`** (2026-10-02, direto no `geolynq-prod`, só INSERT
+      idempotente; nada existente foi alterado/apagado): +11 produtos (SKUs WPC-900, CRE-300,
+      BCA-120, PRE-300, ALB-500, MVA-060, OM3-120, COL-300, GLU-300, BAR-012, HIP-3000 → total 12 com o
+      WPI-900), +10 revendedores (Santos x2, Guarujá, São Paulo x3 incl. loja online, Campinas
+      [distribuidor], Rio, Curitiba, BH) e 50 vínculos de cobertura. Coordenadas aproximadas
+      ao nível do bairro, sem CEP. Telefones/WhatsApp **inválidos de propósito** (ex.
+      `13900000001`) para ninguém mandar mensagem a um estranho numa demo; sites em
+      `example.com`. Histórias de demo embutidas: Whey/Creatina em quase todo lugar; Glutamina
+      só em SP; Barra só com distribuidor + online; **HIP-3000 sem nenhum revendedor** (caso
+      "produto sem cobertura"). Validado como `anon` via `widget_nearest_resellers`
 
 ## Validação da Fase 4 contra o Supabase real (2026-10-01, geolynq-prod)
 Feita via conector MCP do Supabase, como role `anon`, com as mesmas consultas que o
@@ -131,6 +141,17 @@ Validado como role `anon` no geolynq-prod: lê produtos/revendedores/endereços/
 do banco agora é schema + migration acima.
 
 ## Decisões em aberto (usuário decide)
+- [ ] **Raio máximo de busca no widget (afeta a demo e o relatório de lacuna de cobertura).**
+      `widget_nearest_resellers` devolve os N mais próximos *sem limite de distância*: de
+      Salvador, a Barra de Proteína aparece com revendedor a 1.423 km, e o widget loga
+      `results_count > 0`. Efeito: a busca "produto existe mas ninguém vende perto" (o
+      argumento mais forte do blueprint, Fase 5) **nunca dispara** para produto com ao menos
+      1 revendedor no país. Proposta: parâmetro `p_max_km` (padrão ~100 km, configurável por
+      tenant) na RPC + mensagem "nenhum revendedor perto de você" no widget
+- [ ] Limpeza do tenant `demo` antes de mostrar a cliente: revendedor duplicado "Farmácia
+      Saúde Total" (id `814f5182-…`, sem cobertura, não aparece nas buscas) e o telefone/
+      WhatsApp `13999990000` dos 2 registros dele (pode ser número real → trocar por
+      inválido ou pelo número do Danilo para demonstrar o botão de WhatsApp)
 - [ ] **Reimportação de revendedores duplica registros.** `products` tem
       `unique(tenant_id, sku)` (duplicata vira erro por linha), mas `resellers` não tem
       constraint única — reimportar a mesma planilha cria revendedores duplicados em
