@@ -8,6 +8,10 @@ Fases 0 a 4.5 e 4.1 **concluídas e no ar**: widget em `https://widget.geolynq.p
 e site de amostra "Pódio" em `https://demo.geolynq.personalsupport.tech`, com catálogo fictício
 (12 produtos, 12 revendedores), raio de busca de 100 km e deploy automático por push.
 **Próximo grande passo: Fase 5 — painel admin** (onde o cliente vê buscas e lacunas de cobertura).
+**Visão do produto (confirmada 2026-10-02, `docs/operacao-e-mercado.md` seção 13):** (1) **Widget** no "onde encontrar"
+do site do fabricante = serviço + sensor de demanda; (2) **Plataforma web** para o time comercial = ver o cenário atual,
+descobrir lacunas e agir (candidatos, alertas, status), alimentada por 3 fontes (navegação no widget, base do cliente,
+universo da Receita); (3) **motor de dados + backoffice** (cadastro por CNPJ, segmentos/CNAE, importação, verificação mensal).
 
 ## Por onde retomar (em ordem)
 1. **Fechar o teste da demo** no navegador e no celular. Já confirmado: Whey + CEP de Santos com

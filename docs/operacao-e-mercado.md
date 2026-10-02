@@ -410,3 +410,22 @@ distribuidores; físicos/online); (3) primeira versão da **taxonomia de segment
 [Dados abertos CNPJ: guia (Toexceed)](https://toexceed.com.br/blog/2026/09/27/dados-abertos-cnpj-receita-federal-o-guia-completo-para-acessar-e-utilizar/) ·
 [Exemplo de uso do dump (~85 GB)](https://github.com/christiano-gonara/teste-abrasel-dados) ·
 [Layout oficial (Receita Federal)](https://www.gov.br/receitafederal/dados/cnpj-metadados.pdf)
+
+## 13. Visão do produto (confirmada com o Junior em 2026-10-02)
+
+**Duas frentes visíveis + um motor de dados com backoffice.**
+
+| Camada | Quem usa | O que faz | Estado |
+|---|---|---|---|
+| **1. Widget** (seção "onde encontrar" e páginas de produto do site do fabricante) | consumidor final | **serviço** (acha o revendedor) e **sensor de demanda** (registra a busca) | **no ar** |
+| **2. Plataforma web** | time comercial, trade marketing, gestores regionais | **ver** o cenário de atendimento atual; **descobrir** lacunas; **agir** (candidatos, alertas, status, exportação) | **não existe** (B2) |
+| **3. Motor de dados + backoffice** | GeoLynq (Junior/Danilo) | cadastro por CNPJ, segmentos/CNAE de canal, importação de catálogo, base da Receita, verificação mensal, monitoramento | **parcial** (importação por n8n) |
+
+**Ajustes à formulação original:**
+1. A plataforma **não é baseada só na navegação**. Três fontes: (a) **navegação no widget** = demanda/prioridade; (b) **base do
+   cliente** (produtos, revendedores, cobertura) = "cenário de atendimento atual"; (c) **universo da Receita** (CNPJ × CNAE de
+   canal × território) = lacunas e candidatos. Com ≤ 500 acessos/mês, só a navegação seria rala.
+2. A plataforma **não é só gráficos e relatórios**: precisa do **ciclo de ação** (alerta, lista de candidatos, marcar *vende / não
+   vende / contatado*, exportar); é o que a distingue de um dashboard passivo.
+3. Existe a **terceira camada** (motor + backoffice), invisível ao cliente e necessária: sem ela não há cadastro por CNPJ nem
+   universo de empresas.
