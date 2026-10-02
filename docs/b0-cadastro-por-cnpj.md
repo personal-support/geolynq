@@ -1,6 +1,20 @@
 # B0 — Cadastro do cliente por CNPJ e perfil de mercado (desenho, 2026-10-02)
 
-> **Estado: DESENHO. Nada disto foi aplicado no banco de produção.** O SQL da seção 5 é rascunho e só roda depois do OK do Junior.
+> **Estado (2026-10-02): B0.1 APLICADO em produção** (migration `supabase/migrations/20261003000000_b0_tenant_profile.sql`,
+> autorizada pelo Junior). Os passos B0.2 em diante continuam só desenho. A seção 5 é o rascunho original; **vale o arquivo da migration**
+> (diferença: CNPJ guardado só com 14 dígitos puros, `check (cnpj ~ '^[0-9]{14}$')`, para a chave única não duplicar por causa de máscara).
+> Decisão confirmada pelo Junior: **território = Brasil inteiro e todos os canais, e o sistema não é só para a New Millen.**
+>
+> **Verificado em produção:** `is_valid_cnpj` (CNPJ da New Millen e do BB válidos; dígito errado, repetido, curto recusados); as 3 recusas
+> da tabela `resellers` (dígito errado, com máscara, duplicado no mesmo tenant) e a aceitação de CNPJ válido; as 12 linhas existentes
+> intactas e sem CNPJ; 6 tabelas novas com RLS e 6 policies; anônimo sem acesso às tabelas novas; anônimo sem acesso às colunas `cnpj`,
+> `verification_status`, `verified_at` de `resellers`; **a RPC `widget_resellers_in_radius` e a `widget_get_tenant` continuam funcionando como anônimo**.
+> **Não verificado:** o widget no navegador depois da mudança de permissão (a RPC foi testada, o widget não foi reaberto); nenhuma
+> consulta do painel logado (não existe ainda).
+>
+> **Mudança de permissão a lembrar:** `anon` agora lê `resellers` só nestas colunas: id, tenant_id, name, type, status, phone, whatsapp,
+> website, created_at, updated_at. Coluna nova em `resellers` nasce fechada para o público; se o widget precisar dela, conceder
+> explicitamente (`grant select (coluna) ... to anon`).
 
 ## 1. O caso real: New Millen (dados informados pelo Junior + fontes públicas)
 
@@ -146,7 +160,7 @@ create unique index if not exists resellers_tenant_cnpj_uq on public.resellers (
   ETL da Receita na VPS entra **junto** com o B0 (não depois). API pública só para consulta unitária no cadastro.
 
 ## 7. Ordem de execução do B0
-1. **B0.1** Migration das tabelas e colunas acima + RLS + `is_valid_cnpj` (**precisa de OK**; aditiva).
+1. ~~**B0.1** Migration das tabelas e colunas acima + RLS + `is_valid_cnpj`~~ (**FEITO em 2026-10-02**).
 2. **B0.2** Função `provision_tenant` (service_role) e semente do segmento **suplementos** (CNAEs conferidos na base real).
 3. **B0.3** Workflow n8n de cadastro por CNPJ + atualização do importador (CNPJ, upsert) e da planilha-modelo.
 4. **B0.4** Cadastro da New Millen como tenant real (só quando o Junior mandar).
@@ -160,8 +174,8 @@ create unique index if not exists resellers_tenant_cnpj_uq on public.resellers (
 - LGPD: o perfil guarda só dados de PJ; os revendedores MEI podem ter nome de pessoa na razão social.
 
 ## 9. Pedidos ao Junior
-(1) Confirmar **"Todos" = Brasil inteiro + todos os canais**; (2) ~~consulta do CNPJ e disco/RAM da VPS~~ (**feito**, seção 10);
-(3) **OK para o B0.1** (migration aditiva, já com os ajustes da seção 10); (4) mandar, quando o Danilo tiver, a **lista de revendedores
+(1) ~~Confirmar "Todos" = Brasil inteiro + todos os canais~~ (**confirmado**); (2) ~~consulta do CNPJ e disco/RAM da VPS~~ (**feito**, seção 10);
+(3) ~~OK para o B0.1~~ (**dado e aplicado**); (4) mandar, quando o Danilo tiver, a **lista de revendedores
 da New Millen com CNPJ**.
 
 ## 10. Verificação com a API real e com a VPS (2026-10-02)

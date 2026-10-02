@@ -33,7 +33,7 @@ universo da Receita); (3) **motor de dados + backoffice** (cadastro por CNPJ, se
    canais → territórios) e todo o sistema o respeita; a New Millen é só a cliente inicial (Baixada Santista era
    só a região da demo; Gofind dela ≤ 500 acessos/mês). **Foco fixo:** fabricantes que dependem de ponto de venda
    (lojas, representantes, distribuidores; físico ou online). Ordem: ~~B1 Telemetria v2~~ (**FEITO e no ar em 2026-10-02**, ver
-   "Concluído") → **próximo: B0 Perfil do tenant por CNPJ** (**desenho pronto em `docs/b0-cadastro-por-cnpj.md`, aguardando OK do usuário para a migration B0.1**; cadastro, taxonomia de segmentos → CNAEs de canal, territórios, **CNPJ como chave de revendedor**
+   "Concluído") → **B0 Perfil do tenant por CNPJ** (**B0.1 estrutura APLICADA em 2026-10-02**; **próximo: B0.2 `provision_tenant` + semente do segmento "suplementos"**, depois B0.3 workflow n8n/importador; desenho em `docs/b0-cadastro-por-cnpj.md`; cadastro, taxonomia de segmentos → CNAEs de canal, territórios, **CNPJ como chave de revendedor**
    `unique(tenant_id, cnpj)`, verificação mensal de situação cadastral) → **B3 Candidatos por tenant** (base da
    Receita na VPS, recorte por tenant no Supabase) → **prova de valor com a New Millen no território dela** →
    **B2 Painel** (visões B2C lojas e B2B distribuidores/representantes) → **B4 Relatório mensal automático**.
@@ -237,7 +237,17 @@ pedir OK. Nunca pedir nem colar tokens/URLs de webhook em chat.
       nulo e telefone `000000000000`** → contato cadastral da Receita é fraco, o "como chegar" exige enriquecimento; `qsa`
       (sócios) é dado pessoal → não guardar. **VPS:** 95,8 GB (61,9 livres), 7,8 GB RAM, 2 vCPU → a base da Receita (~85 GB)
       **não cabe extraída**; ETL em **streaming** (um zip por vez, filtrando na leitura, de madrugada). Pendente:
-      "Todos" = Brasil + todos os canais (confirmar) e **OK do usuário para a migration B0.1**
+      "Todos" = Brasil + todos os canais (**confirmado pelo Junior: Brasil inteiro, todos os canais, e não só New Millen**)
+- [x] **B0.1 — estrutura aplicada em produção** (2026-10-02, autorizada; `supabase/migrations/20261003000000_b0_tenant_profile.sql`).
+      Criados: `is_valid_cnpj()`, `tenant_profiles`, `cnae_catalog`, `segments`, `segment_channel_cnaes`, `tenant_segments`,
+      `tenant_territories` (todas com RLS; escrita só service_role) e em `resellers` as colunas `cnpj` (14 dígitos puros + DV),
+      `verification_status`, `verified_at` + índice único `(tenant_id, cnpj)`. **Verificado de verdade no banco:** validação de CNPJ,
+      recusa de dígito errado/máscara/duplicado, 12 revendedores intactos, anônimo sem acesso às tabelas novas nem às colunas novas,
+      RPCs do widget ainda respondendo como anônimo (3 resultados, 0,83 km), verificador de segurança sem alerta novo.
+      **Não verificado:** o widget aberto no navegador depois da mudança. **Mudou de permissão:** `anon` só lê `resellers` em colunas
+      listadas (id, tenant_id, name, type, status, phone, whatsapp, website, created_at, updated_at); coluna nova nasce fechada.
+      **Armadilha do conector:** `DROP POLICY` e bloco longo dão timeout e **desfazem tudo** (a etapa 4 inteira foi revertida; refeita em
+      blocos curtos só com `CREATE`); depois de timeout, confira o estado antes de repetir. Tipos novos em `packages/shared/types.ts`.
 
 ## Validação da Fase 4 contra o Supabase real (2026-10-01, geolynq-prod)
 Feita via conector MCP do Supabase, como role `anon`, com as mesmas consultas que o
@@ -303,7 +313,8 @@ do banco agora é schema + migration acima.
 ## Pendente
 - [ ] Decisão de negócio: oferta e preço para a New Millen (seção 10 de `docs/operacao-e-mercado.md`); a tabela
       antiga (Essencial R$ 247) **não vale mais**
-- [ ] **B0 Perfil do tenant por CNPJ** (cadastro) e **CNPJ nos revendedores** (resolve a reimportação que duplica)
+- [ ] **B0 Perfil do tenant por CNPJ** — B0.1 (estrutura) feito; faltam B0.2 (`provision_tenant`, semente de segmento), B0.3 (n8n + importador
+      com coluna CNPJ e upsert por `(tenant, cnpj)` — a reimportação ainda duplica até isso), B0.4 (New Millen real), B0.5 (ETL Receita na VPS)
 - [ ] Widget: exibir atribuição "© OpenStreetMap" (exigência do Nominatim) e cachear CEP→coordenadas
 - [ ] Supabase `geolynq-prod` ainda no plano grátis → Pro antes do 1º cliente pagante
 - [ ] Fase 5 — painel admin (ver "Por onde retomar")
