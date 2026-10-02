@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GeoLynq widget — página de teste</title>
+    <style>
+      body { font-family: Georgia, serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #333; }
+      /* estilos agressivos do "site hospedeiro" — o Shadow DOM tem que resistir a isto */
+      button, input, h2, label { color: red !important; font-family: "Comic Sans MS" !important; }
+    </style>
+  </head>
+  <body>
+    <h1>Página de produto (simulação)</h1>
+    <p>O widget abaixo é o contrato exato que o webmaster do cliente cola no site.</p>
+    <geolynq-widget tenant="demo" color="#E84E0E"></geolynq-widget>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
