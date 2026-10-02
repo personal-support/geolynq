@@ -169,8 +169,13 @@ create unique index if not exists resellers_tenant_cnpj_uq on public.resellers (
      CEP sem máscara, UF em maiúscula, 2 territórios, widget não enxerga o cliente `trial`) e 5 recusas (filial, dígito, baixada, slug repetido, segmento
      inexistente); `anon` e `authenticated` **sem** EXECUTE, só `service_role`. **Não verificado:** chamada real via service_role pela API (o teste rodou
      como dono do banco) e o mapeamento BrasilAPI → jsonb.
-   - **B0.2b PENDENTE:** semente do segmento "suplementos" e `cnae_catalog`. Bloqueada: os sites de CNAE (IBGE etc.) não abrem do sandbox, então os
-     códigos e descrições têm de ser conferidos pela VPS do Junior (BrasilAPI `/api/cnae/v1/{codigo}`) antes de gravar.
+   - **B0.2b FEITO (2026-10-02)** `supabase/migrations/20261003020000_b0_segment_suplementos.sql`: `cnae_catalog` com **16 códigos conferidos** na API
+     oficial do IBGE (`https://servicodados.ibge.gov.br/api/v2/cnae/subclasses/{codigo}`, consultada pela VPS do Junior; do sandbox o IBGE e os sites de
+     CNAE ficam bloqueados; a rota `/api/cnae/v1` da BrasilAPI que eu havia sugerido **não existe**) e o segmento **`suplementos`** com 10 CNAEs de canal
+     (varejo 4, atacado 3, representante 2, outro 1). **A escolha dos códigos e os pesos 1–3 são julgamento meu, não medição**; ficam só como ponto de partida
+     até o perfil medido do cliente (B0.5). Fora do canal de propósito: 4789099, supermercados/mercearias (4711301, 4711302, 4712100) e hortifrúti (4724500).
+     Verificado: 16 no catálogo, 10 canais sem nenhum órfão do catálogo, `anon` sem leitura, `provision_tenant` vinculando o segmento (em rollback).
+     **Não verificado:** se esses canais realmente cobrem os revendedores da New Millen (depende da lista com CNPJ do Danilo).
 3. **B0.3** Workflow n8n de cadastro por CNPJ + atualização do importador (CNPJ, upsert) e da planilha-modelo.
 4. **B0.4** Cadastro da New Millen como tenant real (só quando o Junior mandar).
 5. **B0.5** ETL da Receita na VPS + perfil de canal medido + verificação mensal (continua no B3).
