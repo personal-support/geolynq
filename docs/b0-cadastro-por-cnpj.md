@@ -162,6 +162,15 @@ create unique index if not exists resellers_tenant_cnpj_uq on public.resellers (
 ## 7. Ordem de execução do B0
 1. ~~**B0.1** Migration das tabelas e colunas acima + RLS + `is_valid_cnpj`~~ (**FEITO em 2026-10-02**).
 2. **B0.2** Função `provision_tenant` (service_role) e semente do segmento **suplementos** (CNAEs conferidos na base real).
+   - **B0.2a FEITO (2026-10-02)** `supabase/migrations/20261003010000_b0_provision_tenant.sql`: recebe o perfil já normalizado em jsonb (o mapeamento
+     da BrasilAPI fica no n8n, B0.3). Cria tenant + perfil + segmentos + territórios numa transação. Regras: CNPJ válido, **só matriz (final 0001)**,
+     situação **ativa**, raiz e slug únicos, segmento existente, CNAE completado com zeros, território padrão Brasil. Cliente nasce **`trial`** (o widget só
+     serve `active`; o Junior ativa de propósito). **Verificado em produção (com rollback):** cadastro completo (perfil, CNAE secundário deduplicado,
+     CEP sem máscara, UF em maiúscula, 2 territórios, widget não enxerga o cliente `trial`) e 5 recusas (filial, dígito, baixada, slug repetido, segmento
+     inexistente); `anon` e `authenticated` **sem** EXECUTE, só `service_role`. **Não verificado:** chamada real via service_role pela API (o teste rodou
+     como dono do banco) e o mapeamento BrasilAPI → jsonb.
+   - **B0.2b PENDENTE:** semente do segmento "suplementos" e `cnae_catalog`. Bloqueada: os sites de CNAE (IBGE etc.) não abrem do sandbox, então os
+     códigos e descrições têm de ser conferidos pela VPS do Junior (BrasilAPI `/api/cnae/v1/{codigo}`) antes de gravar.
 3. **B0.3** Workflow n8n de cadastro por CNPJ + atualização do importador (CNPJ, upsert) e da planilha-modelo.
 4. **B0.4** Cadastro da New Millen como tenant real (só quando o Junior mandar).
 5. **B0.5** ETL da Receita na VPS + perfil de canal medido + verificação mensal (continua no B3).

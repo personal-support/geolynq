@@ -33,7 +33,7 @@ universo da Receita); (3) **motor de dados + backoffice** (cadastro por CNPJ, se
    canais → territórios) e todo o sistema o respeita; a New Millen é só a cliente inicial (Baixada Santista era
    só a região da demo; Gofind dela ≤ 500 acessos/mês). **Foco fixo:** fabricantes que dependem de ponto de venda
    (lojas, representantes, distribuidores; físico ou online). Ordem: ~~B1 Telemetria v2~~ (**FEITO e no ar em 2026-10-02**, ver
-   "Concluído") → **B0 Perfil do tenant por CNPJ** (**B0.1 estrutura APLICADA em 2026-10-02**; **próximo: B0.2 `provision_tenant` + semente do segmento "suplementos"**, depois B0.3 workflow n8n/importador; desenho em `docs/b0-cadastro-por-cnpj.md`; cadastro, taxonomia de segmentos → CNAEs de canal, territórios, **CNPJ como chave de revendedor**
+   "Concluído") → **B0 Perfil do tenant por CNPJ** (**B0.1 estrutura APLICADA em 2026-10-02**; **B0.2a `provision_tenant` FEITO; próximo: B0.2b semente do segmento "suplementos" (precisa conferir CNAEs pela VPS)**, depois B0.3 workflow n8n/importador; desenho em `docs/b0-cadastro-por-cnpj.md`; cadastro, taxonomia de segmentos → CNAEs de canal, territórios, **CNPJ como chave de revendedor**
    `unique(tenant_id, cnpj)`, verificação mensal de situação cadastral) → **B3 Candidatos por tenant** (base da
    Receita na VPS, recorte por tenant no Supabase) → **prova de valor com a New Millen no território dela** →
    **B2 Painel** (visões B2C lojas e B2B distribuidores/representantes) → **B4 Relatório mensal automático**.
@@ -248,6 +248,10 @@ pedir OK. Nunca pedir nem colar tokens/URLs de webhook em chat.
       listadas (id, tenant_id, name, type, status, phone, whatsapp, website, created_at, updated_at); coluna nova nasce fechada.
       **Armadilha do conector:** `DROP POLICY` e bloco longo dão timeout e **desfazem tudo** (a etapa 4 inteira foi revertida; refeita em
       blocos curtos só com `CREATE`); depois de timeout, confira o estado antes de repetir. Tipos novos em `packages/shared/types.ts`.
+- [x] **B0.2a — `provision_tenant` aplicada** (2026-10-02; `supabase/migrations/20261003010000_b0_provision_tenant.sql`; detalhes e o que não foi
+      verificado em `docs/b0-cadastro-por-cnpj.md` seção 7). Só `service_role` executa; cliente novo nasce `trial` (widget só serve `active`).
+      Testada só com rollback; **nenhum cliente real cadastrado**. **A New Millen NÃO foi cadastrada:** o Junior avisa quando tiver os dados.
+      Armadilha: o Supabase dá EXECUTE a anon/authenticated em função nova; sempre `revoke` explícito.
 
 ## Validação da Fase 4 contra o Supabase real (2026-10-01, geolynq-prod)
 Feita via conector MCP do Supabase, como role `anon`, com as mesmas consultas que o
