@@ -92,7 +92,13 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   `rollback`): `panel_overview` 30 d = 269 buscas / 79 sem cobertura / 22 lacunas (igual ao teste local); usuário vinculado só vê 1
   cliente e 0 eventos da demo. **Para apagar os simulados:** `delete from public.widget_events where session_id like 'seed-%';`
   (SQL Editor). O histórico `supabase_migrations` não registra esta migration (aplicada por `execute_sql`).
-- **Falta para o 1º login real:** criar o usuário no Supabase Auth e vinculá-lo (SQL no README do admin); criar o app no EasyPanel.
+- **EasyPanel (criado em 2026-10-06, ainda SEM deploy):** serviço `geolynq_admin` no projeto `personalsupport_saas` (Fonte Git SSH
+  `git@github.com:personal-support/geolynq.git`, branch `claude/keen-johnson-c0x5hs`, Dockerfile `apps/admin/Dockerfile`, porta 3000, domínio
+  `painel.geolynq.personalsupport.tech` com HTTPS, 1 vCPU / 1 GB). O Dockerfile traz URL e chave publishable como ARG, então não há variáveis
+  no serviço. **Chave de deploy própria do serviço gerada; falta o usuário cadastrá-la no GitHub** (repo → Settings → Deploy keys, SOMENTE
+  leitura). Depois: `deployAppService`. Não ligar webhook de deploy automático nesta branch de sessão; quando houver merge na `main`,
+  trocar a branch do serviço para `main`. A imagem Docker NUNCA foi construída: o 1º build é o teste real do Dockerfile.
+- **Falta para o 1º login real:** criar o usuário no Supabase Auth e vinculá-lo (SQL no README do admin); cadastrar a deploy key; deploy.
 - **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário
   no Supabase Auth e vinculá-lo (SQL no README); (3) opcional: gravar as buscas simuladas no `fabrica-teste` para o painel
   não ficar vazio (`supabase/tests/03_eventos_simulados.sql`; apagar depois com `delete … where session_id like 'seed-%'`);
