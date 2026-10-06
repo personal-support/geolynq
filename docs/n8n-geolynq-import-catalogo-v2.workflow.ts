@@ -434,6 +434,8 @@ const httpGravarCobertura = node({
   config: {
     name: 'Gravar Cobertura (upsert)',
     onError: 'continueErrorOutput',
+    // alwaysOutputData: a resposta (return=minimal) é vazia; sem isso o sucesso não emite item e não aciona o merge.
+    alwaysOutputData: true,
     parameters: {
       method: 'POST',
       url: 'https://vshlsisnuaugeceafipt.supabase.co/rest/v1/product_reseller_coverage?on_conflict=product_id,reseller_id',
@@ -457,7 +459,9 @@ const mergeErros = merge({
   config: {
     name: 'Consolidar Erros de Validação e Gravação',
     alwaysOutputData: true,
-    parameters: { mode: 'append', numberInputs: 6 },
+    // 7 entradas: 0-5 = erros/invalidos; 6 = FIM DA CADEIA COM SUCESSO. Sem a entrada 6 o merge nunca roda numa importação sem
+    // nenhum erro e o import_batches não é gravado (achado na execução real nº 104, 2026-10-06).
+    parameters: { mode: 'append', numberInputs: 7 },
     output: [{ json: { _sheet: 'Produtos', _row: 5, _error: 'exemplo de erro' } }]
   }
 });
@@ -560,6 +564,7 @@ const produtoChain = codeValidarProdutos.to(
 httpGravarProdutos.onError(mergeErros.input(0));
 httpImportarRevendedor.onError(mergeErros.input(2));
 httpGravarCobertura.onError(mergeErros.input(5));
+httpGravarCobertura.to(mergeErros.input(6)); // sucesso também chega ao resumo
 
 export default workflow('geolynq-import-catalogo-v2', 'GeoLynq — Import Catálogo v2 (CNPJ)')
   .add(startTrigger)

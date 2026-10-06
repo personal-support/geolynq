@@ -9,8 +9,9 @@ que contém tudo da `claude/bold-cray-vbbdyb` (merge feito em 2026-10-06).
 Decisão do usuário: **a New Millen ainda não é cliente** → trabalhar com **dados hipotéticos**
 (`docs/dados-teste/`, tenant fictício `fabrica-teste`; o `demo` fica só como vitrine). Meta: um sistema que
 funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos os itens abaixo:
-1. [ ] **Pipeline provado ponta a ponta com dados de teste:** cadastro por CNPJ gravando, importação v2 e
-       reimportação sem duplicar (conferido no banco).
+1. [x] **Pipeline provado ponta a ponta com dados de teste (2026-10-06):** cadastro por CNPJ gravando,
+       importação v2 e reimportação sem duplicar, tudo conferido no banco. Falta só o teste de erros
+       (linhas inválidas, CNPJ repetido) e o widget lendo o tenant de teste.
 2. [ ] **Painel (Fase 5):** o cliente entra e vê buscas, lacunas de cobertura e cliques por revendedor — é o
        que justifica o preço (o widget sozinho é commodity). Antes: patch do `next` (16.3.8).
 3. [ ] **Operação segura:** Supabase **Pro** (o grátis pausa e derruba o widget), rate limit em
@@ -29,10 +30,22 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
 - Conferido no banco (somente leitura): `tenants` + `tenant_profiles` + segmento + territórios gravados;
   produtos e revendedores = 0. Como `anon`: `widget_get_tenant('fabrica-teste')` = 0 linhas (trial é invisível
   ao público), `demo` = 1, e `tenant_profiles` nem tem permissão para `anon`.
-- Workflow 1 voltou para `gravar=false` (com os parâmetros do teste). Workflow 2 já aponta para o tenant de
+- Workflow 1 voltou para `gravar=false` (com os parâmetros do teste). Workflow 2 aponta para o tenant de
   teste (`exigir_cnpj=true`) e para a planilha do Drive `1Kh1LUORceoK8uqcQs63bVUj2ef0pBWDlcCYX80YApw8` (lendo
-  as abas por nome). **Ainda não executado.** Falta o usuário compartilhar a planilha (Leitor) com a conta de
-  serviço do n8n; depois o assistente roda a importação (só no tenant de teste) e confere no banco.
+  as abas por nome). A planilha foi compartilhada pelo usuário com a conta de serviço do n8n (como Editor).
+- **Importação v2 provada com dados reais de produção (2026-10-06):**
+  - Exec. nº 104 (1ª): 5 produtos, 8 revendedores, 8 endereços (8/8 geocodificados, coordenadas coerentes) e
+    20 coberturas gravados no tenant de teste. **Achou 1 defeito:** o `import_batches` não foi gravado (a
+    execução terminava em "Gravar Cobertura" porque, sem erro, nenhum ramo acionava o merge).
+  - **Conserto** (no n8n e em `docs/n8n-geolynq-import-catalogo-v2.workflow.ts`): o merge ganhou a 7ª entrada,
+    alimentada pelo sucesso de "Gravar Cobertura" (que agora tem `alwaysOutputData`).
+  - Exec. nº 105 (reimportação da mesma planilha): **0 duplicatas** (contagens e checksums dos ids de
+    produtos, revendedores, endereços e coberturas idênticos antes/depois) e **1 lote** em `import_batches`
+    (`success`, 33 linhas processadas, 0 falhas).
+  - Observação menor: revendedor `online` também é geocodificado (cai no centro da cidade). Inofensivo (o widget
+    ignora a distância de loja online), mas é consulta desperdiçada ao Nominatim; pular no futuro.
+  - **Não testado ainda:** o widget lendo este tenant (precisa estar `active`; está `trial`) e o caso de
+    importação com linhas inválidas/CNPJ repetido.
 
 ## Auditoria de 2026-10-06
 **Conectores agora disponíveis na sessão:** Supabase (org `gknjufnkbourddiufozo`, vê o `geolynq-prod`),
