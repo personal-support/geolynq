@@ -1,26 +1,110 @@
 @import "tailwindcss";
+@import "@fontsource-variable/bricolage-grotesque/wdth.css";
+@import "@fontsource-variable/instrument-sans/index.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "leaflet/dist/leaflet.css";
+
+/*
+  Identidade do painel — "Radar de Cobertura"
+  Tinta petróleo + papel frio. Duas cores com significado fixo em TODO o painel:
+    teal  = atendido (há revendedor por perto)     laranja = lacuna (busca sem revendedor por perto)
+  Nunca usar laranja para outra coisa, nem teal para alerta.
+*/
+@theme {
+  --color-ink: #0a1f2c;
+  --color-ink-2: #2b4556;
+  --color-ink-3: #5d7482;
+  --color-paper: #f3f6f5;
+  --color-card: #ffffff;
+  --color-line: #dbe3e1;
+  --color-line-2: #c3cfcc;
+  --color-ok: #0b7a75;
+  --color-ok-deep: #075a56;
+  --color-ok-soft: #d8efec;
+  --color-gap: #d94a18;
+  --color-gap-deep: #a8350d;
+  --color-gap-soft: #fde4d9;
+  --color-warn: #8a5a00;
+  --color-warn-soft: #fbefcf;
+  --font-display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --shadow-card: 0 1px 0 rgba(10, 31, 44, 0.04), 0 8px 24px -16px rgba(10, 31, 44, 0.18);
+}
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-paper);
+  color: var(--color-ink);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-stretch: 92%;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ok);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--color-ok-soft);
+}
+
+/* Leaflet: mapa em tons neutros para que teal/laranja sejam as únicas cores */
+.gl-map .leaflet-tile-pane {
+  filter: grayscale(1) contrast(0.92) brightness(1.04);
+  opacity: 0.85;
+}
+.gl-map .leaflet-container {
+  background: #e6ecea;
+  font-family: var(--font-sans);
+}
+.gl-map .leaflet-control-attribution {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.8);
+}
+.gl-tooltip {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  border: 1px solid var(--color-line-2);
+  border-radius: 8px;
+  box-shadow: var(--shadow-card);
+  color: var(--color-ink);
+  padding: 6px 9px;
+}
+
+@keyframes gl-sweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.gl-sweep {
+  transform-origin: 50% 50%;
+  animation: gl-sweep 7s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gl-sweep {
+    animation: none;
+  }
 }

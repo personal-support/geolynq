@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // scripts de teste em CommonJS (Playwright), fora do app
+    "e2e/**",
   ]),
 ]);
 

@@ -11,9 +11,10 @@ n8n para importação de catálogo, EasyPanel/Hostinger para hospedagem. Bluepri
 ## Mapa do repositório
 - `apps/widget` — Web Component (vanilla TS, Vite), Dockerfile e `nginx.conf` (serve widget e demo)
 - `apps/demo` — site de amostra "Pódio" (gerador Node sem dependências; marca fictícia)
-- `apps/admin` — painel admin (Next.js 16; Fase 5, ainda não construído)
+- `apps/admin` — painel do cliente (Next.js 16, `proxy.ts`; construído e testado, ver README; ainda não publicado)
 - `packages/shared` — tipos e clients Supabase
 - `supabase/migrations` — SQL idempotente aplicado à mão em produção
+- `supabase/tests` — Postgres local (mini-Supabase) para testar migrations e relatórios sem tocar na produção
 - `docs/` — blueprint, schema v2, workflow n8n versionado, planilha-modelo
 - `docs/operacao-e-mercado.md` — fluxo ponta a ponta, onboarding de cliente, pesquisa de mercado, viabilidade e preço (hipóteses a validar)
 

@@ -12,8 +12,9 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
 1. [x] **Pipeline provado ponta a ponta com dados de teste (2026-10-06):** cadastro por CNPJ gravando,
        importação v2 e reimportação sem duplicar, tudo conferido no banco. Falta só o teste de erros
        (linhas inválidas, CNPJ repetido) e o widget lendo o tenant de teste.
-2. [ ] **Painel (Fase 5):** o cliente entra e vê buscas, lacunas de cobertura e cliques por revendedor — é o
-       que justifica o preço (o widget sozinho é commodity). Antes: patch do `next` (16.3.8).
+2. [~] **Painel (Fase 5):** o cliente entra e vê buscas, lacunas de cobertura e cliques por revendedor — é o
+       que justifica o preço (o widget sozinho é commodity). **Construído e testado (2026-10-06); falta aplicar a
+       migration no banco real, criar o 1º usuário e publicar no EasyPanel** (ver "Fase 5 — painel" abaixo).
 3. [ ] **Operação segura:** Supabase **Pro** (o grátis pausa e derruba o widget), rate limit em
        `widget_events`, `spatial_ref_sys` com RLS, monitor de uptime, deploy com testes (`deploy-widget.yml`).
 4. [ ] **Legal e geocodificação:** aviso de privacidade + contrato (LGPD), atribuição ao OpenStreetMap,
@@ -60,6 +61,35 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   - **Não testado ainda:** o widget lendo este tenant (precisa estar `active`; está `trial`); falha de gravação
     no banco (ex.: Supabase fora do ar no meio do lote); planilha com milhares de linhas (geocodificação a 1/s:
     1.000 revendedores ≈ 17 min; Nominatim público não serve para volume — ver "Antes do 1º cliente real").
+
+## Fase 5 — painel do cliente (construído em 2026-10-06; **NÃO publicado**; `apps/admin`)
+- **Telas:** login · visão geral (frase do período, 4 indicadores, **mapa de cobertura**, maiores lacunas, tendência, produtos,
+  buscas fora do catálogo, ações) · lacunas · rede de revendedores · catálogo · importações · widget no site. Tudo em pt-BR.
+  Detalhes, variáveis e como publicar: `apps/admin/README.md`.
+- **Arquitetura:** o painel **não usa `service_role`**. O usuário entra por Supabase Auth e lê como `authenticated`; o RLS
+  existente (`tenant_users`) isola os clientes. Relatórios = 2 funções SQL novas (`panel_overview`, `panel_catalog`) +
+  1 policy (o usuário vê a própria linha em `tenants`) em `supabase/migrations/20261006000000_painel_relatorios.sql`.
+  **Essa migration AINDA NÃO foi aplicada no `geolynq-prod`** (precisa de OK do usuário).
+- **Segurança do app:** `next` 16.3.8 (RCE corrigido; `npm audit --omit=dev` = 0), cookies de sessão `httpOnly`+`SameSite=Lax`+`Secure`,
+  CSP restritiva, HSTS, `X-Frame-Options: DENY`, `?next` do login só aceita caminhos internos, sessão validada com `getUser()`.
+  Devs: 8 alertas só em ferramentas de teste (vitest/tinypool), fora do servidor.
+- **Testes (todos locais, sem tocar na produção):**
+  - Banco: Postgres 16 + PostGIS local com `docs/schema-locator-v2.sql` + TODAS as migrations do zero (provou que a cadeia de
+    migrations é reproduzível) + cliente de teste + 420 buscas simuladas (`supabase/tests/`). Isolamento provado: membro do
+    cliente A lê o A; usuário só do cliente B recebe NULL/0 linhas ao tentar ler o A; anônimo não vê nem executa.
+  - Navegador: `npm run e2e -w @geolynq/admin` = **42/42** em Chromium real (também no servidor "standalone" da imagem), com
+    mini-Supabase cujas respostas vêm das funções SQL reais. Confere número da tela = número do banco, filtros, período, mapa
+    (um marcador por revendedor/demanda), celular sem rolagem lateral, cookies httpOnly, CSP, sair, usuário sem vínculo.
+- **Não verificado:** build da imagem Docker (sem daemon aqui; a saída standalone foi testada, o Dockerfile não foi executado);
+  login contra o Auth REAL do Supabase (o ambiente não alcança `*.supabase.co`; o fluxo é o padrão do `@supabase/ssr`);
+  os blocos reais do OpenStreetMap no mapa (bloqueados aqui; sem eles o mapa aparece sem fundo); a pré-visualização do widget
+  (bundle externo bloqueado aqui).
+- **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário
+  no Supabase Auth e vinculá-lo (SQL no README); (3) opcional: gravar as buscas simuladas no `fabrica-teste` para o painel
+  não ficar vazio (`supabase/tests/03_eventos_simulados.sql`; apagar depois com `delete … where session_id like 'seed-%'`);
+  (4) criar o app `geolynq_admin` no EasyPanel (README); (5) o domínio `painel.geolynq…` já é coberto pelo DNS `*.geolynq`.
+- **Limites conhecidos:** sem "esqueci a senha"/convite de usuário/edição de catálogo no painel; mapa com blocos públicos do OSM
+  (uso comercial em escala exige servidor próprio/pago); "lista de candidatos a revendedor" (B3) ainda não existe.
 
 ## Auditoria de 2026-10-06
 **Conectores agora disponíveis na sessão:** Supabase (org `gknjufnkbourddiufozo`, vê o `geolynq-prod`),

@@ -155,6 +155,19 @@ begin
          group by 1, 2
          order by buscas desc, cidade
          limit 10) x), '[]'::jsonb),
+    'mapa_demanda', coalesce((
+      select jsonb_agg(to_jsonb(x)) from (
+        select coalesce(nullif(btrim(city), ''), 'Local não identificado') as cidade,
+               nullif(btrim(state), '') as uf,
+               round(avg(lat_approx)::numeric, 3) as lat,
+               round(avg(lng_approx)::numeric, 3) as lng,
+               count(*) as buscas,
+               count(*) filter (where product_id is not null and coalesce(results_count, 0) = 0) as sem_cobertura
+          from cur
+         where event_type = 'search' and lat_approx is not null and lng_approx is not null
+         group by 1, 2
+         order by buscas desc, cidade
+         limit 60) x), '[]'::jsonb),
     'acoes', coalesce((
       select jsonb_agg(to_jsonb(x)) from (
         select action as acao, count(*) as cliques
@@ -246,6 +259,16 @@ begin
         'fisicos',      count(*) filter (where type <> 'online'),
         'fisicos_com_coordenadas', count(*) filter (where type <> 'online' and latitude is not null and longitude is not null))
       from rev),
+    'rede', coalesce((
+      select jsonb_agg(to_jsonb(x) order by x.nome) from (
+        select r.id, r.name as nome, r.type as tipo, r.city as cidade, r.state as uf, r.neighborhood as bairro,
+               r.latitude as lat, r.longitude as lng, r.cnpj,
+               (nullif(btrim(r.whatsapp), '') is not null) as tem_whatsapp,
+               (nullif(btrim(r.phone), '') is not null)    as tem_telefone,
+               (nullif(btrim(r.website), '') is not null)  as tem_site,
+               (select count(*) from cov where cov.reseller_id = r.id) as produtos
+          from rev r
+         limit 1000) x), '[]'::jsonb),
     'ultima_importacao', (select to_jsonb(i) from imp i)
   ) into v_result;
 
