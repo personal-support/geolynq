@@ -20,6 +20,20 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
 5. [ ] **n8n fora da AWS** (prazo 10–13/11/2026) → VPS Hostinger/EasyPanel.
 6. [ ] **Limpar o `demo`** (revendedor duplicado e telefone `13999990000`) antes de mostrar a qualquer cliente.
 
+## Cliente de teste `fabrica-teste` (criado em 2026-10-06, com OK do usuário)
+- Cadastrado pelo workflow n8n "Cadastro de Cliente por CNPJ" (execução nº 103, `gravar=true`, sucesso na 1ª
+  tentativa): `tenant_id` `88a5496b-7837-4aee-a817-4cfbe7a1a011`, slug `fabrica-teste`, status **trial**,
+  segmento `suplementos`, territórios SP e RJ. O CNPJ usado na consulta à Receita é o do Banco do Brasil
+  (`00000000000191`, **só como stand-in**; a raiz `00000000` está ocupada por este tenant de teste).
+  Quando a New Millen fechar, cadastrar com o CNPJ dela (raiz própria, sem conflito).
+- Conferido no banco (somente leitura): `tenants` + `tenant_profiles` + segmento + territórios gravados;
+  produtos e revendedores = 0. Como `anon`: `widget_get_tenant('fabrica-teste')` = 0 linhas (trial é invisível
+  ao público), `demo` = 1, e `tenant_profiles` nem tem permissão para `anon`.
+- Workflow 1 voltou para `gravar=false` (com os parâmetros do teste). Workflow 2 já aponta para o tenant de
+  teste (`exigir_cnpj=true`) e para a planilha do Drive `1Kh1LUORceoK8uqcQs63bVUj2ef0pBWDlcCYX80YApw8` (lendo
+  as abas por nome). **Ainda não executado.** Falta o usuário compartilhar a planilha (Leitor) com a conta de
+  serviço do n8n; depois o assistente roda a importação (só no tenant de teste) e confere no banco.
+
 ## Auditoria de 2026-10-06
 **Conectores agora disponíveis na sessão:** Supabase (org `gknjufnkbourddiufozo`, vê o `geolynq-prod`),
 GitHub, n8n, EasyPanel, Hostinger. Antes o Supabase estava ligado à conta errada.
