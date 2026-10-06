@@ -1,7 +1,44 @@
 # Status — GeoLynq
 
 ## Última atualização
-2026-10-02 — **pausa**: usuário volta depois. Tudo commitado e enviado (branch `claude/bold-cray-vbbdyb`).
+2026-10-06 — **retomada + auditoria de infraestrutura** (só leitura; nada gravado em produção). Ver
+"Auditoria de 2026-10-06" logo abaixo. Trabalho do dia na branch `claude/keen-johnson-c0x5hs`,
+que contém tudo da `claude/bold-cray-vbbdyb` (merge feito em 2026-10-06).
+
+## Auditoria de 2026-10-06
+**Conectores agora disponíveis na sessão:** Supabase (org `gknjufnkbourddiufozo`, vê o `geolynq-prod`),
+GitHub, n8n, EasyPanel, Hostinger. Antes o Supabase estava ligado à conta errada.
+- **Banco real (`geolynq-prod`) confere com o repositório:** as 7 migrations existem no banco (tabelas
+  `tenant_profiles`, `cnae_catalog`, `segments`, `segment_channel_cnaes`, `tenant_segments`,
+  `tenant_territories`; coluna `resellers.cnpj` + `verification_status`; índice único parcial
+  `resellers_tenant_cnpj_uq (tenant_id, cnpj)`; funções `provision_tenant` e `import_reseller` com
+  EXECUTE **só** para `service_role`; `widget_get_tenant`/`is_active_tenant` públicas por design).
+  Contagens reais: 1 tenant (`demo`, active), 12 produtos, 12 revendedores, 12 endereços, 51 coberturas,
+  9 eventos, 0 `tenant_profiles`. O histórico `supabase_migrations` só tem a migration inicial (as demais
+  foram aplicadas por `execute_sql`; os arquivos do repo são idempotentes).
+- **Advisors de segurança:** `spatial_ref_sys` sem RLS (ERROR, risco baixo; correção
+  `ALTER TABLE public.spatial_ref_sys ENABLE ROW LEVEL SECURITY` **aguarda OK do usuário**); PostGIS no
+  schema `public` (WARN); `tenants` com RLS e sem policy (INFO, **intencional**: o widget só lê 5 campos
+  via RPC); RPCs `SECURITY DEFINER` executáveis por `anon` (`widget_get_tenant`, `is_active_tenant`: por
+  design; `st_estimatedextent`: do PostGIS).
+- **EasyPanel foi reorganizado em 2026-10-05:** o app do widget agora é o projeto `personalsupport_saas`
+  → serviço `geolynq_widget` (antes: projeto `geolynq` → app `widget`, que não aparece mais). Continua com
+  Fonte Git (branch `claude/bold-cray-vbbdyb`, Dockerfile `apps/widget/Dockerfile`, porta 80) e os dois
+  domínios `widget.` e `demo.geolynq.personalsupport.tech` com HTTPS; último commit implantado = `b2c2c88`
+  (cabeça da branch). **A conferir pelo usuário:** o webhook do GitHub ainda aponta para o gatilho de
+  implantação do app antigo? Se sim, o push deixou de publicar sozinho (o token do gatilho mudou).
+- **VPS Hostinger:** KVM 2 (2 vCPU, 8 GB, 100 GB), Ubuntu 24.04 com EasyPanel, `running`, IP
+  `179.198.116.157`. Tem folga para receber o n8n.
+- **Segredos expostos no chat desta sessão:** a listagem geral do EasyPanel devolveu as variáveis de
+  ambiente de **outros projetos** (fora do GeoLynq). Não foram usadas. O usuário vai rotacioná-las. Regra
+  daqui para frente: consultar o EasyPanel **só** em `personalsupport_saas`/`geolynq_widget`
+  (`inspectAppService`/`listDomains`), nunca `listProjectsAndServices`. Recomendado: usuário do EasyPanel
+  restrito ao projeto `personalsupport_saas`.
+- **Não verificado nesta sessão:** acesso HTTP real ao widget e à demo (o ambiente de nuvem leva 403 do
+  proxy nesses domínios).
+- **B0.3 ainda inativo:** os workflows `GeoLynq — Cadastro de Cliente por CNPJ` (`toU5IgMP0wvoaE1b`) e
+  `GeoLynq — Import Catálogo v2 (CNPJ)` (`vCFeM2DItVsorH5f`) existem no n8n, inativos, e `gravar=false`.
+  Falta o usuário **vincular a credencial Supabase com a `service_role`** nos nós HTTP (só na credencial).
 
 ## Fase atual
 Fases 0 a 4.5 e 4.1 **concluídas e no ar**: widget em `https://widget.geolynq.personalsupport.tech/v1/embed.js`
@@ -57,8 +94,12 @@ universo da Receita); (3) **motor de dados + backoffice** (cadastro por CNPJ, se
    - decidir a reimportação de revendedores (duplicam) e resolver;
    - rate limit em `widget_events` (qualquer um com a chave pública insere);
    - limpar o `demo` (revendedor duplicado + telefone `13999990000`, que pode ser real).
-7. **Prazo duro: o n8n na AWS free tier expira em 10/11/2026.** Migrar o workflow
-   `geolynq-import-catalogo` para a VPS Hostinger com folga (confirmar a data no console AWS).
+7. **Prazo duro: o n8n na AWS free tier expira em 10/11/2026.** Migrar o n8n (e os workflows
+   `geolynq-import-catalogo`, `Cadastro de Cliente por CNPJ` e `Import Catálogo v2`) da AWS para o
+   EasyPanel da VPS Hostinger com folga (confirmar a data no console AWS; alguns registros dizem 13/11).
+   **Decidido em 2026-10-06: ainda não mexer; só manter o alerta.** Ao migrar: exportar workflows e
+   credenciais, recriar a credencial Supabase `service_role` no n8n novo, e trocar o endereço do n8n em
+   `CLAUDE.md`/esta tabela.
 
 **Como trabalhar com o usuário (combinado):** ele não usa PC, só a VPS Hostinger (`root@srv1887859`) e
 o EasyPanel. Para qualquer passo na VPS ou no EasyPanel: primeiro explicar em português simples o que
@@ -69,11 +110,11 @@ pedir OK. Nunca pedir nem colar tokens/URLs de webhook em chat.
 ## Referência rápida
 | O quê | Valor |
 |---|---|
-| Repositório | `github.com/personal-support/geolynq` (privado). Branch de trabalho `claude/bold-cray-vbbdyb`; a `main` **ainda não tem** o widget (PR nº 1 foi fechado sem merge) |
+| Repositório | `github.com/personal-support/geolynq` (privado). Branch de deploy `claude/bold-cray-vbbdyb` (é dela que o EasyPanel publica). A `main` só tem até o empacotamento da Fase 4.5 (merge do PR nº 1 em `b09ee7b`); **não tem** demo, B0, B1 nem CI. Em 2026-10-06 a branch de sessão `claude/keen-johnson-c0x5hs` recebeu um merge da `bold-cray` |
 | Supabase (prod) | projeto `geolynq-prod`, ref `vshlsisnuaugeceafipt`, sa-east-1, URL `https://vshlsisnuaugeceafipt.supabase.co`. Projeto antigo `geolynq` (ca-central-1) está pausado |
 | Tenant demo | slug `demo`, id `3596b3c6-8389-42af-b575-4bbdd69f2f2d` |
 | VPS / DNS | Hostinger, IP `179.198.116.157`. DNS na Hostinger: A `*.geolynq` e A `geolynq` → IP da VPS (o curinga **não** cobre a raiz) |
-| EasyPanel | `https://panel.personalsupport.tech` → projeto `geolynq` → app `widget` (serve os 2 hosts: `widget.` e `demo.`) |
+| EasyPanel | `https://panel.personalsupport.tech` → projeto `personalsupport_saas` → app `geolynq_widget` (serve os 2 hosts: `widget.` e `demo.`; reorganizado em 2026-10-05, antes era projeto `geolynq` → app `widget`) |
 | Deploy | push na branch → webhook do GitHub → Gatilho de Implantação do EasyPanel (HTTPS pelo domínio do painel). O Dockerfile faz `nginx -t`: config inválida derruba o build, não o container no ar |
 | n8n | `https://automacoes-n8n.tvywld.easypanel.host`, workflow `geolynq-import-catalogo` (id `2ZPDQymNwVSENTIf`, trigger manual); planilha-modelo no Google Sheets id `18rF_rlwS-wYHASnW9Tbd-FQI0Ko9s1lUHTTSe5T8s_g` |
 | Testes do widget | `npm run typecheck -w @geolynq/widget` · `npm test -w @geolynq/widget` (21) · E2E: buildar com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` e então `npm run e2e -w @geolynq/widget` (46). Site: `node apps/demo/build.mjs` |
