@@ -32,6 +32,15 @@ Não use o tenant `demo` para isso: ele é a vitrine de apresentação.
 como *Leitor* com a conta de serviço usada pelo n8n (credencial "Google Drive account"); o compartilhamento
 feito pelo assistente foi bloqueado pelas permissões, então é manual.
 
+## Teste de erros (2026-10-06)
+`fabrica-teste-ERROS-catalogo.xlsx` = base limpa + 2 linhas boas novas + **11 linhas ruins de propósito**
+(produto sem SKU, SKU duplicado, CNPJ com dígito errado, CNPJ repetido no lote, revendedor sem CNPJ, tipo inválido,
+CEP inválido, sem cidade, cobertura com SKU inexistente, com CNPJ não importado e com SKU vazio).
+**Esperado no lote:** `status=partial`, `rows_processed=48`, `rows_failed=11`; as linhas boas entram mesmo assim.
+Estado final esperado: 6 produtos, 10 revendedores, 21 coberturas (= `fabrica-teste-v2-catalogo.xlsx`).
+Planilha no Drive: pasta `GeoLynq — Testes (n8n)` (id `1KFH8Gw5l0FgQR_CykOtgbVGiNhfHexEJ`); compartilhar a **pasta**
+com a conta de serviço do n8n faz as planilhas criadas dentro dela herdarem o acesso.
+
 ## Como usar
 1. Cadastrar o cliente de teste (`slug: fabrica-teste`) — workflow n8n "Cadastro de Cliente por CNPJ", `gravar=true`.
 2. Colocar estes dados numa planilha do Google compartilhada com a service account do n8n.
