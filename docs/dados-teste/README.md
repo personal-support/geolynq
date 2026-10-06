@@ -26,6 +26,12 @@ Não use o tenant `demo` para isso: ele é a vitrine de apresentação.
 - `fabrica-teste-catalogo.xlsx` — 3 abas (`Produtos`, `Revendedores`, `Cobertura`) no formato de `docs/geolynq-catalogo-modelo.xlsx`
 - `fabrica-teste-*.tsv` — as mesmas abas em texto separado por tabulação (colar direto no Google Sheets)
 
+## Planilha no Google Drive (criada em 2026-10-06)
+`GeoLynq — Fábrica Teste (dados hipotéticos)`, id `1Kh1LUORceoK8uqcQs63bVUj2ef0pBWDlcCYX80YApw8`
+(dono: conta do usuário). Conteúdo conferido: 5 produtos, 8 revendedores, 20 vínculos. **Falta compartilhar**
+como *Leitor* com a conta de serviço usada pelo n8n (credencial "Google Drive account"); o compartilhamento
+feito pelo assistente foi bloqueado pelas permissões, então é manual.
+
 ## Como usar
 1. Cadastrar o cliente de teste (`slug: fabrica-teste`) — workflow n8n "Cadastro de Cliente por CNPJ", `gravar=true`.
 2. Colocar estes dados numa planilha do Google compartilhada com a service account do n8n.
