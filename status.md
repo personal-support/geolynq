@@ -36,9 +36,21 @@ GitHub, n8n, EasyPanel, Hostinger. Antes o Supabase estava ligado à conta errad
   restrito ao projeto `personalsupport_saas`.
 - **Não verificado nesta sessão:** acesso HTTP real ao widget e à demo (o ambiente de nuvem leva 403 do
   proxy nesses domínios).
-- **B0.3 ainda inativo:** os workflows `GeoLynq — Cadastro de Cliente por CNPJ` (`toU5IgMP0wvoaE1b`) e
-  `GeoLynq — Import Catálogo v2 (CNPJ)` (`vCFeM2DItVsorH5f`) existem no n8n, inativos, e `gravar=false`.
-  Falta o usuário **vincular a credencial Supabase com a `service_role`** nos nós HTTP (só na credencial).
+- **B0.3 — credenciais vinculadas em 2026-10-06 (workflows continuam inativos, manuais):**
+  - `GeoLynq — Cadastro de Cliente por CNPJ` (`toU5IgMP0wvoaE1b`): nó `provision_tenant` com a credencial
+    n8n "Supabase account" (`urKpm6ymaIpZn3c3`). Testado só em **modo conferência** (`gravar=false`; nada
+    gravado). A BrasilAPI é instável: 02/10 ok em 2 s; 06/10 deu 503, depois 429 no navegador, depois ok.
+    O CNPJ de exemplo `00385181000111` é o da **NM Alimentos / New Millen** (ativa, CNAE 1099607,
+    Cajamar/SP). **Não gravado:** falta o usuário definir slug, nome, estados de atuação e cor (B0.4).
+  - `GeoLynq — Import Catálogo v2 (CNPJ)` (`vCFeM2DItVsorH5f`): conferido por leitura (MCP) — 3 nós "Ler Aba"
+    com "Google Drive account" (service account) e a planilha modelo; 3 nós HTTP + "Registrar Lote" com
+    "Supabase account"; `tenant_id` = demo e `exigir_cnpj=false`. **Nunca executado.**
+  - **Não executar o v2 no tenant `demo` com a planilha-modelo:** a linha "Farmácia Saúde Total" não tem CNPJ e
+    `import_reseller` sem CNPJ **sempre insere** (mais um duplicado) e reusa o telefone `13999990000`
+    (que pode ser real). Primeira execução real: com os dados e CNPJs da New Millen, `exigir_cnpj=true`,
+    depois do cadastro do cliente (B0.4) e com OK do usuário.
+  - **Não verificado:** se a chave dentro da credencial "Supabase account" é a `service_role` do
+    `geolynq-prod` (o conteúdo da credencial não é legível por aqui; a Fase 3 funcionou com ela).
 
 ## Fase atual
 Fases 0 a 4.5 e 4.1 **concluídas e no ar**: widget em `https://widget.geolynq.personalsupport.tech/v1/embed.js`
