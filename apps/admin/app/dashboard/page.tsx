@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { AvisoBasePequena } from "@/components/avisos";
 import { BarList, TrendChart } from "@/components/charts";
 import { CoverageMap } from "@/components/coverage-map";
 import { ErroPainel } from "@/components/erro-painel";
 import { PeriodTabs } from "@/components/period-tabs";
 import { Card, CardHeader, Delta, Empty, Kpi, PageHeader } from "@/components/ui";
 import { carregar, getCatalog, getMembership, getOverview, parseDias } from "@/lib/data";
+import { avisoDeBase } from "@/lib/avisos";
 import { ACAO_CLIQUE, km, num, pct, variacao } from "@/lib/format";
 
 export const metadata = { title: "Visão geral" };
@@ -26,6 +28,7 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
   const semBuscas = k.buscas === 0;
   const maior = o.lacunas[0];
   const vLacunas = variacao(k.sem_cobertura, o.anterior.sem_cobertura, "descer");
+  const aviso = avisoDeBase(k.buscas, o.anterior.buscas, dias, true);
 
   return (
     <>
@@ -34,6 +37,8 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
         subtitulo={`Últimos ${dias} dias, comparados com os ${dias} dias anteriores.`}
         direita={<PeriodTabs dias={dias} base="/dashboard" />}
       />
+
+      <AvisoBasePequena aviso={aviso} />
 
       {/* A frase do painel: o que a equipe comercial precisa saber primeiro */}
       <Card className="mb-6 overflow-hidden">
@@ -47,6 +52,16 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
                   {m.tenant.status === "active"
                     ? "Assim que alguém buscar um produto no site da sua marca, os números aparecem aqui."
                     : "O widget só atende clientes ativos. Quando a GeoLynq ativar a sua marca, as buscas passam a ser medidas."}
+                </p>
+              </>
+            ) : k.buscas_com_produto === 0 ? (
+              <>
+                <h2 className="mt-3 text-4xl font-semibold leading-[1.04] sm:text-[44px]">
+                  {k.buscas === 1 ? "A única busca não bateu" : `Nenhuma das ${num(k.buscas)} buscas bateu`} com um produto do catálogo.
+                </h2>
+                <p className="mt-4 max-w-xl text-[15px] text-ink-2">
+                  Sem produto identificado não dá para medir cobertura de revendedores. Veja abaixo, em “Procuraram e você não tem”, o que as
+                  pessoas buscaram.
                 </p>
               </>
             ) : k.sem_cobertura === 0 ? (
@@ -139,7 +154,11 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
         <Card>
           <CardHeader titulo="Maiores lacunas" dica="Produto procurado onde não há revendedor físico a 100 km." />
           {o.lacunas.length === 0 ? (
-            <Empty titulo="Nenhuma lacuna no período">Todas as buscas com produto encontraram revendedor por perto.</Empty>
+            k.buscas_com_produto === 0 ? (
+              <Empty titulo="Sem dados para medir lacunas">Nenhuma busca do período identificou um produto do catálogo.</Empty>
+            ) : (
+              <Empty titulo="Nenhuma lacuna no período">Todas as buscas com produto encontraram revendedor por perto.</Empty>
+            )
           ) : (
             <ol className="mt-3 divide-y divide-line">
               {o.lacunas.slice(0, 6).map((l) => (

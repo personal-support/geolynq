@@ -36,7 +36,7 @@ export NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 NEXT_PUBLIC_SUPABASE_ANON
 npm run build -w @geolynq/admin
 E2E_STANDALONE=1 PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers npm run e2e -w @geolynq/admin   # servidor "standalone" = o da imagem Docker
 ```
-Cobre: login/erro/`?next` externo, isolamento entre clientes, números da tela = números do banco, filtros, período, mapa,
+Cobre: login/erro/`?next` externo, isolamento entre clientes, números da tela = números do banco, filtros, período, mapa, faixa de demonstração, aviso de base pequena,
 sem rolagem lateral no celular, cookies `httpOnly`, CSP, sair. Capturas em `E2E_OUT` (padrão `/tmp/geolynq-e2e`).
 
 ## Publicar (EasyPanel, projeto `personalsupport_saas`)

@@ -52,9 +52,11 @@ async function esperado() {
   const ov = (await db.query("select public.panel_overview($1::uuid, 30) j", [t])).rows[0].j;
   const ov7 = (await db.query("select public.panel_overview($1::uuid, 7) j", [t])).rows[0].j;
   const cat = (await db.query("select public.panel_catalog($1::uuid) j", [t])).rows[0].j;
+  const totalEventos = (await db.query("select count(*)::int n from public.widget_events where tenant_id=$1::uuid", [t])).rows[0].n;
+  const simulados = (await db.query("select count(*)::int n from public.widget_events where tenant_id=$1::uuid and session_id like 'seed-%'", [t])).rows[0].n;
   await db.query("rollback");
   await db.end();
-  return { ov, ov7, cat };
+  return { ov, ov7, cat, totalEventos, simulados };
 }
 
 (async () => {
@@ -83,6 +85,12 @@ async function esperado() {
   try {
     await esperarServidor();
     const ref = await esperado();
+    // Cenário "base pequena": 5 buscas (sessões e2e-…, NÃO 'seed-…') no tenant demo; removidas no final.
+    const dbSeed = new Client({ connectionString: process.env.DATABASE_URL || "postgres://e2e:e2e@127.0.0.1:5432/geolynq_test" });
+    await dbSeed.connect();
+    await dbSeed.query("delete from public.widget_events where session_id like 'e2e-%'");
+    await dbSeed.query(`insert into public.widget_events (tenant_id, session_id, event_type, query_text, results_count, telemetry_v, created_at)
+      select (select id from public.tenants where slug='demo'), 'e2e-' || g, 'search', 'whey', 1, 2, now() - (g || ' hours')::interval from generate_series(1, 5) g`);
     browser = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });
 
     const novoContexto = async (viewport = { width: 1440, height: 1000 }) => {
@@ -158,6 +166,10 @@ async function esperado() {
       check("mapa: um marcador por revendedor físico localizado + um por local de demanda", marcadores === esperadosMarc, `${marcadores} de ${esperadosMarc}`);
       const discos = await pageA.locator(".leaflet-container path:not(.leaflet-interactive)").count();
       check("mapa: discos de 100 km desenhados", discos >= 8, `${discos}`);
+      const faixa = pageA.locator('[role="note"]', { hasText: "Dados de demonstração" });
+      check("faixa 'Dados de demonstração' aparece com dado simulado", (await faixa.count()) === 1);
+      check("faixa informa a contagem real (simulados de total)", new RegExp(`Todos os ${ref.totalEventos} eventos|${ref.simulados} de ${ref.totalEventos} eventos`).test(await faixa.innerText()), await faixa.innerText().then((x) => x.replace(/\s+/g, " ").slice(0, 120)));
+      check("sem aviso de base pequena quando há volume", (await pageA.locator('[role="note"]', { hasText: "Base pequena" }).count()) === 0);
       check("sem erros de JS na visão geral", errosA.length === 0, errosA.join(" | "));
       await pageA.screenshot({ path: `${OUT}/02-visao-geral-desktop.png`, fullPage: true });
     }
@@ -173,6 +185,11 @@ async function esperado() {
     check("período inválido cai em 30 dias", (await pageA.locator('nav[aria-label="Período"] a[aria-current="true"]').innerText()) === "30 dias");
 
     // páginas internas
+    for (const rota of ["/dashboard/lacunas", "/dashboard/rede", "/dashboard/catalogo", "/dashboard/importacoes", "/dashboard/widget"]) {
+      await pageA.goto(`${BASE}${rota}`);
+      if ((await pageA.locator('[role="note"]', { hasText: "Dados de demonstração" }).count()) !== 1) check(`faixa de demonstração em ${rota}`, false);
+    }
+    check("faixa de demonstração presente em todas as telas", true);
     await pageA.goto(`${BASE}/dashboard/lacunas`);
     {
       const linhas = await pageA.locator("table tbody tr").count();
@@ -267,6 +284,17 @@ async function esperado() {
       await entrar(page, "b@example.invalid");
       const t = await texto(page);
       check("outro cliente: vê o próprio nome e 'Ativo'", /GeoLynq Demo/.test(t) && /Ativo/.test(t) && !/Fábrica Teste/.test(t));
+      check("outro cliente (sem dado simulado): NÃO mostra a faixa de demonstração", (await page.locator('[role="note"]', { hasText: "Dados de demonstração" }).count()) === 0);
+      const base = page.locator('[role="note"]', { hasText: "Base pequena" });
+      check("aviso 'Base pequena' com 5 buscas", (await base.count()) === 1 && /5 buscas neste período/.test(await base.innerText()), await base.innerText().then((x) => x.replace(/\s+/g, " ").slice(0, 110)));
+      check("manchete NÃO diz que está tudo coberto quando nenhuma busca bateu com produto", /Nenhuma das 5 buscas bateu com um produto do catálogo/.test(t) && !/Todas as buscas com produto encontraram/.test(t), await page.locator("h2").first().innerText().then((x) => x.replace(/\s+/g, " ")));
+      check("aviso sugere 90 dias quando o período é menor", /90 dias/.test(await base.innerText()));
+      await page.screenshot({ path: `${OUT}/13-demo-base-pequena.png`, fullPage: true });
+      await page.goto(`${BASE}/dashboard?dias=90`);
+      check("no período de 90 dias o aviso não repete a sugestão de 90 dias", !/90 dias dá/.test(await texto(page)) && (await page.locator('[role="note"]', { hasText: "Base pequena" }).count()) === 1);
+      await page.goto(`${BASE}/dashboard/lacunas`);
+      check("aviso de base pequena também na tela de lacunas", (await page.locator('[role="note"]', { hasText: "Base pequena" }).count()) === 1);
+      await page.goto(`${BASE}/dashboard`);
       await page.goto(`${BASE}/dashboard/rede`);
       check("outro cliente: rede vazia (não vê os revendedores do cliente A)", !(await texto(page)).includes("Exemplo"));
       await page.goto(`${BASE}/dashboard/widget`);
@@ -290,6 +318,12 @@ async function esperado() {
     console.log("--- log do Next ---\n" + nextLog.slice(-2000));
   } finally {
     if (browser) await browser.close();
+    try {
+      const c = new Client({ connectionString: process.env.DATABASE_URL || "postgres://e2e:e2e@127.0.0.1:5432/geolynq_test" });
+      await c.connect();
+      await c.query("delete from public.widget_events where session_id like 'e2e-%'");
+      await c.end();
+    } catch {}
     next.kill();
     mock.server.close();
   }

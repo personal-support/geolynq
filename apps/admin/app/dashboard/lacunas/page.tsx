@@ -1,8 +1,10 @@
+import { AvisoBasePequena } from "@/components/avisos";
 import { BarList } from "@/components/charts";
 import { ErroPainel } from "@/components/erro-painel";
 import { PeriodTabs } from "@/components/period-tabs";
 import { Card, CardHeader, Empty, PageHeader, TD, TH } from "@/components/ui";
 import { carregar, getMembership, getOverview, parseDias } from "@/lib/data";
+import { avisoDeBase } from "@/lib/avisos";
 import { num } from "@/lib/format";
 
 export const metadata = { title: "Lacunas" };
@@ -15,6 +17,7 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
   if ("erro" in r) return <ErroPainel erro={r.erro} />;
   const o = r.dados;
   const totalBuscas = o.lacunas.reduce((s, l) => s + l.buscas, 0);
+  const aviso = avisoDeBase(o.kpis.buscas, o.anterior.buscas, dias, false);
 
   return (
     <>
@@ -23,6 +26,8 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
         subtitulo="Onde as pessoas procuraram um produto da sua marca e não havia revendedor físico a até 100 km."
         direita={<PeriodTabs dias={dias} base="/dashboard/lacunas" />}
       />
+
+      <AvisoBasePequena aviso={aviso} />
 
       <Card className="mb-6">
         <CardHeader
@@ -34,9 +39,13 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
           }
         />
         {o.lacunas.length === 0 ? (
-          <Empty titulo="Nenhuma lacuna neste período">
-            Todas as buscas com produto identificado encontraram um revendedor físico por perto.
-          </Empty>
+          o.kpis.buscas_com_produto === 0 ? (
+            <Empty titulo="Sem dados para medir lacunas">Nenhuma busca do período identificou um produto do catálogo.</Empty>
+          ) : (
+            <Empty titulo="Nenhuma lacuna neste período">
+              Todas as buscas com produto identificado encontraram um revendedor físico por perto.
+            </Empty>
+          )
         ) : (
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">

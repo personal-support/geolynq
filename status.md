@@ -111,7 +111,18 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   real; (c) **riscos de precisão com dados reais, a tratar antes do 1º cliente:** busca sensível a acento ("proteina" não acha "Proteína" e
   vira falsamente "fora do catálogo"), `widget_events` aceita INSERT anônimo sem limite (inflável por robô), "pessoas" = sessões do navegador
   (não pessoas), buscas sem localização não entram como lacuna, raio fixo de 100 km, base pequena (≤ 500 acessos/mês) = números instáveis.
-  **Ideias aprovadas a propor:** faixa "Dados de demonstração" em tenants de teste; aviso "base pequena" quando houver poucas buscas.
+  **Ideias aprovadas:** faixa "Dados de demonstração" e aviso "base pequena" → **feitos** (ver abaixo). **Ainda a propor (mexe em produção, precisa de OK):**
+  busca sem acento (`unaccent`, toca banco e widget) e limite de eventos por visitante em `widget_events`.
+- **Faixa "Dados de demonstração" + aviso "Base pequena" (feitos em 2026-10-06, só no painel, sem mudar o banco):**
+  - Faixa amarela no topo de todas as telas quando o tenant tem eventos com `session_id` `seed-…` (simulados). Mostra a contagem real
+    ("Todos os N eventos…" ou "X de N eventos…"). Some sozinha quando os simulados forem apagados; o `demo` não mostra (não tem simulados).
+    Código: `components/avisos.tsx`, `lib/data.ts` (`getEventosSimulados`, 2 contagens HEAD sob RLS), `app/dashboard/layout.tsx`.
+  - Aviso "Base pequena" na visão geral e em lacunas quando o período tem menos de **30 buscas** (`lib/avisos.ts`, `LIMITE_BASE_PEQUENA`);
+    sugere 90 dias quando o período é menor; na comparação com o período anterior avisa "pouco confiável" se o anterior tem < 30.
+  - **Defeito achado ao revisar a captura e corrigido:** quando NENHUMA busca do período identificava produto (ex.: 5 buscas fora do
+    catálogo), a manchete e os cartões "Maiores lacunas" diziam "Todas as buscas com produto encontraram revendedor" (falso por vazio).
+    Agora a manchete diz "Nenhuma das N buscas bateu com um produto do catálogo" e os cartões dizem "Sem dados para medir lacunas".
+  - E2E em Chromium agora **52/52** (`next start` e standalone). Limiar de 30 é uma hipótese; ajustar com dados reais.
 - **Falta:** a conferência visual completa pelo usuário (mapa com os blocos reais do OSM, pré-visualização do widget só aparece com o
   cliente `active`). Depois do merge na `main`, trocar a branch do serviço `geolynq_admin` para `main`.
 - **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário

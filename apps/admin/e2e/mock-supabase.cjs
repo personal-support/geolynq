@@ -114,6 +114,17 @@ function start(port = 54321) {
           );
           return send(200, r.rows);
         }
+        if (rota === "widget_events") {
+          // contagem exata (HEAD + Prefer: count=exact), sob RLS: tenant_id=eq.X e, opcionalmente, session_id=like.seed-%
+          const tenant = (url.searchParams.get("tenant_id") || "").replace(/^eq\./, "");
+          const like = (url.searchParams.get("session_id") || "").replace(/^like\./, "");
+          const r = await comoUsuario(claims.sub, (db) =>
+            db.query(`select count(*)::int n from public.widget_events where tenant_id = $1::uuid ${like ? "and session_id like $2" : ""}`, like ? [tenant, like] : [tenant]),
+          );
+          const n = r.rows[0].n;
+          res.writeHead(200, { "content-type": "application/json", "access-control-allow-origin": "*", "content-range": n === 0 ? "*/0" : `0-${n - 1}/${n}` });
+          return res.end(req.method === "HEAD" ? undefined : "[]");
+        }
         if (rota === "import_batches") {
           const tenant = (url.searchParams.get("tenant_id") || "").replace(/^eq\./, "");
           const r = await comoUsuario(claims.sub, (db) =>

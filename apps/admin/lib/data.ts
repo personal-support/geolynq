@@ -85,3 +85,17 @@ export async function carregar<T>(fn: () => Promise<T>): Promise<{ dados: T } | 
     return { erro: e instanceof Error ? e.message : "Erro inesperado ao carregar os dados." };
   }
 }
+
+/**
+ * Quantos eventos do cliente são simulados (sessões "seed-…", criadas por supabase/tests/03_eventos_simulados.sql).
+ * Alimenta a faixa "Dados de demonstração". Em caso de erro devolve null: sem faixa (não dá para afirmar nada).
+ */
+export const getEventosSimulados = cache(async (tenantId: string): Promise<{ simulados: number; total: number } | null> => {
+  const { supabase } = await getSession();
+  const [sim, tot] = await Promise.all([
+    supabase.from("widget_events").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).like("session_id", "seed-%"),
+    supabase.from("widget_events").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
+  ]);
+  if (sim.error || tot.error || sim.count == null || tot.count == null) return null;
+  return { simulados: sim.count, total: tot.count };
+});
