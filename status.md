@@ -84,6 +84,15 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   login contra o Auth REAL do Supabase (o ambiente não alcança `*.supabase.co`; o fluxo é o padrão do `@supabase/ssr`);
   os blocos reais do OpenStreetMap no mapa (bloqueados aqui; sem eles o mapa aparece sem fundo); a pré-visualização do widget
   (bundle externo bloqueado aqui).
+- **APLICADO EM PRODUÇÃO em 2026-10-06 (OK do usuário):** (1) migration `20261006000000_painel_relatorios.sql` no `geolynq-prod`
+  (policy `tenant_members_read_tenant` em `tenants`; funções `is_tenant_member`, `panel_overview`, `panel_catalog`, todas
+  SECURITY INVOKER; `anon` sem EXECUTE, `authenticated` e `service_role` com EXECUTE; aplicada em 3 partes por causa do limite de
+  60 s do conector, resultado idêntico ao arquivo); (2) 526 eventos simulados no tenant `fabrica-teste` (410 buscas + 116 cliques;
+  todas as sessões começam com `seed-`; o `demo` NÃO foi tocado: continua com 9 eventos). Prova no banco real (usuário temporário +
+  `rollback`): `panel_overview` 30 d = 269 buscas / 79 sem cobertura / 22 lacunas (igual ao teste local); usuário vinculado só vê 1
+  cliente e 0 eventos da demo. **Para apagar os simulados:** `delete from public.widget_events where session_id like 'seed-%';`
+  (SQL Editor). O histórico `supabase_migrations` não registra esta migration (aplicada por `execute_sql`).
+- **Falta para o 1º login real:** criar o usuário no Supabase Auth e vinculá-lo (SQL no README do admin); criar o app no EasyPanel.
 - **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário
   no Supabase Auth e vinculá-lo (SQL no README); (3) opcional: gravar as buscas simuladas no `fabrica-teste` para o painel
   não ficar vazio (`supabase/tests/03_eventos_simulados.sql`; apagar depois com `delete … where session_id like 'seed-%'`);
