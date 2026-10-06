@@ -98,7 +98,14 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   no serviço. **Chave de deploy própria do serviço gerada; falta o usuário cadastrá-la no GitHub** (repo → Settings → Deploy keys, SOMENTE
   leitura). Depois: `deployAppService`. Não ligar webhook de deploy automático nesta branch de sessão; quando houver merge na `main`,
   trocar a branch do serviço para `main`. A imagem Docker NUNCA foi construída: o 1º build é o teste real do Dockerfile.
-- **Falta para o 1º login real:** criar o usuário no Supabase Auth e vinculá-lo (SQL no README do admin); cadastrar a deploy key; deploy.
+- **NO AR (2026-10-06, ~23:20 UTC):** deploy key do serviço cadastrada no GitHub pelo usuário (somente leitura); build feito a partir do commit
+  `3037bb1` e **o Dockerfile do painel funcionou na 1ª tentativa**. Contêiner `personalsupport_saas_geolynq_admin` `running` e `healthy`
+  (HEALTHCHECK em `/login`). O domínio `painel.geolynq.personalsupport.tech` está mapeado (HTTPS); **não verificado daqui** (o ambiente de
+  nuvem leva 403 do proxy nesse domínio): o 1º acesso real é do usuário.
+- **Acesso:** usuário `personalpg51@gmail.com` (Auth, confirmado) vinculado como `owner` ao tenant `fabrica-teste` (cliente de teste, `trial`).
+  A senha só o usuário sabe.
+- **Falta:** o 1º login real e a conferência visual pelo usuário (mapa com os blocos reais do OSM, pré-visualização do widget só aparece com o
+  cliente `active`). Depois do merge na `main`, trocar a branch do serviço `geolynq_admin` para `main`.
 - **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário
   no Supabase Auth e vinculá-lo (SQL no README); (3) opcional: gravar as buscas simuladas no `fabrica-teste` para o painel
   não ficar vazio (`supabase/tests/03_eventos_simulados.sql`; apagar depois com `delete … where session_id like 'seed-%'`);
