@@ -104,7 +104,15 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   nuvem leva 403 do proxy nesse domínio): o 1º acesso real é do usuário.
 - **Acesso:** usuário `personalpg51@gmail.com` (Auth, confirmado) vinculado como `owner` ao tenant `fabrica-teste` (cliente de teste, `trial`).
   A senha só o usuário sabe.
-- **Falta:** o 1º login real e a conferência visual pelo usuário (mapa com os blocos reais do OSM, pré-visualização do widget só aparece com o
+- **1º login feito pelo usuário (2026-10-06): "visualizações ok"; dúvida dele: os dados são precisos?** Resposta registrada:
+  (a) **cálculo provado:** 11 indicadores do painel recalculados direto dos eventos brutos, por consulta independente, no banco real
+  (buscas 269, pessoas 185, cliques 75, sem revendedor 79, com produto 233, fora do catálogo 36, 37,8 %, 66,1 %, 13,9 km, soma das
+  lacunas = 79, soma da série = 269): **11/11 idênticos**; (b) **conteúdo é fictício** (simulado) — nunca mostrar a cliente como se fosse
+  real; (c) **riscos de precisão com dados reais, a tratar antes do 1º cliente:** busca sensível a acento ("proteina" não acha "Proteína" e
+  vira falsamente "fora do catálogo"), `widget_events` aceita INSERT anônimo sem limite (inflável por robô), "pessoas" = sessões do navegador
+  (não pessoas), buscas sem localização não entram como lacuna, raio fixo de 100 km, base pequena (≤ 500 acessos/mês) = números instáveis.
+  **Ideias aprovadas a propor:** faixa "Dados de demonstração" em tenants de teste; aviso "base pequena" quando houver poucas buscas.
+- **Falta:** a conferência visual completa pelo usuário (mapa com os blocos reais do OSM, pré-visualização do widget só aparece com o
   cliente `active`). Depois do merge na `main`, trocar a branch do serviço `geolynq_admin` para `main`.
 - **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário
   no Supabase Auth e vinculá-lo (SQL no README); (3) opcional: gravar as buscas simuladas no `fabrica-teste` para o painel
