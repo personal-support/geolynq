@@ -5,6 +5,21 @@
 "Auditoria de 2026-10-06" logo abaixo. Trabalho do dia na branch `claude/keen-johnson-c0x5hs`,
 que contém tudo da `claude/bold-cray-vbbdyb` (merge feito em 2026-10-06).
 
+## Rumo ao produto vendável (definido em 2026-10-06)
+Decisão do usuário: **a New Millen ainda não é cliente** → trabalhar com **dados hipotéticos**
+(`docs/dados-teste/`, tenant fictício `fabrica-teste`; o `demo` fica só como vitrine). Meta: um sistema que
+funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos os itens abaixo:
+1. [ ] **Pipeline provado ponta a ponta com dados de teste:** cadastro por CNPJ gravando, importação v2 e
+       reimportação sem duplicar (conferido no banco).
+2. [ ] **Painel (Fase 5):** o cliente entra e vê buscas, lacunas de cobertura e cliques por revendedor — é o
+       que justifica o preço (o widget sozinho é commodity). Antes: patch do `next` (16.3.8).
+3. [ ] **Operação segura:** Supabase **Pro** (o grátis pausa e derruba o widget), rate limit em
+       `widget_events`, `spatial_ref_sys` com RLS, monitor de uptime, deploy com testes (`deploy-widget.yml`).
+4. [ ] **Legal e geocodificação:** aviso de privacidade + contrato (LGPD), atribuição ao OpenStreetMap,
+       cache de CEP/coordenadas.
+5. [ ] **n8n fora da AWS** (prazo 10–13/11/2026) → VPS Hostinger/EasyPanel.
+6. [ ] **Limpar o `demo`** (revendedor duplicado e telefone `13999990000`) antes de mostrar a qualquer cliente.
+
 ## Auditoria de 2026-10-06
 **Conectores agora disponíveis na sessão:** Supabase (org `gknjufnkbourddiufozo`, vê o `geolynq-prod`),
 GitHub, n8n, EasyPanel, Hostinger. Antes o Supabase estava ligado à conta errada.

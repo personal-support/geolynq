@@ -1,0 +1,9 @@
+cnpj	nome	tipo	telefone	whatsapp	site	cep	rua	numero	bairro	cidade	estado
+91000001000191	Loja Exemplo Gonzaga (Teste)	loja_fisica	13900000001	13900000001			Avenida Ana Costa	100	Gonzaga	Santos	SP
+91000002000136	Farmacia Exemplo Boqueirao (Teste)	farmacia	13900000002	13900000002			Avenida Conselheiro Nebias	300	Boqueirao	Santos	SP
+91000003000180	Loja Exemplo Pitangueiras (Teste)	loja_fisica	13900000003	13900000003			Avenida Puglisi	50	Pitangueiras	Guaruja	SP
+91000004000125	Loja Exemplo Paulista (Teste)	loja_fisica	13900000004	13900000004			Avenida Paulista	1000	Bela Vista	Sao Paulo	SP
+91000005000170	Farmacia Exemplo Augusta (Teste)	farmacia	13900000005	13900000005			Rua Augusta	500	Consolacao	Sao Paulo	SP
+91000006000114	Loja Online Exemplo (Teste)	online	13900000006	13900000006	https://example.com/loja-online					Sao Paulo	SP
+91000007000169	Distribuidora Exemplo Campinas (Teste)	distribuidor	13900000007	13900000007			Avenida Francisco Glicerio	800	Centro	Campinas	SP
+91000008000103	Loja Exemplo Copacabana (Teste)	loja_fisica	13900000008	13900000008			Avenida Atlantica	2000	Copacabana	Rio de Janeiro	RJ

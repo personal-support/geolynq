@@ -1,0 +1,21 @@
+sku_produto	cnpj_revendedor	nome_revendedor	prioridade
+TST-001	91000001000191	Loja Exemplo Gonzaga (Teste)	0
+TST-001	91000002000136	Farmacia Exemplo Boqueirao (Teste)	1
+TST-001	91000003000180	Loja Exemplo Pitangueiras (Teste)	2
+TST-001	91000004000125	Loja Exemplo Paulista (Teste)	3
+TST-001	91000005000170	Farmacia Exemplo Augusta (Teste)	4
+TST-001	91000006000114	Loja Online Exemplo (Teste)	5
+TST-001	91000007000169	Distribuidora Exemplo Campinas (Teste)	6
+TST-001	91000008000103	Loja Exemplo Copacabana (Teste)	7
+TST-002	91000001000191	Loja Exemplo Gonzaga (Teste)	0
+TST-002	91000002000136	Farmacia Exemplo Boqueirao (Teste)	1
+TST-002	91000003000180	Loja Exemplo Pitangueiras (Teste)	2
+TST-002	91000004000125	Loja Exemplo Paulista (Teste)	3
+TST-002	91000005000170	Farmacia Exemplo Augusta (Teste)	4
+TST-002	91000006000114	Loja Online Exemplo (Teste)	5
+TST-002	91000007000169	Distribuidora Exemplo Campinas (Teste)	6
+TST-003	91000004000125	Loja Exemplo Paulista (Teste)	0
+TST-003	91000005000170	Farmacia Exemplo Augusta (Teste)	1
+TST-003	91000006000114	Loja Online Exemplo (Teste)	2
+TST-004	91000006000114	Loja Online Exemplo (Teste)	0
+TST-004	91000007000169	Distribuidora Exemplo Campinas (Teste)	1
