@@ -44,8 +44,22 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
     (`success`, 33 linhas processadas, 0 falhas).
   - Observação menor: revendedor `online` também é geocodificado (cai no centro da cidade). Inofensivo (o widget
     ignora a distância de loja online), mas é consulta desperdiçada ao Nominatim; pular no futuro.
-  - **Não testado ainda:** o widget lendo este tenant (precisa estar `active`; está `trial`) e o caso de
-    importação com linhas inválidas/CNPJ repetido.
+- **Teste de erros provado (2026-10-06, exec. nº 106 e 107):** planilha com 11 erros plantados + 2 linhas boas
+  (`docs/dados-teste/fabrica-teste-ERROS-catalogo.xlsx`). Resultado: lote `partial`, 48 linhas processadas,
+  **11 falhas, todas na aba/linha/mensagem certas** (produto sem SKU, SKU duplicado, CNPJ com DV errado, CNPJ
+  repetido no lote, sem CNPJ, tipo inválido, CEP inválido, sem cidade, cobertura com SKU inexistente / CNPJ não
+  importado / SKU vazio). Nenhuma linha ruim entrou; as 2 boas entraram; a reimportação não duplicou nada.
+  Estado final do tenant de teste: **6 produtos, 10 revendedores, 10 endereços, 21 coberturas** (e 3 lotes).
+  - **Lacuna achada e fechada:** revendedor com endereço que o Nominatim não acha entrava **sem aviso** e sumia da
+    busca por distância. Agora o resumo grava `AVISO: endereço não geocodificado…` no `error_log` (não conta como
+    falha; se for o único problema, status `partial`; loja `online` não gera aviso). Validado na exec. nº 107
+    (11 falhas + 1 aviso, 12 itens no log). Corrigido no n8n e em `docs/n8n-geolynq-import-catalogo-v2.workflow.ts`.
+  - O workflow voltou a apontar para a planilha limpa `1Kh1LUORceoK8uqcQs63bVUj2ef0pBWDlcCYX80YApw8`.
+    A pasta `GeoLynq — Testes (n8n)` (id `1KFH8Gw5l0FgQR_CykOtgbVGiNhfHexEJ`) está compartilhada (Leitor) com a conta
+    de serviço do n8n: planilhas criadas dentro dela herdam o acesso.
+  - **Não testado ainda:** o widget lendo este tenant (precisa estar `active`; está `trial`); falha de gravação
+    no banco (ex.: Supabase fora do ar no meio do lote); planilha com milhares de linhas (geocodificação a 1/s:
+    1.000 revendedores ≈ 17 min; Nominatim público não serve para volume — ver "Antes do 1º cliente real").
 
 ## Auditoria de 2026-10-06
 **Conectores agora disponíveis na sessão:** Supabase (org `gknjufnkbourddiufozo`, vê o `geolynq-prod`),

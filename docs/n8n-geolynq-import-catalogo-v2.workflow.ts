@@ -494,14 +494,26 @@ const codeMontarResumo = node({
         "etapas.forEach(function (et) {\n" +
         "  if (contarLinhas(et[1]) > 0 && contarLinhas(et[2]) === 0) erros.push({ _sheet: et[0], _row: null, _error: 'etapa não executada: a etapa anterior não produziu nenhuma linha válida' });\n" +
         "});\n" +
+        "// AVISOS (não contam como falha): revendedor salvo sem coordenadas não aparece na busca por distância do widget.\n" +
+        "// Online não precisa de coordenadas, então não gera aviso.\n" +
+        "let semCoordenadas = [];\n" +
+        "try {\n" +
+        "  semCoordenadas = $('Montar Payload do Revendedor').all().filter(function (i) {\n" +
+        "    return i.json && i.json._geocodificado === false && !(i.json.row && i.json.row.p_reseller && i.json.row.p_reseller.type === 'online');\n" +
+        "  });\n" +
+        "} catch (e) { semCoordenadas = []; }\n" +
+        "const avisos = semCoordenadas.map(function (i) {\n" +
+        "  return { _sheet: 'Revendedores', _row: i.json._row != null ? i.json._row : null, _error: 'AVISO: endereço não geocodificado; o revendedor foi salvo sem coordenadas e NÃO aparece na busca por distância (corrija o endereço e reimporte)' };\n" +
+        "});\n" +
         "const rowsProcessed = contarLinhas('Ler Aba Produtos') + contarLinhas('Ler Aba Revendedores') + contarLinhas('Ler Aba Cobertura');\n" +
         "const rowsFailed = erros.length;\n" +
         "let status = 'success';\n" +
         "if (rowsFailed > 0 && rowsFailed < rowsProcessed) status = 'partial';\n" +
         "if (rowsFailed > 0 && rowsFailed >= rowsProcessed) status = 'failed';\n" +
+        "if (status === 'success' && avisos.length > 0) status = 'partial';\n" +
         "return [{ json: {\n" +
         "  tenant_id: tenantId, source: importSource, status: status,\n" +
-        "  rows_processed: rowsProcessed, rows_failed: rowsFailed, error_log: erros,\n" +
+        "  rows_processed: rowsProcessed, rows_failed: rowsFailed, error_log: erros.concat(avisos),\n" +
         "  completed_at: new Date().toISOString()\n" +
         "} }];"
     },
