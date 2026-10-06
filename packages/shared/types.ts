@@ -6,8 +6,24 @@ export type ResellerType =
   | "distribuidor"
   | "outro";
 export type ResellerStatus = "active" | "inactive";
+/** Situação cadastral do CNPJ do revendedor na Receita (B0.1). `null` = nunca consultado. */
+export type ResellerVerificationStatus =
+  | "nao_verificado"
+  | "ativa"
+  | "suspensa"
+  | "inapta"
+  | "baixada"
+  | "nula";
+export type CnpjSituacao = Exclude<ResellerVerificationStatus, "nao_verificado">;
+export type ChannelType = "varejo" | "atacado" | "representante" | "online" | "outro";
+export type TerritoryScope = "brasil" | "uf" | "municipio";
+export type TenantProfileSource = "brasilapi" | "receita_dump" | "manual";
 export type ImportBatchStatus = "processing" | "success" | "partial" | "failed";
 export type WidgetEventType = "search" | "reseller_click";
+/** Como a localização do visitante foi obtida (telemetria v2). */
+export type WidgetLocationSource = "cep" | "gps" | "none";
+/** Ação escolhida pelo visitante num revendedor (telemetria v2). */
+export type WidgetEventAction = "whatsapp" | "call" | "site" | "directions";
 export type LeadStatus =
   | "new"
   | "contacted"
@@ -26,6 +42,64 @@ export interface Tenant {
   logo_url: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** Perfil de mercado do cliente, vindo da Receita no cadastro (B0.1). Só pessoa jurídica; sem quadro societário. */
+export interface TenantProfile {
+  tenant_id: string;
+  cnpj_raiz: string;
+  cnpj_matriz: string;
+  razao_social: string;
+  nome_fantasia: string | null;
+  situacao_cadastral: CnpjSituacao | null;
+  data_abertura: string | null;
+  porte: string | null;
+  /** 7 dígitos; a API devolve número, normalizar com lpad(x::text, 7, '0'). */
+  cnae_principal: string | null;
+  cnae_principal_desc: string | null;
+  cnaes_secundarios: string[];
+  uf: string | null;
+  municipio: string | null;
+  /** Código IBGE (7 dígitos). */
+  municipio_ibge: number | null;
+  /** Código interno da Receita (o dump mensal usa este). */
+  municipio_receita: number | null;
+  cep: string | null;
+  website: string | null;
+  fonte: TenantProfileSource;
+  consultado_em: string | null;
+  created_at: string;
+}
+
+export interface CnaeCatalogItem {
+  cnae: string;
+  descricao: string;
+}
+
+export interface Segment {
+  id: string;
+  nome: string;
+  ativo: boolean;
+}
+
+export interface SegmentChannelCnae {
+  segment_id: string;
+  cnae: string;
+  tipo_canal: ChannelType;
+  peso: number;
+}
+
+export interface TenantSegment {
+  tenant_id: string;
+  segment_id: string;
+}
+
+export interface TenantTerritory {
+  id: string;
+  tenant_id: string;
+  scope: TerritoryScope;
+  uf: string | null;
+  municipio_ibge: number | null;
 }
 
 export interface TenantUser {
@@ -58,6 +132,10 @@ export interface Reseller {
   phone: string | null;
   whatsapp: string | null;
   website: string | null;
+  /** 14 dígitos, sem máscara, com dígito verificador válido (B0.1). Opcional. */
+  cnpj: string | null;
+  verification_status: ResellerVerificationStatus | null;
+  verified_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -109,9 +187,27 @@ export interface WidgetEvent {
   product_id: string | null;
   city: string | null;
   state: string | null;
+  /** v2: nº de revendedores FÍSICOS no raio (v1: total devolvido). */
   results_count: number | null;
   reseller_id: string | null;
   created_at: string;
+  // ---- telemetria v2 (migration 20261002010000_widget_events_v2.sql); linhas antigas têm telemetry_v = 1 e nulos ----
+  telemetry_v: number;
+  neighborhood: string | null;
+  /** coordenada arredondada a 2 casas (~1 km); nunca a exata */
+  lat_approx: number | null;
+  lng_approx: number | null;
+  /** 5 primeiros dígitos do CEP; nunca o CEP inteiro */
+  cep5: string | null;
+  location_source: WidgetLocationSource | null;
+  /** distância ao revendedor físico mais próximo entregue na busca (null se nenhum) */
+  nearest_km: number | null;
+  physical_count: number | null;
+  online_count: number | null;
+  /** só em reseller_click */
+  action: WidgetEventAction | null;
+  /** só em reseller_click: distância do revendedor clicado */
+  distance_km: number | null;
 }
 
 export type OpportunityClassification =

@@ -1,0 +1,63 @@
+# Deploy automático do widget: push na main -> testes -> aviso ao EasyPanel -> build e publicação.
+# O EasyPanel (app `widget`, projeto `geolynq`) constrói a imagem a partir da branch configurada
+# na aba Fonte. Esta workflow só decide QUANDO publicar: apenas se o código do widget mudou
+# e os testes passaram. Se um teste falhar, nada vai pro ar.
+#
+# Pré-requisito (uma vez): secret do repositório EASYPANEL_WIDGET_DEPLOY_URL = URL do webhook
+# de deploy do app `widget` no EasyPanel. A URL carrega um token: é segredo, nunca no código.
+# Com esta workflow ativa, deixe o "Auto Deploy" nativo do EasyPanel DESLIGADO, senão cada
+# push publica duas vezes.
+name: Deploy widget
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/widget/**"
+      - "packages/shared/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".dockerignore"
+      - ".github/workflows/deploy-widget.yml"
+  workflow_dispatch:
+
+# Um deploy por vez; um push novo espera o anterior terminar em vez de cancelá-lo no meio do build.
+concurrency:
+  group: deploy-widget
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # Mesma instalação enxuta do Dockerfile do widget (não instala o Next do admin).
+      - run: npm ci --workspace=@geolynq/widget --include-workspace-root
+      - run: npm run typecheck -w @geolynq/widget
+      - run: npm test -w @geolynq/widget
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disparar deploy no EasyPanel
+        env:
+          DEPLOY_URL: ${{ secrets.EASYPANEL_WIDGET_DEPLOY_URL }}
+        run: |
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "::error::Secret EASYPANEL_WIDGET_DEPLOY_URL não configurado (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          # -f: falha se o EasyPanel responder erro; -sS: sem barra de progresso, mas mostra o erro.
+          # Sem eco da URL: ela contém o token.
+          curl -fsS -X POST "$DEPLOY_URL"
+          echo "Deploy solicitado ao EasyPanel."

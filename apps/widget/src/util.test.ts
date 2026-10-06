@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  MAX_RADIUS_KM,
+  countNearby,
+  locationFields,
+  roundCoord,
+  summarizeResults,
   formatDistance,
   getSessionId,
   isValidColor,
@@ -94,5 +99,75 @@ describe("getSessionId", () => {
     const first = getSessionId(t0);
     expect(getSessionId(t0 + 29 * 86_400_000)).toBe(first);
     expect(getSessionId(t0 + 31 * 86_400_000)).not.toBe(first);
+  });
+});
+
+describe("raio máximo e lacuna de cobertura", () => {
+  it("o raio padrão do widget é 100 km (mesmo valor do filtro no banco)", () => {
+    expect(MAX_RADIUS_KM).toBe(100);
+  });
+
+  it("loja online não conta como cobertura próxima", () => {
+    expect(countNearby([])).toBe(0);
+    expect(countNearby([{ type: "online" }])).toBe(0);
+    expect(countNearby([{ type: "online" }, { type: "loja_fisica" }, { type: "farmacia" }])).toBe(2);
+    expect(countNearby([{ type: "distribuidor" }, { type: "outro" }])).toBe(2);
+  });
+});
+
+describe("telemetria v2: localização", () => {
+  const cep = { lat: -23.9608, lng: -46.3336, city: "Santos", state: "SP", neighborhood: "Gonzaga", cep5: "11060", source: "cep" as const };
+
+  it("arredonda a coordenada a 2 casas (~1 km)", () => {
+    expect(roundCoord(-23.9608)).toBe(-23.96);
+    expect(roundCoord(-46.3336)).toBe(-46.33);
+    expect(roundCoord(0.005)).toBe(0.01);
+  });
+
+  it("sem localização: source 'none' e tudo nulo", () => {
+    expect(locationFields(null)).toEqual({
+      location_source: "none", city: null, state: null, neighborhood: null, lat_approx: null, lng_approx: null, cep5: null,
+    });
+  });
+
+  it("CEP: guarda cidade, bairro, cep5 e coordenada arredondada, nunca a exata", () => {
+    const f = locationFields(cep);
+    expect(f).toMatchObject({ location_source: "cep", city: "Santos", state: "SP", neighborhood: "Gonzaga", cep5: "11060", lat_approx: -23.96, lng_approx: -46.33 });
+    expect(JSON.stringify(f)).not.toMatch(/23\.9608|46\.3336/);
+  });
+
+  it("GPS: source 'gps' e sem cep5", () => {
+    const f = locationFields({ ...cep, source: "gps", cep5: null });
+    expect(f.location_source).toBe("gps");
+    expect(f.cep5).toBeNull();
+  });
+
+  it("respeita os limites do CHECK do banco (cep5 = 5 dígitos; textos truncados)", () => {
+    expect(locationFields({ ...cep, cep5: "11060001" }).cep5).toBeNull();
+    expect(locationFields({ ...cep, cep5: "abcde" }).cep5).toBeNull();
+    const big = locationFields({ ...cep, city: "x".repeat(500), state: "y".repeat(500), neighborhood: "z".repeat(500) });
+    expect(big.city?.length).toBe(120);
+    expect(big.state?.length).toBe(60);
+    expect(big.neighborhood?.length).toBe(120);
+  });
+});
+
+describe("telemetria v2: resumo dos resultados", () => {
+  it("separa físico de online e acha o físico mais próximo", () => {
+    const rs = [
+      { type: "farmacia", distance_km: 4.2 },
+      { type: "loja_fisica", distance_km: 0.804 },
+      { type: "online", distance_km: null },
+    ];
+    expect(summarizeResults(rs)).toEqual({ physical_count: 2, online_count: 1, nearest_km: 0.8 });
+  });
+
+  it("só online: nenhum físico e nearest_km nulo (lacuna local)", () => {
+    expect(summarizeResults([{ type: "online", distance_km: null }])).toEqual({ physical_count: 0, online_count: 1, nearest_km: null });
+  });
+
+  it("sem resultados, ou físicos sem distância (sem localização): nearest_km nulo", () => {
+    expect(summarizeResults([])).toEqual({ physical_count: 0, online_count: 0, nearest_km: null });
+    expect(summarizeResults([{ type: "loja_fisica", distance_km: null }])).toEqual({ physical_count: 1, online_count: 0, nearest_km: null });
   });
 });

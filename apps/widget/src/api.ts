@@ -1,5 +1,5 @@
-import type { Product, Tenant, WidgetEventType } from "@geolynq/shared";
-import { getSessionId, parseCep, sanitizeSearchTerm } from "./util";
+import type { Product, Tenant, WidgetEventAction, WidgetEventType, WidgetLocationSource } from "@geolynq/shared";
+import { getSessionId, MAX_RADIUS_KM, parseCep, roundCoord, sanitizeSearchTerm, type LocationInfo } from "./util";
 
 export type TenantPublic = Pick<Tenant, "id" | "name" | "slug" | "primary_color" | "logo_url">;
 export type ProductPublic = Pick<Product, "id" | "sku" | "name" | "category">;
@@ -21,12 +21,7 @@ export interface ResellerResult {
   distance_km: number | null;
 }
 
-export interface GeoPoint {
-  lat: number;
-  lng: number;
-  city: string | null;
-  state: string | null;
-}
+export type GeoPoint = LocationInfo;
 
 export interface EventPayload {
   event_type: WidgetEventType;
@@ -36,6 +31,18 @@ export interface EventPayload {
   city?: string | null;
   state?: string | null;
   results_count?: number | null;
+  // ---- telemetria v2 (ver supabase/migrations/20261002010000_widget_events_v2.sql) ----
+  neighborhood?: string | null;
+  lat_approx?: number | null;
+  lng_approx?: number | null;
+  cep5?: string | null;
+  location_source?: WidgetLocationSource | null;
+  nearest_km?: number | null;
+  physical_count?: number | null;
+  online_count?: number | null;
+  action?: WidgetEventAction | null;
+  /** Em `reseller_click`: distância do revendedor clicado. */
+  distance_km?: number | null;
 }
 
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -78,6 +85,19 @@ export class GeoLynqApi {
     return rows[0] ?? null;
   }
 
+  /** Produto exato por SKU (atributo `product` do widget). SKU fora do padrão é ignorado. */
+  async getProductBySku(tenantId: string, sku: string): Promise<ProductPublic | null> {
+    if (!/^[A-Za-z0-9._-]{1,40}$/.test(sku)) return null;
+    const params = new URLSearchParams({
+      select: "id,sku,name,category",
+      tenant_id: `eq.${tenantId}`,
+      sku: `eq.${sku}`,
+      limit: "1",
+    });
+    const rows = await this.request<ProductPublic[]>(`products?${params}`);
+    return rows[0] ?? null;
+  }
+
   async searchProducts(tenantId: string, term: string): Promise<ProductPublic[]> {
     const clean = sanitizeSearchTerm(term);
     if (!clean) return [];
@@ -96,7 +116,7 @@ export class GeoLynqApi {
     productId: string,
     point: GeoPoint | null,
   ): Promise<ResellerResult[]> {
-    return this.request<ResellerResult[]>("rpc/widget_nearest_resellers", {
+    return this.request<ResellerResult[]>("rpc/widget_resellers_in_radius", {
       method: "POST",
       body: JSON.stringify({
         p_tenant_id: tenantId,
@@ -104,6 +124,7 @@ export class GeoLynqApi {
         p_lat: point?.lat ?? null,
         p_lng: point?.lng ?? null,
         p_limit: 10,
+        p_max_km: MAX_RADIUS_KM,
       }),
     });
   }
@@ -117,7 +138,7 @@ export class GeoLynqApi {
       method: "POST",
       keepalive: true,
       headers: { Prefer: "return=minimal" },
-      body: JSON.stringify({ tenant_id: tenantId, session_id: getSessionId(), ...event }),
+      body: JSON.stringify({ tenant_id: tenantId, session_id: getSessionId(), telemetry_v: 2, ...event }),
     }).catch(() => undefined);
   }
 }
@@ -148,7 +169,15 @@ export async function geocodeCep(rawCep: string): Promise<GeoPoint | null> {
   const hit =
     (await nominatim(query))[0] ?? (await nominatim(`${via.localidade}, ${via.uf}, Brasil`))[0];
   if (!hit) return null;
-  return { lat: parseFloat(hit.lat), lng: parseFloat(hit.lon), city: via.localidade, state: via.uf };
+  return {
+    lat: parseFloat(hit.lat),
+    lng: parseFloat(hit.lon),
+    city: via.localidade,
+    state: via.uf,
+    neighborhood: via.bairro || null,
+    cep5: cep.slice(0, 5),
+    source: "cep",
+  };
 }
 
 export function browserLocation(): Promise<GeoPoint> {
@@ -156,9 +185,52 @@ export function browserLocation(): Promise<GeoPoint> {
     if (!navigator.geolocation) return reject(new Error("unsupported"));
     navigator.geolocation.getCurrentPosition(
       (pos) =>
-        resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, city: null, state: null }),
+        resolve({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          city: null,
+          state: null,
+          neighborhood: null,
+          cep5: null,
+          source: "gps",
+        }),
       reject,
       { timeout: 8000, maximumAge: 5 * 60 * 1000 },
     );
   });
+}
+
+interface NominatimReverse {
+  address?: Record<string, string>;
+}
+
+/**
+ * Cidade/UF/bairro a partir do GPS (o GPS devolve só coordenadas). Falha silenciosa e com prazo curto: nunca atrasa nem
+ * quebra a busca do visitante. A coordenada é arredondada (~1 km) ANTES de sair para o serviço de terceiros.
+ */
+export async function reverseGeocode(
+  lat: number,
+  lng: number,
+): Promise<Pick<GeoPoint, "city" | "state" | "neighborhood"> | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 2500);
+  try {
+    const url =
+      "https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=16&addressdetails=1&accept-language=pt-BR" +
+      `&lat=${roundCoord(lat)}&lon=${roundCoord(lng)}`;
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) return null;
+    const a = ((await res.json()) as NominatimReverse).address;
+    if (!a) return null;
+    const iso = a["ISO3166-2-lvl4"]; // ex.: "BR-SP"
+    return {
+      city: a.city ?? a.town ?? a.village ?? a.municipality ?? null,
+      state: iso?.startsWith("BR-") ? iso.slice(3) : (a.state ?? null),
+      neighborhood: a.suburb ?? a.neighbourhood ?? a.quarter ?? a.city_district ?? null,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }

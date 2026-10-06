@@ -66,6 +66,78 @@ export function mapsLink(lat: number | null, lng: number | null, fallbackQuery: 
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
 
+/**
+ * Raio máximo (km) da busca de revendedores físicos. Fica aqui (e é enviado à RPC como
+ * `p_max_km`) para a mensagem do widget e o filtro do banco nunca divergirem.
+ */
+export const MAX_RADIUS_KM = 100;
+
+/**
+ * Quantos resultados são "perto de verdade": loja online atende qualquer lugar, então não
+ * conta. É o que vira `results_count` na telemetria — assim "produto existe, mas ninguém
+ * vende perto" (results_count = 0) continua detectável mesmo quando só há loja online.
+ */
+export function countNearby(resellers: ReadonlyArray<{ type: string }>): number {
+  return resellers.filter((r) => r.type !== "online").length;
+}
+
+/** Localização do visitante. `source` diz como veio; nunca guardamos o CEP inteiro nem a coordenada exata. */
+export interface LocationInfo {
+  lat: number;
+  lng: number;
+  city: string | null;
+  state: string | null;
+  neighborhood: string | null;
+  /** 5 primeiros dígitos do CEP (só quando a localização veio do CEP). */
+  cep5: string | null;
+  source: "cep" | "gps";
+}
+
+/** Arredonda a 2 casas (~1 km): suficiente para mapa de calor, impreciso para identificar uma pessoa. */
+export function roundCoord(v: number): number {
+  return Math.round(v * 100) / 100;
+}
+
+const clip = (s: string | null | undefined, max: number): string | null => (s ? s.slice(0, max) : null);
+
+/**
+ * Campos de localização do evento de telemetria. Os limites (120/60 caracteres, formato do CEP) espelham o CHECK
+ * `widget_events_v2_check` do banco: evento fora do padrão seria recusado e a telemetria se perderia em silêncio.
+ */
+export function locationFields(p: LocationInfo | null) {
+  if (!p) {
+    return {
+      location_source: "none" as const,
+      city: null,
+      state: null,
+      neighborhood: null,
+      lat_approx: null,
+      lng_approx: null,
+      cep5: null,
+    };
+  }
+  return {
+    location_source: p.source,
+    city: clip(p.city, 120),
+    state: clip(p.state, 60),
+    neighborhood: clip(p.neighborhood, 120),
+    lat_approx: roundCoord(p.lat),
+    lng_approx: roundCoord(p.lng),
+    cep5: p.cep5 && /^\d{5}$/.test(p.cep5) ? p.cep5 : null,
+  };
+}
+
+/** Resume o que o visitante recebeu: físicos vs online e a distância ao físico mais próximo (null se não houver). */
+export function summarizeResults(rs: ReadonlyArray<{ type: string; distance_km: number | null }>) {
+  const physical = rs.filter((r) => r.type !== "online");
+  const dists = physical.map((r) => r.distance_km).filter((d): d is number => d !== null && Number.isFinite(d));
+  return {
+    physical_count: physical.length,
+    online_count: rs.length - physical.length,
+    nearest_km: dists.length > 0 ? Math.round(Math.min(...dists) * 100) / 100 : null,
+  };
+}
+
 export function formatDistance(km: number | null): string | null {
   if (km === null || Number.isNaN(km)) return null;
   if (km < 1) return `${Math.max(1, Math.round(km * 10)) * 100} m`;

@@ -1,0 +1,24 @@
+{
+  "_comment": "Espelha o catálogo do tenant 'demo' no Supabase (mesmos SKUs). Marca e produtos FICTÍCIOS. Para mudar um produto aqui, mude também no banco (e vice-versa).",
+  "categories": {
+    "proteina":   { "label": "Proteínas",             "jar": "#1F3FFF", "ink": "#FFFFFF" },
+    "aminoacido": { "label": "Aminoácidos",           "jar": "#101820", "ink": "#FFFFFF" },
+    "energia":    { "label": "Energia e performance", "jar": "#FFD43B", "ink": "#101820" },
+    "vitamina":   { "label": "Vitaminas",             "jar": "#FFFFFF", "ink": "#101820" },
+    "saude":      { "label": "Saúde e bem-estar",     "jar": "#CFE3D6", "ink": "#101820" }
+  },
+  "products": [
+    { "sku": "WPI-900",  "name": "Whey Protein Isolado 900g",           "short": ["WHEY", "ISOLADO"],   "category": "proteina",   "claims": ["Sem lactose", "Sem glúten"], "allergens": ["leite"],                    "blurb": "Proteína do soro do leite isolada, em pó, sabor baunilha. Pote com 900 g e medidor." },
+    { "sku": "WPC-900",  "name": "Whey Protein Concentrado 900g",       "short": ["WHEY", "CONCENTRADO"], "category": "proteina", "claims": ["Sem glúten"],                "allergens": ["leite"],                    "blurb": "Proteína do soro do leite concentrada, em pó, sabor chocolate. Pote com 900 g e medidor." },
+    { "sku": "ALB-500",  "name": "Albumina 500g",                       "short": ["ALBUMINA", "500 G"], "category": "proteina",   "claims": ["Sem glúten"],                "allergens": ["ovo"],                      "blurb": "Albumina em pó, sem sabor. Pote com 500 g." },
+    { "sku": "BAR-012",  "name": "Barra de Proteína (caixa com 12 un)", "short": ["BARRA", "PROTEÍNA"], "category": "proteina",   "claims": [],                            "allergens": ["leite", "soja", "amendoim"], "blurb": "Barra de proteína, sabor amendoim. Caixa com 12 unidades de 45 g." },
+    { "sku": "HIP-3000", "name": "Hipercalórico 3kg",                   "short": ["HIPER-", "CALÓRICO"], "category": "proteina",  "claims": [],                            "allergens": ["leite"],                    "blurb": "Hipercalórico em pó, sabor chocolate. Pacote de 3 kg." },
+    { "sku": "BCA-120",  "name": "BCAA 2:1:1 120 cápsulas",             "short": ["BCAA", "2:1:1"],     "category": "aminoacido", "claims": ["Sem glúten"],                "allergens": [],                           "blurb": "BCAA na proporção 2:1:1, em cápsulas. Pote com 120 cápsulas." },
+    { "sku": "GLU-300",  "name": "Glutamina 300g",                      "short": ["GLUTAMINA", "300 G"], "category": "aminoacido", "claims": ["Sem glúten", "Vegano"],     "allergens": [],                           "blurb": "Glutamina em pó, sem sabor. Pote com 300 g." },
+    { "sku": "CRE-300",  "name": "Creatina Monohidratada 300g",         "short": ["CREATINA", "300 G"], "category": "energia",    "claims": ["Sem glúten", "Vegano"],      "allergens": [],                           "blurb": "Creatina monohidratada em pó, sem sabor. Pote com 300 g." },
+    { "sku": "PRE-300",  "name": "Pré-Treino Energy 300g",              "short": ["PRÉ-", "TREINO"],    "category": "energia",    "claims": ["Sem açúcar"],                "allergens": [],                           "blurb": "Pré-treino em pó, sabor limão, sem açúcar. Pote com 300 g." },
+    { "sku": "MVA-060",  "name": "Multivitamínico A-Z 60 cápsulas",     "short": ["MULTI-", "VITAMÍNICO"], "category": "vitamina", "claims": ["Sem glúten"],               "allergens": [],                           "blurb": "Multivitamínico e mineral em cápsulas. Pote com 60 cápsulas." },
+    { "sku": "OM3-120",  "name": "Ômega 3 120 cápsulas",                "short": ["ÔMEGA 3", "120 CÁPS."], "category": "saude",   "claims": ["Sem glúten"],                "allergens": ["peixe"],                    "blurb": "Óleo de peixe (ômega 3) em cápsulas. Pote com 120 cápsulas." },
+    { "sku": "COL-300",  "name": "Colágeno Hidrolisado 300g",           "short": ["COLÁGENO", "300 G"], "category": "saude",      "claims": ["Sem glúten", "Sem lactose"], "allergens": [],                           "blurb": "Colágeno hidrolisado em pó, sem sabor. Pote com 300 g." }
+  ]
+}

@@ -1,7 +1,9 @@
+import type { WidgetEventAction } from "@geolynq/shared";
 import {
   GeoLynqApi,
   browserLocation,
   geocodeCep,
+  reverseGeocode,
   type EventPayload,
   type GeoPoint,
   type ProductPublic,
@@ -10,13 +12,17 @@ import {
 } from "./api";
 import { STYLES } from "./styles";
 import {
+  MAX_RADIUS_KM,
+  countNearby,
   formatDistance,
+  locationFields,
   mapsLink,
   parseCep,
   readableTextColor,
   resolveColor,
   safeUrl,
   sanitizeSearchTerm,
+  summarizeResults,
   telLink,
   whatsappLink,
 } from "./util";
@@ -53,7 +59,7 @@ function h<K extends keyof HTMLElementTagNameMap>(
 }
 
 export class GeoLynqWidget extends HTMLElement {
-  static observedAttributes = ["tenant", "color"];
+  static observedAttributes = ["tenant", "color", "product"];
 
   private readonly root = this.attachShadow({ mode: "open" });
   private readonly api = new GeoLynqApi(
@@ -71,7 +77,8 @@ export class GeoLynqWidget extends HTMLElement {
   private resellers: ResellerResult[] | null = null;
   private busy = false;
   private error: string | null = null;
-  private focusTarget: string | null = "term";
+  /** Só recebe foco depois de uma ação do usuário; no carregamento a página do site não pode rolar. */
+  private focusTarget: string | null = null;
   /** Invalida respostas atrasadas quando o usuário já seguiu em frente (ou trocou de tenant). */
   private token = 0;
   private started = false;
@@ -83,7 +90,7 @@ export class GeoLynqWidget extends HTMLElement {
 
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     if (!this.started || oldValue === newValue) return;
-    if (name === "tenant") void this.load();
+    if (name === "tenant" || name === "product") void this.load();
     else this.render();
   }
 
@@ -104,12 +111,35 @@ export class GeoLynqWidget extends HTMLElement {
       this.tenant = tenant;
       this.status = tenant ? "ready" : "unavailable";
       if (!tenant) console.error(`[geolynq] tenant '${slug}' não encontrado ou inativo`);
+      await this.preselectProduct(tenant, run);
     } catch (err) {
       if (run !== this.token) return;
       console.error("[geolynq] falha ao carregar o tenant", err);
       this.status = "unavailable";
     }
     this.render();
+  }
+
+  /**
+   * Página de produto: `<geolynq-widget product="SKU">` abre direto na etapa de localização.
+   * SKU inexistente ou falha de rede não quebram nada: o widget cai na busca normal.
+   */
+  private async preselectProduct(tenant: TenantPublic | null, run: number): Promise<void> {
+    const sku = this.getAttribute("product")?.trim();
+    if (!tenant || !sku) return;
+    try {
+      const product = await this.api.getProductBySku(tenant.id, sku);
+      if (run !== this.token) return;
+      if (product) {
+        this.product = product;
+        this.view = "location";
+      } else {
+        console.error(`[geolynq] produto '${sku}' não encontrado no catálogo do tenant`);
+      }
+    } catch (err) {
+      if (run !== this.token) return;
+      console.error("[geolynq] falha ao carregar o produto", err);
+    }
   }
 
   private reset(): void {
@@ -121,7 +151,7 @@ export class GeoLynqWidget extends HTMLElement {
     this.resellers = null;
     this.busy = false;
     this.error = null;
-    this.focusTarget = "term";
+    this.focusTarget = null;
   }
 
   // ---- ações -------------------------------------------------------------
@@ -140,7 +170,13 @@ export class GeoLynqWidget extends HTMLElement {
       this.products = products;
       // Termo que não bate com nenhum SKU = demanda por produto fora do catálogo (Fase 10).
       if (products.length === 0) {
-        this.log({ event_type: "search", query_text: term, product_id: null, results_count: 0 });
+        this.log({
+          event_type: "search",
+          query_text: term,
+          product_id: null,
+          results_count: 0,
+          ...locationFields(null),
+        });
       }
     } catch {
       if (run !== this.token) return;
@@ -195,7 +231,8 @@ export class GeoLynqWidget extends HTMLElement {
     try {
       const point = await browserLocation();
       if (run !== this.token) return;
-      await this.lookup(point);
+      // O GPS só dá coordenadas: cidade/UF/bairro vêm de geocodificação reversa, em paralelo à busca (falha silenciosa).
+      await this.lookup(point, reverseGeocode(point.lat, point.lng));
     } catch {
       if (run !== this.token) return;
       this.busy = false;
@@ -205,7 +242,10 @@ export class GeoLynqWidget extends HTMLElement {
     }
   }
 
-  private async lookup(point: GeoPoint | null): Promise<void> {
+  private async lookup(
+    point: GeoPoint | null,
+    place?: Promise<Pick<GeoPoint, "city" | "state" | "neighborhood"> | null>,
+  ): Promise<void> {
     const tenant = this.tenant;
     const product = this.product;
     if (!tenant || !product) return;
@@ -214,20 +254,29 @@ export class GeoLynqWidget extends HTMLElement {
     this.error = null;
     this.render();
     try {
-      const resellers = await this.api.nearestResellers(tenant.id, product.id, point);
+      const [resellers, found] = await Promise.all([
+        this.api.nearestResellers(tenant.id, product.id, point),
+        place ?? Promise.resolve(null),
+      ]);
       if (run !== this.token) return;
-      this.point = point;
+      const located: GeoPoint | null = point && found ? { ...point, ...found } : point;
+      this.point = located;
       this.resellers = resellers;
       this.view = "results";
       this.focusTarget = "heading";
       // product_id + results_count = 0 → produto existe, ninguém vende perto (coverage gap).
+      // results_count conta só revendedores físicos dentro do raio: a loja online aparece pro
+      // usuário, mas não esconde a lacuna de cobertura local.
+      const summary = summarizeResults(resellers);
       this.log({
         event_type: "search",
         query_text: sanitizeSearchTerm(this.term) || product.name,
         product_id: product.id,
-        city: point?.city ?? null,
-        state: point?.state ?? null,
-        results_count: resellers.length,
+        results_count: summary.physical_count,
+        ...locationFields(located),
+        nearest_km: summary.nearest_km,
+        physical_count: summary.physical_count,
+        online_count: summary.online_count,
       });
     } catch {
       if (run !== this.token) return;
@@ -256,14 +305,15 @@ export class GeoLynqWidget extends HTMLElement {
     if (this.tenant) this.api.logEvent(this.tenant.id, event);
   }
 
-  private trackClick(reseller: ResellerResult): void {
+  private trackClick(reseller: ResellerResult, action: WidgetEventAction): void {
     this.log({
       event_type: "reseller_click",
       query_text: sanitizeSearchTerm(this.term) || this.product?.name || null,
       product_id: this.product?.id ?? null,
       reseller_id: reseller.reseller_id,
-      city: this.point?.city ?? null,
-      state: this.point?.state ?? null,
+      ...locationFields(this.point),
+      action,
+      distance_km: reseller.distance_km === null ? null : Math.round(reseller.distance_km * 100) / 100,
     });
   }
 
@@ -422,25 +472,30 @@ export class GeoLynqWidget extends HTMLElement {
 
   private renderResults(): Node {
     const resellers = this.resellers ?? [];
-    const where = this.point?.city ? ` perto de ${this.point.city}/${this.point.state}` : "";
+    const located = this.point !== null;
+    const city = this.point?.city ?? null;
+    const where = city ? ` perto de ${city}/${this.point?.state}` : "";
+
+    let subText = "";
+    if (resellers.length > 0) {
+      subText =
+        located && countNearby(resellers) === 0
+          ? `Nenhum revendedor físico em até ${MAX_RADIUS_KM} km de ${city ?? "você"}. Veja as opções online:`
+          : `${resellers.length} ${resellers.length === 1 ? "revendedor" : "revendedores"}${where}`;
+    }
+
+    // Sem localização a busca não filtra por distância: lista vazia = nenhum revendedor cadastrado.
+    const emptyText = located
+      ? `Nenhum revendedor encontrado em até ${MAX_RADIUS_KM} km de ${city ?? "você"}. Tente outro produto ou outra localização.`
+      : "Ainda não há revendedores cadastrados para este produto. Tente outro produto ou volte mais tarde.";
 
     const heading = h("h2", { tabindex: "-1", "data-focus": "heading" }, this.product?.name ?? "");
-    const sub = h(
-      "p",
-      { class: "muted", "aria-live": "polite" },
-      resellers.length > 0
-        ? `${resellers.length} ${resellers.length === 1 ? "revendedor" : "revendedores"}${where}`
-        : "",
-    );
+    const sub = h("p", { class: "muted", "aria-live": "polite" }, subText);
 
     const body =
       resellers.length > 0
         ? h("div", { class: "stack" }, ...resellers.map((r) => this.renderReseller(r)))
-        : h(
-            "p",
-            { class: "msg", role: "status" },
-            "Ainda não há revendedores cadastrados para este produto. Tente outro produto ou volte mais tarde.",
-          );
+        : h("p", { class: "msg", role: "status" }, emptyText);
 
     return h(
       "div",
@@ -463,7 +518,7 @@ export class GeoLynqWidget extends HTMLElement {
     const line1 = [r.street, r.number].filter(Boolean).join(", ");
     const line2 = [r.neighborhood, `${r.city}/${r.state}`].filter(Boolean).join(" — ");
 
-    const link = (label: string, href: string | null, secondary: boolean): Node | null =>
+    const link = (label: string, href: string | null, secondary: boolean, action: WidgetEventAction): Node | null =>
       href
         ? h(
             "a",
@@ -472,7 +527,7 @@ export class GeoLynqWidget extends HTMLElement {
               href,
               target: "_blank",
               rel: "noopener noreferrer",
-              onclick: () => this.trackClick(r),
+              onclick: () => this.trackClick(r, action),
             },
             label,
           )
@@ -492,11 +547,11 @@ export class GeoLynqWidget extends HTMLElement {
       h(
         "div",
         { class: "actions" },
-        link("WhatsApp", whatsappLink(r.whatsapp), false),
-        link("Ligar", telLink(r.phone), true),
-        link("Site", safeUrl(r.website), true),
+        link("WhatsApp", whatsappLink(r.whatsapp), false, "whatsapp"),
+        link("Ligar", telLink(r.phone), true, "call"),
+        link("Site", safeUrl(r.website), true, "site"),
         !isOnline
-          ? link("Como chegar", mapsLink(r.latitude, r.longitude, [line1, line2].filter(Boolean).join(", ")), true)
+          ? link("Como chegar", mapsLink(r.latitude, r.longitude, [line1, line2].filter(Boolean).join(", ")), true, "directions")
           : null,
       ),
     );
