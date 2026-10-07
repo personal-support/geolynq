@@ -145,8 +145,8 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   "Roteiro da demo", dicas "Experimente…", molduras "Widget GeoLynq / Busca ao vivo". **Só resta o rodapé** dizendo que a marca é fictícia.
   Roteiro + CEPs de teste + snippet foram para **`/apresentacao.html`** (sem link no site, noindex; uso interno). Conferido em Chromium (desktop e
   390 px) com o widget real e dados simulados: sem rolagem lateral em nenhuma das 16 páginas. Não conferido: fontes do Google e o widget lendo o
-  banco real (o sandbox não alcança). **Pendente (precisa OK, grava no banco):** categoria dos produtos do tenant `demo` está como `proteina`
-  (minúsculo, sem acento) e o widget a mostra na lista de busca; corrigir para "Proteínas" etc.
+  banco real (o sandbox não alcança). **Categorias do tenant `demo` corrigidas no banco (OK do usuário):** de `proteina`/`aminoacido`/`energia`/`vitamina`/`saude` para
+  "Proteínas" (5), "Aminoácidos" (2), "Energia e performance" (2), "Vitaminas" (1), "Saúde e bem-estar" (2); o widget mostra esse texto na lista de busca.
 - **Falta:** a conferência visual completa pelo usuário (mapa com os blocos reais do OSM, pré-visualização do widget só aparece com o
   cliente `active`). Depois do merge na `main`, trocar a branch do serviço `geolynq_admin` para `main`.
 - **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário
