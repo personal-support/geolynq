@@ -641,7 +641,7 @@ do banco agora é schema + migration acima.
   vale após recarregar), E2E v1 48 ok. Widget v1 (legado) não tem o aviso.
 - Pendente: publicar (push em bold-cray, OK do usuário); revisão jurídica do texto; endereço do contato do encarregado.
 
-## Eventos de funil (2026-10-07) — PRONTO NO CÓDIGO; NADA APLICADO NA PRODUÇÃO AINDA
+## Eventos de funil (2026-10-07) — APLICADO E PUBLICADO (2026-10-07); conferir deploy
 - Widget v2 grava 4 novos `event_type` (anônimos, sem coordenada/CEP/bairro; só depois da interação e respeitando a recusa da medição):
   `catalog_search` (termo digitado que ACHOU produto; sem produto continua `search` = "fora do catálogo"), `product_select`, `list_open`,
   `list_search` (UF/cidade/produto; 1 por combinação e visita). Abrir a página não grava nada.
@@ -653,3 +653,7 @@ do banco agora é schema + migration acima.
 - Painel: cartão "Como as pessoas usam o localizador" na Visão geral (caminho do produto, caminho da lista, termos digitados) e feed "Atividade ao vivo"
   com linhas de navegação. Painel precisa de novo deploy do `geolynq_admin` (branch keen-johnson) para aparecer.
 - Testes: widget 47 unitários + 75 E2E v2; painel 76 E2E; banco 04, 05, 07, 08, 09, 10 ok.
+- Feito com OK do usuário: (1) constraint de `event_type` + `panel_funnel` aplicados em produção via `apply_migration` (não travou; conferido: constraint com os 6 tipos,
+  `panel_funnel` com EXECUTE só para authenticated); (2) simulação `11_` rodada no `demo` (prefixo `seed-pod-`): 300 product_select, 201 catalog_search, 83 list_open/list_search;
+  (3) push `e089984` em `claude/bold-cray-vbbdyb` (widget); (4) `deployAppService` do `geolynq_admin` (a chamada estoura 60 s, mas o build segue). Deploys NÃO verificados ainda.
+- Cuidado: `listProjectsAndServices` do EasyPanel devolve as variáveis de ambiente (segredos) de TODOS os projetos da conta; use `getDockerContainers`.
