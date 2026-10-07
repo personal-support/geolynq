@@ -129,7 +129,7 @@ function layout({ title, description, body, noindexOnly = false }) {
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="${esc(brand.fonts.googleHref)}">
+${brand.fonts.googleHref ? `<link rel="stylesheet" href="${esc(brand.fonts.googleHref)}">` : ""}
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/brand.css">
 ${noindexOnly ? "" : `<script src="${esc(WIDGET_SRC)}" defer></script>`}
@@ -161,7 +161,7 @@ ${body}
     </nav>
   </div>
   <div class="foot__fine">
-    <p>© 2026 Pódio Nutrição Esportiva. Pódio é uma marca fictícia criada para a demonstração da GeoLynq; produtos, lojas e endereços não existem.</p>
+    <p>© 2026 Pódio Nutrição Esportiva.</p>
     <p>Suplemento alimentar não substitui uma alimentação equilibrada. Consulte um profissional de saúde.</p>
   </div>
 </footer>
@@ -333,6 +333,7 @@ const presenter = layout({
   <p class="eyebrow">Uso interno · não divulgue este endereço</p>
   <h1>Roteiro da apresentação</h1>
   <p class="lead">Duas partes. Na primeira, o cliente do fabricante usa o site. Na segunda, a equipe comercial vê os dados na plataforma.</p>
+  <p><b>Nota interna:</b> a marca Pódio, os produtos, lojas e endereços são fictícios (criados só para esta demonstração), e o site não avisa isso ao visitante de propósito. Se o cliente perguntar, diga que é uma demonstração.</p>
 
   <h2>Parte 1 — o site (o consumidor)</h2>
   <p>Abra o site como se fosse o do cliente: <a href="/">página inicial</a> e, no botão <b>Onde encontrar</b>, a <a href="/onde-encontrar.html">página Onde encontrar</a> (cabeçalho e rodapé são do cliente; no meio, o widget). Nada aqui diz "demonstração" além do rodapé.</p>
@@ -379,9 +380,11 @@ writeFileSync(join(out, "404.html"), notFound);
 writeFileSync(join(out, "robots.txt"), "User-agent: *\nDisallow: /\n");
 cpSync(join(here, "styles.css"), join(out, "styles.css"));
 const c = brand.colors;
+const x = brand.extra ?? {};
+const extra = Object.entries(x).map(([k, v]) => `;--${k}:${v}`).join("");
 writeFileSync(
   join(out, "brand.css"),
-  `/* gerado de brand.json: variáveis da marca (cores, fontes, arredondamento) */\n:root{--bg:${c.bg};--navy:${c.ink};--navy-2:${c.ink2};--muted:${c.muted};--line:${c.line};--cobalt:${c.primary};--cobalt-d:${c.primaryDark};--orange:${c.accent};--display:${brand.fonts.display};--body:${brand.fonts.body};--radius:${brand.radius}px}\n`,
+  `/* gerado de brand.json: variáveis da marca (cores, fontes, arredondamento) */\n:root{--bg:${c.bg};--navy:${c.ink};--navy-2:${c.ink2};--muted:${c.muted};--line:${c.line};--cobalt:${c.primary};--cobalt-d:${c.primaryDark};--orange:${c.accent};--display:${brand.fonts.display};--body:${brand.fonts.body};--radius:${brand.radius}px${extra}}\n`,
 );
 writeFileSync(
   join(out, "favicon.svg"),

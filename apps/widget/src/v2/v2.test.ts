@@ -56,6 +56,29 @@ describe("tema (nunca aplica texto livre do banco como CSS)", () => {
     expect(css).toContain("--gl-bg:transparent");
   });
 
+  it("botões/campos: raio próprio (pílula), caixa alta e sombra só se válidos; selo ligado por padrão", () => {
+    const padrao = resolveTheme({ radius: 14 }, null, null);
+    expect(padrao.buttonRadius).toBe(14);
+    expect(padrao.inputRadius).toBe(14);
+    expect(padrao.showCredit).toBe(true);
+    expect(padrao.buttonUppercase).toBe(false);
+    const t = resolveTheme({ radius: 14, buttonRadius: 999, inputRadius: 25, inputBorder: "#D1D1D1", buttonUppercase: true, hoverShadow: true, showCredit: false }, null, null);
+    expect(t.buttonRadius).toBe(30);
+    expect(t.inputRadius).toBe(25);
+    expect(t.inputBorder).toBe("#d1d1d1");
+    expect(t.showCredit).toBe(false);
+    const css = themeVars(t);
+    expect(css).toContain("--gl-btn-radius:30px");
+    expect(css).toContain("--gl-btn-case:uppercase");
+    expect(css).toContain("--gl-hover-shadow:0 4px 12px");
+    // valores malformados caem no padrão e nunca viram CSS
+    const ruim = resolveTheme({ buttonRadius: "url(x)", inputBorder: "red;}", buttonUppercase: "yes", showCredit: "nao" }, null, null);
+    expect(ruim.buttonRadius).toBe(12);
+    expect(ruim.inputBorder).toBe("#e5e7eb");
+    expect(ruim.buttonUppercase).toBe(false);
+    expect(ruim.showCredit).toBe(true);
+  });
+
   it("só aceita CSS do Google Fonts", () => {
     expect(safeFontUrl("https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap")).toMatch(/^https:\/\/fonts\.googleapis\.com\/css2/);
     for (const bad of ["http://fonts.googleapis.com/css2?family=Inter", "https://evil.com/css2", "https://fonts.googleapis.com.evil.com/css2", "javascript:alert(1)", "https://fonts.googleapis.com/other", 5, null]) {

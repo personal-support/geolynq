@@ -10,5 +10,10 @@ const tema = {
   cardText: b.colors.ink.toUpperCase(),
   border: b.colors.line.toUpperCase(),
   imageRatio: b.widget.imageRatio,
+  // campos extras do tema (só entram se estiverem no brand.json)
+  ...Object.fromEntries(
+    ["buttonRadius", "inputRadius", "buttonUppercase", "hoverShadow", "showCredit"].filter((k) => k in b.widget).map((k) => [k, b.widget[k]]),
+  ),
+  ...("inputBorder" in b.widget ? { inputBorder: b.widget.inputBorder.toUpperCase() } : {}),
 };
 console.log(`update public.tenants set widget_theme = '${JSON.stringify(tema)}'::jsonb where slug = 'demo';`);

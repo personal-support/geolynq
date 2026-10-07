@@ -21,6 +21,9 @@ import { resolveTheme, themeVars, type WidgetTheme } from "./theme";
 type View = "home" | "product" | "results" | "list";
 type Status = "loading" | "ready" | "unavailable";
 
+/** Página pública da GeoLynq para o selo. `null` = selo só como texto (sem link). */
+const CREDIT_URL: string | null = null;
+
 const PAGE = 24; // cartões por "página" da grade
 const CATALOG_LIMIT = 500; // até aqui o catálogo inteiro é carregado de uma vez e filtrado no navegador
 const SERVER_PAGE = 100; // catálogos maiores: busca e paginação no servidor
@@ -654,6 +657,7 @@ export class GeoLynqWidgetV2 extends HTMLElement {
       wrapper.append(h("p", { class: "msg" }, "O localizador de revendedores está indisponível no momento."));
     } else {
       wrapper.append(this.renderView());
+      if (this.theme.showCredit) wrapper.append(this.renderCredit());
     }
 
     this.root.replaceChildren(h("style", {}, STYLES_V2), wrapper);
@@ -662,6 +666,15 @@ export class GeoLynqWidgetV2 extends HTMLElement {
     this.focusTarget = null;
     if (target) this.root.querySelector<HTMLElement>(`[data-focus="${target}"]`)?.focus({ preventScroll: true });
     if (reveal) this.reveal();
+  }
+
+  /** Selo discreto. Sem link até existir uma página pública da GeoLynq (CREDIT_URL); o clique nunca entra na telemetria do cliente. */
+  private renderCredit(): Node {
+    const label = "Tecnologia GeoLynq";
+    const inner = CREDIT_URL
+      ? h("a", { href: CREDIT_URL, target: "_blank", rel: "noopener noreferrer" }, label)
+      : h("span", {}, label);
+    return h("p", { class: "credit", "data-credit": "" }, inner);
   }
 
   private renderView(): Node {

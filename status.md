@@ -615,3 +615,14 @@ do banco agora é schema + migration acima.
 - [ ] O ambiente de nuvem da sessão não alcança `*.supabase.co` nem os domínios do projeto (ver
       "Armadilhas"); é uma limitação do ambiente, contornada pela VPS do usuário. Liberar em Network
       access do ambiente (menu do ambiente → Edit) só se quiser testes HTTP reais daqui.
+
+## Tema "estilo New Millen" + selo "Tecnologia GeoLynq" (2026-10-07) — PRONTO NO CÓDIGO, NÃO PUBLICADO
+- Widget v2: novos campos de tema (validados, sem CSS livre): `buttonRadius`, `inputRadius` (0–30; 30 = pílula), `inputBorder`,
+  `buttonUppercase`, `hoverShadow`, `showCredit` (padrão true). Selo "Tecnologia GeoLynq" discreto no fim do widget, só texto
+  (sem link): `CREDIT_URL` em `widget2.ts` é `null` até existir página pública da GeoLynq. 44 testes unitários + 55 checks E2E ok.
+- Demo Pódio: `brand.json` agora segue a especificação enviada pelo usuário da loja New Millen (laranja #FF5500, topo preto,
+  botões pílula em caixa alta, cantos 14, borda #F0F0F0, campos #D1D1D1). Aviso "marca fictícia" saiu do rodapé (ficou só na
+  página interna `/apresentacao.html`). **Fonte NÃO informada**: usa fonte do sistema. Embalagens (`products.json`) recoloridas.
+- Pendente com OK do usuário: (1) `update public.tenants set widget_theme = ...` do `demo` (rodar `node apps/demo/brand-sql.mjs`);
+  (2) push em `claude/bold-cray-vbbdyb` (publica widget + demo).
+- Risco: texto branco sobre #FF5500 dá contraste ~3,2:1 (abaixo de 4,5:1 do AA para texto normal).

@@ -19,6 +19,17 @@ export interface WidgetTheme {
   fontUrl: string | null;
   buttonStyle: "solid" | "outline";
   imageRatio: "1 / 1" | "4 / 3" | "3 / 4";
+  /** Arredondamento próprio de botões e campos (0–30). Padrão: o mesmo `radius` dos cartões. 30 = pílula. */
+  buttonRadius: number;
+  inputRadius: number;
+  /** Borda dos campos de busca/seleção (os cartões usam `border`). */
+  inputBorder: string;
+  /** Texto dos botões em caixa alta. */
+  buttonUppercase: boolean;
+  /** Sombra discreta no cartão de produto ao passar o mouse. */
+  hoverShadow: boolean;
+  /** Selo "Tecnologia GeoLynq" no rodapé do widget. Ligado por padrão; só a GeoLynq desliga (plano). */
+  showCredit: boolean;
 }
 
 export const DEFAULT_PRIMARY = "#1f3fff";
@@ -34,6 +45,12 @@ const DEFAULTS: Omit<WidgetTheme, "primary"> = {
   fontUrl: null,
   buttonStyle: "solid",
   imageRatio: "1 / 1",
+  buttonRadius: -1, // -1 = igual ao radius (resolvido em resolveTheme)
+  inputRadius: -1,
+  inputBorder: "",
+  buttonUppercase: false,
+  hoverShadow: false,
+  showCredit: true,
 };
 
 const RATIOS: Record<string, WidgetTheme["imageRatio"]> = { "1/1": "1 / 1", "4/3": "4 / 3", "3/4": "3 / 4" };
@@ -59,6 +76,10 @@ export function safeFontUrl(v: unknown): string | null {
  * Junta, em ordem de prioridade: atributo `color` do snippet > tema do banco > cor principal do cliente > padrão.
  * Qualquer valor inválido cai no padrão: um tema quebrado nunca pode quebrar o widget.
  */
+function clampRadius(v: unknown, fallback: number): number {
+  return typeof v === "number" && Number.isFinite(v) ? Math.min(30, Math.max(0, Math.round(v))) : fallback;
+}
+
 export function resolveTheme(raw: unknown, attrColor?: string | null, tenantColor?: string | null): WidgetTheme {
   const t = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
   const radius = typeof t.radius === "number" && Number.isFinite(t.radius) ? Math.min(24, Math.max(0, Math.round(t.radius))) : DEFAULTS.radius;
@@ -76,6 +97,12 @@ export function resolveTheme(raw: unknown, attrColor?: string | null, tenantColo
     fontUrl: safeFontUrl(t.fontUrl),
     buttonStyle: t.buttonStyle === "outline" ? "outline" : "solid",
     imageRatio: (typeof t.imageRatio === "string" && RATIOS[t.imageRatio]) || DEFAULTS.imageRatio,
+    buttonRadius: clampRadius(t.buttonRadius, radius),
+    inputRadius: clampRadius(t.inputRadius, radius),
+    inputBorder: hex(t.inputBorder) ?? hex(t.border) ?? DEFAULTS.border,
+    buttonUppercase: t.buttonUppercase === true,
+    hoverShadow: t.hoverShadow === true,
+    showCredit: t.showCredit !== false,
   };
 }
 
@@ -125,6 +152,11 @@ export function themeVars(t: WidgetTheme): string {
     `--gl-muted:${ensureContrast("#6b7280", t.card, 4.5)}`,
     `--gl-border:${t.border}`,
     `--gl-radius:${t.radius}px`,
+    `--gl-btn-radius:${t.buttonRadius}px`,
+    `--gl-input-radius:${t.inputRadius}px`,
+    `--gl-input-border:${t.inputBorder}`,
+    `--gl-btn-case:${t.buttonUppercase ? "uppercase" : "none"}`,
+    `--gl-hover-shadow:${t.hoverShadow ? "0 4px 12px rgba(0,0,0,.08)" : "none"}`,
     t.font !== "inherit" ? `--gl-font:${t.font}` : "",
     `--gl-ratio:${t.imageRatio}`,
   ]

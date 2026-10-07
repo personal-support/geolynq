@@ -112,6 +112,9 @@ async function setup(ctx) {
   check('cada produto tem UM só botão', botoesPorCard.every((n) => n === 1), JSON.stringify(botoesPorCard.slice(0, 5)));
   check('o botão do produto é "Onde encontrar"', (await sel('.prod .btn').first().innerText()) === 'Onde encontrar');
   check('botão "Lista de revendedores" no início', (await sel('.bar .btn').innerText()) === 'Lista de revendedores');
+  check('selo "Tecnologia GeoLynq" presente, discreto e no fim do widget', (await sel('.credit').count()) === 1 && (await sel('.credit').innerText()) === 'Tecnologia GeoLynq' && (await sel('.gl > :last-child').getAttribute('class')) === 'credit');
+  const fsCredito = await sel('.credit').evaluate((el) => parseFloat(getComputedStyle(el).fontSize) / parseFloat(getComputedStyle(el.parentElement).fontSize));
+  check('selo é menor que o texto do widget', fsCredito < 0.9, String(fsCredito));
   await sel('text=Mostrar mais').click();
   check('"Mostrar mais" revela o restante da grade', (await sel('.prod').count()) === 30);
   await shot(page, 'v2-01-home');

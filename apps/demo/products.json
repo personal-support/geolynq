@@ -3,32 +3,32 @@
   "categories": {
     "proteina": {
       "label": "Proteínas",
-      "body": "#1F3FFF",
-      "tint": "#E8EDFF",
+      "body": "#FF5500",
+      "tint": "#FFF0E8",
       "tagline": "Whey, albumina e barras para o dia a dia."
     },
     "aminoacido": {
       "label": "Aminoácidos",
-      "body": "#0F1B2D",
-      "tint": "#E6EAF0",
+      "body": "#111111",
+      "tint": "#F2F2F2",
       "tagline": "Recuperação e constância nos treinos."
     },
     "energia": {
       "label": "Energia e performance",
-      "body": "#F2551C",
-      "tint": "#FFEDE5",
+      "body": "#C23F00",
+      "tint": "#FDE9DF",
       "tagline": "Para render mais quando o treino aperta."
     },
     "vitamina": {
       "label": "Vitaminas",
-      "body": "#139A82",
-      "tint": "#E2F5F0",
+      "body": "#4A4A4A",
+      "tint": "#F4F4F4",
       "tagline": "A base da rotina, em uma cápsula."
     },
     "saude": {
       "label": "Saúde e bem-estar",
-      "body": "#A8864E",
-      "tint": "#F5EEE0",
+      "body": "#8A3300",
+      "tint": "#F8ECE5",
       "tagline": "Cuidado diário, de dentro para fora."
     }
   },
