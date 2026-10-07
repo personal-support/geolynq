@@ -37,7 +37,10 @@ export async function gerarLeituraIA(formData: FormData) {
     carregar(() => getFunnel(m.tenant.id, dias)),
     carregar(() => getResellerPerf(m.tenant.id, dias)),
   ]);
-  if ("erro" in ov || "erro" in fun || "erro" in perf) return volta("falha");
+  if ("erro" in ov || "erro" in fun || "erro" in perf) {
+    console.error("[ia] falha ao carregar os dados do período:", [ov, fun, perf].map((x) => ("erro" in x ? x.erro : "ok")).join(" | "));
+    return volta("dados");
+  }
   if (ov.dados.kpis.buscas === 0) return volta("sem_dados");
 
   let resultado;
@@ -55,6 +58,9 @@ export async function gerarLeituraIA(formData: FormData) {
     tokens_in: resultado.entrada,
     tokens_out: resultado.saida,
   });
-  if (error) return volta(/limite_leitura_ia/.test(error.message) ? "limite" : "falha");
+  if (error) {
+    console.error(`[ia] não gravou a leitura: ${error.code ?? ""} ${error.message}`);
+    return volta(/limite_leitura_ia/.test(error.message) ? "limite" : "gravar");
+  }
   return volta();
 }

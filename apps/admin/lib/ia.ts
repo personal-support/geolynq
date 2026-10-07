@@ -15,7 +15,20 @@ export interface Leitura {
   acoes: { acao: string; motivo: string }[];
 }
 
-export type ErroIA = "sem_chave" | "sem_modelo" | "limite" | "falha" | "nao_confiavel" | "sem_dados";
+export type ErroIA =
+  | "sem_chave"
+  | "sem_modelo"
+  | "limite"
+  | "falha"
+  | "nao_confiavel"
+  | "sem_dados"
+  | "api_chave"
+  | "api_modelo"
+  | "api_limite"
+  | "api_fora"
+  | "rede"
+  | "gravar"
+  | "dados";
 
 export class LeituraErro extends Error {
   codigo: ErroIA;
@@ -31,6 +44,13 @@ export const MENSAGEM_ERRO: Record<ErroIA, string> = {
   limite: "Já foi gerada uma leitura há pouco (ou o limite do dia foi atingido). Tente de novo em alguns minutos.",
   falha: "Não foi possível gerar a leitura agora. Tente novamente em instantes.",
   nao_confiavel: "A leitura gerada citou números que não conferem com os dados e foi descartada por segurança. Tente gerar de novo.",
+  api_chave: "A IA recusou a chave configurada (código IA-CHAVE). Avise a GeoLynq para conferir a chave.",
+  api_modelo: "A IA não aceitou o modelo configurado (código IA-MODELO). Avise a GeoLynq para conferir o nome do modelo.",
+  api_limite: "A IA está com limite de uso ou de gasto atingido (código IA-LIMITE). Tente mais tarde ou avise a GeoLynq.",
+  api_fora: "O serviço de IA está instável agora (código IA-FORA). Tente novamente em alguns minutos.",
+  rede: "O painel não conseguiu falar com o serviço de IA (código IA-REDE). Tente novamente; se repetir, avise a GeoLynq.",
+  gravar: "A leitura foi gerada, mas não foi possível guardá-la (código IA-GRAVAR). Avise a GeoLynq.",
+  dados: "Não foi possível carregar os números do período para a leitura (código IA-DADOS). Tente novamente.",
   sem_dados: "Ainda não há buscas suficientes neste período para uma leitura.",
 };
 
@@ -193,10 +213,17 @@ async function chamar(mensagens: { role: "user" | "assistant"; content: string }
       body: JSON.stringify({ model: modelo, max_tokens: 1500, system: SISTEMA, messages: mensagens }),
       signal: AbortSignal.timeout(45_000),
     });
-  } catch {
-    throw new LeituraErro("falha", MENSAGEM_ERRO.falha);
+  } catch (e) {
+    console.error(`[ia] sem resposta do serviço de IA: ${e instanceof Error ? e.name : "erro"}`);
+    throw new LeituraErro("rede", MENSAGEM_ERRO.rede);
   }
-  if (!r.ok) throw new LeituraErro("falha", MENSAGEM_ERRO.falha);
+  if (!r.ok) {
+    const corpo = (await r.json().catch(() => null)) as { error?: { type?: string; message?: string } } | null;
+    // só o motivo da API (sem chave, sem dados do cliente) vai para o log do servidor
+    console.error(`[ia] API respondeu ${r.status} ${corpo?.error?.type ?? ""}: ${(corpo?.error?.message ?? "").slice(0, 200)}`);
+    const codigo: ErroIA = r.status === 401 || r.status === 403 ? "api_chave" : r.status === 404 || r.status === 400 ? "api_modelo" : r.status === 429 ? "api_limite" : "api_fora";
+    throw new LeituraErro(codigo, MENSAGEM_ERRO[codigo]);
+  }
   const j = (await r.json().catch(() => null)) as Resposta | null;
   const texto = j?.content?.find((c) => c.type === "text")?.text;
   if (!texto) throw new LeituraErro("falha", MENSAGEM_ERRO.falha);

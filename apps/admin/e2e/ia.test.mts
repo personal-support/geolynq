@@ -64,12 +64,18 @@ await ok("lerResposta: rejeita formato errado, excesso e texto grande demais", (
 // ---- chamada ao modelo contra um servidor simulado ----
 import http from "node:http";
 const respostas: string[] = [];
+let statusForcado = 0;
 const pedidos: any[] = [];
 const srv = http.createServer((req, res) => {
   let b = "";
   req.on("data", (c) => (b += c));
   req.on("end", () => {
     pedidos.push({ headers: req.headers, body: JSON.parse(b) });
+    if (statusForcado) {
+      res.statusCode = statusForcado;
+      res.setHeader("content-type", "application/json");
+      return res.end(JSON.stringify({ type: "error", error: { type: "teste", message: "motivo-de-teste" } }));
+    }
     const texto = respostas.shift() ?? "{}";
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify({ content: [{ type: "text", text: texto }], usage: { input_tokens: 100, output_tokens: 50 } }));
@@ -126,6 +132,21 @@ await ok("instrução escondida num termo digitado vira só dado (vai dentro do 
   assert.equal(p.messages.length, 1);
   assert.ok(p.messages[0].content.startsWith("DADOS DO PERÍODO (JSON):"));
   assert.ok(!p.system.includes("ignore tudo"));
+});
+for (const [status, codigo] of [[401, "api_chave"], [403, "api_chave"], [404, "api_modelo"], [400, "api_modelo"], [429, "api_limite"], [500, "api_fora"], [529, "api_fora"]] as const) {
+  await ok(`API responde ${status}: erro ${codigo} (sem tentar de novo, sem número/chave na mensagem)`, async () => {
+    statusForcado = status;
+    const antes = pedidos.length;
+    await assert.rejects(gerarLeitura(dados), (e: any) => e instanceof LeituraErro && e.codigo === codigo && !e.message.includes("chave-de-teste"));
+    assert.equal(pedidos.length - antes, 1);
+    statusForcado = 0;
+  });
+}
+await ok("serviço fora do ar: erro rede", async () => {
+  const antes = process.env.ANTHROPIC_BASE_URL;
+  process.env.ANTHROPIC_BASE_URL = "http://127.0.0.1:1";
+  await assert.rejects(gerarLeitura(dados), (e: any) => e instanceof LeituraErro && e.codigo === "rede");
+  process.env.ANTHROPIC_BASE_URL = antes;
 });
 srv.close();
 console.log(process.exitCode ? "\nHÁ FALHAS" : `\n${n} testes ok`);
