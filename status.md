@@ -122,6 +122,7 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   - **Defeito achado ao revisar a captura e corrigido:** quando NENHUMA busca do período identificava produto (ex.: 5 buscas fora do
     catálogo), a manchete e os cartões "Maiores lacunas" diziam "Todas as buscas com produto encontraram revendedor" (falso por vazio).
     Agora a manchete diz "Nenhuma das N buscas bateu com um produto do catálogo" e os cartões dizem "Sem dados para medir lacunas".
+  - **Publicado (2026-10-07):** commit `aeb844b` redeployado em `geolynq_admin`; contêiner novo `running` e `healthy` (conferido no EasyPanel; a tela em si só o usuário vê, o domínio dá 403 no proxy daqui).
   - E2E em Chromium agora **52/52** (`next start` e standalone). Limiar de 30 é uma hipótese; ajustar com dados reais.
 - **Falta:** a conferência visual completa pelo usuário (mapa com os blocos reais do OSM, pré-visualização do widget só aparece com o
   cliente `active`). Depois do merge na `main`, trocar a branch do serviço `geolynq_admin` para `main`.
