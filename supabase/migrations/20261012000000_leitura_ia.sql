@@ -34,7 +34,7 @@ drop policy if exists panel_ai_readings_insert on public.panel_ai_readings;
 create policy panel_ai_readings_insert on public.panel_ai_readings for insert to authenticated
   with check (public.is_tenant_member(tenant_id));
 
-revoke all on public.panel_ai_readings from public, anon;
+revoke all on public.panel_ai_readings from public, anon, authenticated;
 grant select, insert on public.panel_ai_readings to authenticated;
 
 create or replace function public.panel_ai_readings_limit()

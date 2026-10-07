@@ -670,3 +670,7 @@ do banco agora é schema + migration acima.
   isolamento entre clientes). NÃO testado com a API real da Anthropic (o sandbox não alcança).
 - Para ligar: (1) aplicar a migration em produção; (2) usuário põe `ANTHROPIC_API_KEY` e `ANTHROPIC_MODEL` no EasyPanel (geolynq_admin > Ambiente); (3) deploy do painel.
 - Privacidade: a IA recebe só números agregados, nomes de produto/cidade e os 6 termos mais buscados fora do catálogo (até 40 caracteres cada). Citar isso no texto de privacidade (operador de IA) na revisão jurídica.
+- **Migration da leitura por IA APLICADA em produção (2026-10-07, OK do usuário):** `apply_migration` estourou 60 s e NADA foi criado (conferido); aplicada em etapas via `execute_sql`
+  (tabela+índice+RLS+grants; políticas; função+gatilho). Conferido: RLS ligado, 2 políticas, 1 gatilho, anon sem acesso. Ajuste extra feito só em produção: `revoke update, delete, truncate,
+  references, trigger ... from authenticated` (a migration do repositório concede só select/insert, mas o default do Supabase tinha dado mais; o `revoke all ... from public, anon` não os tira de authenticated).
+  TODO: repetir esse revoke no arquivo da migration para o repositório e a produção ficarem iguais. Falta: chave (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`) no EasyPanel e deploy do painel (commit a8ddf09).
