@@ -134,9 +134,10 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
     unitários (3 novos) e E2E 48/48 (3 novos: sem acento, sanitização, fallback).
   - **Aplicado na produção (`geolynq-prod`) em 3 partes:** funções + trigger. Conferido lá: trigger ativo (1), `created_at` forjado de 40 dias
     virou agora, busca "PROTEÍN" como `anon` achou 3 produtos do `demo`; transação de prova desfeita (0 sobras; `widget_events` segue com 535).
-  - **NÃO publicado ainda:** o código do widget (usa a RPC) só vai ao ar com push/merge na `claude/bold-cray-vbbdyb`, que NÃO foi feito (a sessão
-    trabalha na `claude/keen-johnson-c0x5hs` e publicar o widget precisa de permissão explícita). Enquanto isso o widget antigo segue funcionando
-    (busca com `ilike`) e já está protegido pelo trigger.
+  - **Widget publicado (2026-10-07, com OK do usuário):** push fast-forward `b2c2c88..2e13330` na `claude/bold-cray-vbbdyb` depois de typecheck, 24
+    testes e E2E 48/48 limpos. O webhook subiu um contêiner novo do `geolynq_widget` (visto no EasyPanel: `running`, "Up about a minute").
+    **Não verificado daqui:** o bundle servido em `widget.geolynq…` (o proxy da nuvem dá 403 nesses domínios) e a busca real no site de demonstração:
+    1º teste real é do usuário (digitar "proteina" no demo https://demo.geolynq.personalsupport.tech).
 - **Falta:** a conferência visual completa pelo usuário (mapa com os blocos reais do OSM, pré-visualização do widget só aparece com o
   cliente `active`). Depois do merge na `main`, trocar a branch do serviço `geolynq_admin` para `main`.
 - **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário
