@@ -138,6 +138,15 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
     testes e E2E 48/48 limpos. O webhook subiu um contêiner novo do `geolynq_widget` (visto no EasyPanel: `running`, "Up about a minute").
     **Não verificado daqui:** o bundle servido em `widget.geolynq…` (o proxy da nuvem dá 403 nesses domínios) e a busca real no site de demonstração:
     1º teste real é do usuário (digitar "proteina" no demo https://demo.geolynq.personalsupport.tech).
+- **Site demo "Pódio" refeito (2026-10-07, pedido do usuário; NÃO publicado — falta OK para push na `bold-cray`):** o demo tem que parecer o site real de um
+  fabricante (o cliente se identifica; a apresentação tem 2 ritmos: 1) o consumidor usa o site, 2) a equipe comercial vê a plataforma). `apps/demo`:
+  visual de marca (hero, grade única de 12 produtos com atalhos de categoria, embalagens em SVG por forma: pote/frasco/caixa/pacote), seção
+  "Onde encontrar" com o widget, página de produto com o widget no lugar do "comprar", página "Sobre". **Saiu do site:** faixa amarela de demo,
+  "Roteiro da demo", dicas "Experimente…", molduras "Widget GeoLynq / Busca ao vivo". **Só resta o rodapé** dizendo que a marca é fictícia.
+  Roteiro + CEPs de teste + snippet foram para **`/apresentacao.html`** (sem link no site, noindex; uso interno). Conferido em Chromium (desktop e
+  390 px) com o widget real e dados simulados: sem rolagem lateral em nenhuma das 16 páginas. Não conferido: fontes do Google e o widget lendo o
+  banco real (o sandbox não alcança). **Pendente (precisa OK, grava no banco):** categoria dos produtos do tenant `demo` está como `proteina`
+  (minúsculo, sem acento) e o widget a mostra na lista de busca; corrigir para "Proteínas" etc.
 - **Falta:** a conferência visual completa pelo usuário (mapa com os blocos reais do OSM, pré-visualização do widget só aparece com o
   cliente `active`). Depois do merge na `main`, trocar a branch do serviço `geolynq_admin` para `main`.
 - **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário
