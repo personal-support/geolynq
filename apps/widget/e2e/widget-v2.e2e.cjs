@@ -112,7 +112,7 @@ async function setup(ctx) {
   check('cada produto tem UM só botão', botoesPorCard.every((n) => n === 1), JSON.stringify(botoesPorCard.slice(0, 5)));
   check('o botão do produto é "Onde encontrar"', (await sel('.prod .btn').first().innerText()).toLowerCase() === 'onde encontrar');
   check('botão "Lista de revendedores" no início', (await sel('.bar .btn').innerText()).toLowerCase() === 'lista de revendedores');
-  check('selo "Tecnologia GeoLynq" presente, discreto e no fim do widget', (await sel('.credit').count()) === 1 && (await sel('.credit').innerText()) === 'Tecnologia GeoLynq' && (await sel('.gl > :last-child').getAttribute('class')) === 'credit');
+  check('selo "Tecnologia GeoLynq" presente, discreto e no fim do widget', (await sel('.credit').count()) === 1 && (await sel('.credit').innerText()) === 'Tecnologia GeoLynq' && (await sel('.gl').evaluate((g) => [...g.children].filter((c) => !c.classList.contains('consent')).at(-1).className)) === 'credit');
   const fsCredito = await sel('.credit').evaluate((el) => parseFloat(getComputedStyle(el).fontSize) / parseFloat(getComputedStyle(el.parentElement).fontSize));
   check('selo é menor que o texto do widget', fsCredito < 0.9, String(fsCredito));
   await sel('text=Mostrar mais').click();
@@ -286,6 +286,64 @@ async function setup(ctx) {
   await shot(pm, 'v2-05c-celular-onde-encontrar');
   await cortados('telas do produto');
   await m.close();
+
+  // ───────── 12. aviso de medição: não trava o widget; recusar desliga TUDO
+  const fluxo = async (p) => { // busca + produto + CEP + clique em revendedor
+    await p.locator('geolynq-widget').locator('#gl-term').fill('whey');
+    await p.locator('geolynq-widget').locator('.prod', { hasText: 'Whey Protein Isolado' }).locator('.btn').click();
+    await p.locator('geolynq-widget').locator('#gl-cep').fill('11060-001');
+    await p.locator('geolynq-widget').locator('button', { hasText: 'Ver revendedores' }).click();
+    await p.locator('geolynq-widget').locator('article.card').first().waitFor({ timeout: 10000 });
+    const w = p.locator('geolynq-widget').locator('a', { hasText: 'WhatsApp' }).first();
+    await w.evaluate((a) => a.addEventListener('click', (e) => e.preventDefault()));
+    await w.click();
+    await p.waitForTimeout(1700);
+  };
+  const c1 = await browser.newContext({ viewport: { width: 1100, height: 900 } });
+  const p1 = await setup(c1);
+  events.length = 0;
+  await p1.goto('https://host.test/page?t=demo');
+  const gw = p1.locator('geolynq-widget');
+  await gw.locator('.prod').first().waitFor();
+  const aviso = gw.locator('.consent');
+  check('primeira visita: aparece o aviso de medição com as 2 opções e o link do texto', (await aviso.count()) === 1 && (await aviso.locator('button').count()) === 2 &&
+    (await aviso.locator('a').getAttribute('href')).endsWith('/privacidade.html'));
+  const txtAviso = await aviso.innerText();
+  check('o aviso diz o que é gravado e o que não é (sem prometer o impossível)', /busca/.test(txtAviso) && /localização aproximada/.test(txtAviso) && /Não pedimos nem guardamos nome, e-mail, telefone, CPF ou endereço/.test(txtAviso) && !/qualquer hipótese/.test(txtAviso));
+  await shot(p1, 'v2-06-aviso');
+  await fluxo(p1);
+  check('com o aviso aberto e sem escolha, o widget funciona e a medição continua (busca e clique gravados)', (await aviso.count()) === 1 && events.some((e) => e.event_type === 'search') && events.some((e) => e.event_type === 'reseller_click'), JSON.stringify(events.map((e) => e.event_type)));
+  await aviso.locator('button', { hasText: 'Entendi' }).click();
+  check('"Entendi" fecha o aviso e mantém o que a pessoa estava vendo', (await gw.locator('.consent').count()) === 0 && (await gw.locator('article.card').count()) > 0);
+  events.length = 0;
+  await gw.locator('button', { hasText: 'Todos os produtos' }).click().catch(() => {});
+  await gw.locator('.prod').first().waitFor();
+  await gw.locator('#gl-term').fill('xyzabc'); await p1.waitForTimeout(1700);
+  check('depois do "Entendi" a medição continua', events.some((e) => e.event_type === 'search'), JSON.stringify(events.map((e) => e.event_type)));
+  await p1.reload(); await gw.locator('.prod').first().waitFor();
+  check('na visita seguinte o aviso não volta', (await gw.locator('.consent').count()) === 0);
+  await c1.close();
+
+  const c2 = await browser.newContext({ viewport: { width: 1100, height: 900 } });
+  const p2 = await setup(c2);
+  events.length = 0;
+  const reqEventos = [];
+  p2.on('request', (r) => { if (r.url().includes('/widget_events')) reqEventos.push(r.url()); });
+  await p2.goto('https://host.test/page?t=demo');
+  const gw2 = p2.locator('geolynq-widget');
+  await gw2.locator('.prod').first().waitFor();
+  await gw2.locator('.consent button', { hasText: 'Não quero ser medido' }).click();
+  check('"Não quero ser medido" fecha o aviso', (await gw2.locator('.consent').count()) === 0);
+  await fluxo(p2);
+  check('RECUSOU: o widget funciona normalmente (resultados e ações aparecem)', (await gw2.locator('article.card').count()) > 0);
+  check('RECUSOU: nenhum evento gravado e nenhuma chamada a widget_events', events.length === 0 && reqEventos.length === 0, `${events.length} eventos, ${reqEventos.length} chamadas`);
+  await gw2.locator('button', { hasText: 'Todos os produtos' }).click().catch(() => {});
+  await gw2.locator('button', { hasText: 'Lista de revendedores' }).click().catch(() => {});
+  await p2.waitForTimeout(1500);
+  await p2.reload(); await gw2.locator('.prod').first().waitFor();
+  await gw2.locator('#gl-term').fill('xyzabc'); await p2.waitForTimeout(1700);
+  check('RECUSOU: depois de recarregar a página o aviso não volta e continua sem gravar nada', (await gw2.locator('.consent').count()) === 0 && events.length === 0 && reqEventos.length === 0, `${events.length}/${reqEventos.length}`);
+  await c2.close();
 
   check('sem erros de JavaScript no console', errs.length === 0, errs.join(' | '));
   await browser.close();

@@ -1,3 +1,4 @@
+import { mayTrack } from "./consent";
 import { GeoLynqApi, type EventPayload, type ResellerResult, type TenantPublic } from "../api";
 
 export interface TenantV2 extends TenantPublic {
@@ -102,8 +103,9 @@ export class GeoLynqApiV2 extends GeoLynqApi {
     return { ufs: p?.ufs ?? [], cidades: p?.cidades ?? [] };
   }
 
-  /** Telemetria fire-and-forget, sempre com o identificador de visita em memória (v2 não usa localStorage). */
+  /** Telemetria fire-and-forget, sempre com o identificador de visita em memória (nada de cookie). Quem recusou a medição não grava nada. */
   override logEvent(tenantId: string, event: EventPayload): void {
+    if (!mayTrack()) return;
     void this.request<void>("widget_events", {
       method: "POST",
       keepalive: true,

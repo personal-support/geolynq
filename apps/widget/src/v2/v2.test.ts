@@ -212,3 +212,52 @@ describe("api v2: paginação e totais", () => {
     expect(bodies[0]).toMatchObject({ p_tenant_id: "T", p_product_id: "P1", p_uf: "SP", p_city: "Santos", p_type: null, p_lat: null, p_limit: 10, p_offset: 10 });
   });
 });
+
+describe("aviso de medição: recusar desliga toda a gravação", () => {
+  afterEach(() => {
+    window.localStorage.clear();
+    vi.unstubAllGlobals();
+  });
+
+  it("sem escolha a medição segue ligada; 'no' desliga; 'ok' mantém", async () => {
+    const c = await import("./consent");
+    window.localStorage.clear();
+    expect(c.readConsent()).toBeNull();
+    expect(c.mayTrack()).toBe(true);
+    c.saveConsent("ok");
+    expect(c.mayTrack()).toBe(true);
+    c.saveConsent("no");
+    expect(c.readConsent()).toBe("no");
+    expect(c.mayTrack()).toBe(false);
+  });
+
+  it("recusou: logEvent não faz nenhuma chamada de rede; antes de recusar, faz", async () => {
+    vi.resetModules(); // a recusa "na memória" de outros testes não pode vazar para este
+    const c = await import("./consent");
+    const { GeoLynqApiV2: Api } = await import("./api2");
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const api = new Api("https://x.supabase.co", "k");
+    window.localStorage.clear();
+    api.logEvent("t1", { event_type: "search", query_text: "whey" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    c.saveConsent("no");
+    api.logEvent("t1", { event_type: "search", query_text: "whey" });
+    api.logEvent("t1", { event_type: "reseller_click", action: "whatsapp" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("armazenamento bloqueado: a recusa vale na memória da página (nunca grava por engano)", async () => {
+    const c = await import("./consent");
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("bloqueado");
+    });
+    const getItem = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("bloqueado");
+    });
+    c.saveConsent("no");
+    expect(c.mayTrack()).toBe(false);
+    setItem.mockRestore();
+    getItem.mockRestore();
+  });
+});

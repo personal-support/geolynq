@@ -14,6 +14,7 @@ import {
 } from "../util";
 import { GeoLynqApiV2, type Places, type ProductCard, type TenantV2 } from "./api2";
 import { filterProducts, initials, termForTelemetry } from "./catalog";
+import { CONSENT_EVENT, readConsent, saveConsent } from "./consent";
 import { h } from "./dom";
 import { STYLES_V2 } from "./styles2";
 import { resolveTheme, themeVars, type WidgetTheme } from "./theme";
@@ -23,6 +24,9 @@ type Status = "loading" | "ready" | "unavailable";
 
 /** Página pública da GeoLynq para o selo. `null` = selo só como texto (sem link). */
 const CREDIT_URL: string | null = null;
+
+/** Texto completo sobre a medição (rascunho; revisão jurídica pendente). */
+const PRIVACY_URL = "https://widget.geolynq.personalsupport.tech/privacidade.html";
 
 const PAGE = 24; // cartões por "página" da grade
 const CATALOG_LIMIT = 500; // até aqui o catálogo inteiro é carregado de uma vez e filtrado no navegador
@@ -93,14 +97,20 @@ export class GeoLynqWidgetV2 extends HTMLElement {
   private listHost: HTMLElement | null = null;
   private citySelect: HTMLSelectElement | null = null;
 
+  private readonly onConsent = (): void => {
+    this.root.querySelector(".consent")?.remove();
+  };
+
   connectedCallback(): void {
     this.started = true;
+    window.addEventListener(CONSENT_EVENT, this.onConsent);
     void this.load();
   }
 
   disconnectedCallback(): void {
     clearTimeout(this.searchTimer);
     clearTimeout(this.logTimer);
+    window.removeEventListener(CONSENT_EVENT, this.onConsent);
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
@@ -658,6 +668,7 @@ export class GeoLynqWidgetV2 extends HTMLElement {
     } else {
       wrapper.append(this.renderView());
       if (this.theme.showCredit) wrapper.append(this.renderCredit());
+      if (readConsent() === null) wrapper.append(this.renderConsent());
     }
 
     this.root.replaceChildren(h("style", {}, STYLES_V2), wrapper);
@@ -666,6 +677,35 @@ export class GeoLynqWidgetV2 extends HTMLElement {
     this.focusTarget = null;
     if (target) this.root.querySelector<HTMLElement>(`[data-focus="${target}"]`)?.focus({ preventScroll: true });
     if (reveal) this.reveal();
+  }
+
+  /**
+   * Aviso de medição: discreto, não bloqueia nada e não cobre a página do cliente (fica colado ao fim do widget).
+   * "Não quero ser medido" desliga a gravação; "Entendi" só fecha o aviso. O texto descreve só o que de fato é gravado.
+   */
+  private renderConsent(): Node {
+    const done = (c: "ok" | "no"): void => {
+      saveConsent(c);
+      // fecha o aviso em todos os widgets da página, sem redesenhar telas (não perde busca nem rolagem)
+      window.dispatchEvent(new Event(CONSENT_EVENT));
+    };
+    return h(
+      "div",
+      { class: "consent", role: "region", "aria-label": "Aviso de medição anônima" },
+      h(
+        "p",
+        { class: "consent-txt" },
+        "Medição anônima: registramos o que você busca e clica aqui, com a sua localização aproximada (cidade e bairro), para que a marca saiba onde faltam lojas. ",
+        "Não pedimos nem guardamos nome, e-mail, telefone, CPF ou endereço, e não usamos cookies. ",
+        h("a", { href: PRIVACY_URL, target: "_blank", rel: "noopener noreferrer" }, "Saiba mais"),
+      ),
+      h(
+        "div",
+        { class: "consent-btns" },
+        h("button", { type: "button", class: "btn secondary", onclick: () => done("no") }, "Não quero ser medido"),
+        h("button", { type: "button", class: "btn", onclick: () => done("ok") }, "Entendi"),
+      ),
+    );
   }
 
   /** Selo discreto. Sem link até existir uma página pública da GeoLynq (CREDIT_URL); o clique nunca entra na telemetria do cliente. */

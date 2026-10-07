@@ -95,6 +95,14 @@ label { display: block; font-weight: 600; margin-bottom: 6px; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .actions .btn { min-height: 40px; padding: 6px 12px; }
 
+/* aviso de medição: discreto, preso ao fim do widget, sem cobrir a página do cliente */
+.consent { position: sticky; bottom: 12px; z-index: 2; margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between;
+  padding: 12px 14px; background: var(--gl-card); color: var(--gl-card-text); border: 1px solid var(--gl-border); border-radius: var(--gl-radius); box-shadow: 0 4px 12px rgba(0,0,0,.15); font-size: .85em; }
+.consent-txt { flex: 1 1 280px; line-height: 1.4; }
+.consent-txt a { color: var(--gl-accent); }
+.consent-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.consent .btn { min-height: 38px; padding: 4px 14px; font-size: .95em; }
+
 /* selo discreto */
 .credit { margin-top: 18px; text-align: right; font-size: .75em; color: var(--gl-muted); }
 .credit a { color: inherit; text-decoration: none; }

@@ -626,3 +626,17 @@ do banco agora é schema + migration acima.
 - Feito com OK do usuário: (1) `tenants.widget_theme` do `demo` gravado em produção (conferido por SELECT/RETURNING);
   (2) push `fe7dc70` em `claude/bold-cray-vbbdyb`; o EasyPanel subiu um contêiner novo de `geolynq_widget`. Não verificado daqui: o site no ar (o sandbox não alcança os domínios).
 - Risco: texto branco sobre #FF5500 dá contraste ~3,2:1 (abaixo de 4,5:1 do AA para texto normal).
+
+## Aviso de medição anônima (2026-10-07) — PRONTO NO CÓDIGO, NÃO PUBLICADO
+- Decisão do usuário: o aviso NÃO trava o widget; a medição segue ligada até a pessoa recusar de forma explícita ("Não quero ser medido").
+  Recusou = nada é gravado nem contado (`GeoLynqApiV2.logEvent` retorna antes de qualquer rede). "Entendi" só fecha o aviso.
+- Código: `apps/widget/src/v2/consent.ts` (preferência `geolynq_medicao` = "ok"|"no" em localStorage; só isso é guardado, nenhum identificador;
+  sem armazenamento a recusa vale até recarregar), `renderConsent` em `widget2.ts` (cartão colado ao fim do widget, não cobre a página do cliente),
+  `public/privacidade.html` (texto-base, com [a definir] para base legal, retenção e contato; **precisa de revisão de advogado**),
+  `nginx.conf` (`location = /privacidade.html`, testado com nginx real).
+- O texto do aviso diz só o que é gravado (busca, produto, localização aproximada, cliques) e que não pedimos nome/e-mail/telefone/CPF/endereço
+  nem usamos cookies. NÃO promete "nenhum dado sensível em qualquer hipótese": o campo de busca é texto livre (só filtramos o que parece
+  e-mail/telefone/documento).
+- Testes: 47 unitários, 67 checks E2E v2 (aviso não bloqueia, "Entendi" mantém medição, recusa = 0 eventos e 0 chamadas a `widget_events`,
+  vale após recarregar), E2E v1 48 ok. Widget v1 (legado) não tem o aviso.
+- Pendente: publicar (push em bold-cray, OK do usuário); revisão jurídica do texto; endereço do contato do encarregado.
