@@ -46,7 +46,7 @@ ativa, cria o login e importa/atualiza o catálogo.
 | Dia 5–7 | Webmaster do cliente | Colar o snippet em staging, validar numa página de produto, comparar lado a lado com a solução atual, ir ao ar |
 | D+7 e D+30 | Junior | Primeiro relatório de uso; revisão de 30 dias; atualização mensal/trimestral do catálogo |
 
-Pré-requisitos do cliente: lista de revendedores (nome, tipo, endereço ou CEP, telefone/WhatsApp), SKUs, acesso ao site.
+Pré-requisitos do cliente: lista de revendedores (nome, tipo, endereço ou CEP, telefone/WhatsApp), SKUs, **foto de cada produto** (link https na coluna `imagem` da planilha; sem foto o widget mostra as iniciais), acesso ao site.
 Tempo estimado de implantação: **6 a 10 horas de trabalho** (hipótese). Risco nº 1 de churn: planilha ruim e dado desatualizado.
 
 ## 3. Como o cliente usa

@@ -1,0 +1,20 @@
+{
+  "_comentario": "Marca do site de demonstração: TROCAR AQUI para vestir o demo com o visual de um cliente (só cores, fontes e arredondamento; nunca logo, nome ou fotos do cliente real). Depois: node apps/demo/build.mjs e node apps/demo/brand-sql.mjs (imprime o UPDATE do tema do widget no banco).",
+  "fonts": {
+    "googleHref": "https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Hanken+Grotesk:wght@400;500;600;700&display=swap",
+    "display": "\"Archivo\", \"Helvetica Neue\", Arial, system-ui, sans-serif",
+    "body": "\"Hanken Grotesk\", system-ui, -apple-system, \"Segoe UI\", sans-serif"
+  },
+  "colors": {
+    "bg": "#f7f6f2",
+    "ink": "#0f1b2d",
+    "ink2": "#28364b",
+    "muted": "#5b6675",
+    "line": "#e4e2da",
+    "primary": "#1f3fff",
+    "primaryDark": "#1730d6",
+    "accent": "#f2551c"
+  },
+  "radius": 18,
+  "widget": { "radius": 14, "imageRatio": "3/4" }
+}

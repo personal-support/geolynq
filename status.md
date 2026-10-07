@@ -188,6 +188,13 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
     (`{"primary":"#1F3FFF","radius":14,"cardText":"#0F1B2D","border":"#E4E2DA","imageRatio":"3/4"}`); (b) push na `claude/bold-cray-vbbdyb` (publica widget v1+v2 e o site demo).
   - **Pendências deste bloco:** coluna de foto na planilha-modelo e no importador n8n; espelhar/otimizar fotos no nosso armazenamento; eventos novos (abrir lista, escolher produto) e funil no painel;
     pop-up de consentimento/LGPD + texto de privacidade/contrato (advogado); trava de domínio; agrupar sabor/tamanho; ViaCEP/Nominatim públicos (dados de CEP saem para terceiros).
+- **Foto do produto na importação (2026-10-07):** planilha-modelo (`docs/geolynq-catalogo-modelo.xlsx`, aba Produtos) ganhou a coluna opcional `imagem` (link https, até 500 caracteres, sem espaço; vazio = sem foto).
+  O workflow versionado `docs/n8n-geolynq-import-catalogo-v2.workflow.ts` grava `products.image_url` (a planilha é a fonte da verdade) e foto inválida vira **AVISO** (o produto entra sem foto; o lote fica `partial`).
+  Lógica testada executando o código dos nós (7 casos: https ok, http, vazio, com espaço, coluna ausente, link gigante, `javascript:`; resumo = 4 avisos). **A cópia VIVA no n8n NÃO foi atualizada**
+  (o conector do n8n está sem autorização nesta sessão): falta reimportar/ajustar o nó "Validar Produtos" e o "Montar Resumo da Importação" no n8n. Espelhar fotos no nosso armazenamento continua em aberto.
+- **Marca do demo configurável (2026-10-07):** `apps/demo/brand.json` (cores, fontes, arredondamento) gera `brand.css` e `node apps/demo/brand-sql.mjs` imprime o UPDATE do tema do widget. Pedido do usuário: vestir o demo
+  Pódio com o visual da loja da New Millen (só cores, fontes e estilo; nunca logo, nome ou fotos do cliente real). **Bloqueado:** o ambiente da nuvem nega o acesso a `loja.newmillen.com.br`
+  (política de rede), então as cores/fonte reais NÃO foram lidas e nada foi chutado. Caminho: o usuário envia print(s) da loja ou os códigos de cor/fonte, ou libera o domínio em Network access do ambiente.
 - **Falta:** a conferência visual completa pelo usuário (mapa com os blocos reais do OSM, pré-visualização do widget só aparece com o
   cliente `active`). Depois do merge na `main`, trocar a branch do serviço `geolynq_admin` para `main`.
 - **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário

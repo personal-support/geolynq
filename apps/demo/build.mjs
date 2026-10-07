@@ -10,10 +10,11 @@ const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, "dist");
 const { categories, products } = JSON.parse(readFileSync(join(here, "products.json"), "utf8"));
 
+const brand = JSON.parse(readFileSync(join(here, "brand.json"), "utf8"));
 const WIDGET_SRC = process.env.WIDGET_SRC ?? "https://widget.geolynq.personalsupport.tech/v2/embed.js";
 const TENANT = "demo";
-const COLOR = "#1F3FFF"; // cobalto da marca; o widget escolhe sozinho a cor legível do texto
-const NAVY = "#0F1B2D";
+const COLOR = brand.colors.primary; // cor da marca; o widget escolhe sozinho a cor legível do texto
+const NAVY = brand.colors.ink;
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const slug = (p) => p.sku.toLowerCase();
@@ -128,8 +129,9 @@ function layout({ title, description, body, noindexOnly = false }) {
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="${esc(brand.fonts.googleHref)}">
 <link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/brand.css">
 ${noindexOnly ? "" : `<script src="${esc(WIDGET_SRC)}" defer></script>`}
 </head>
 <body>
@@ -376,6 +378,11 @@ writeFileSync(join(out, "apresentacao.html"), presenter);
 writeFileSync(join(out, "404.html"), notFound);
 writeFileSync(join(out, "robots.txt"), "User-agent: *\nDisallow: /\n");
 cpSync(join(here, "styles.css"), join(out, "styles.css"));
+const c = brand.colors;
+writeFileSync(
+  join(out, "brand.css"),
+  `/* gerado de brand.json: variáveis da marca (cores, fontes, arredondamento) */\n:root{--bg:${c.bg};--navy:${c.ink};--navy-2:${c.ink2};--muted:${c.muted};--line:${c.line};--cobalt:${c.primary};--cobalt-d:${c.primaryDark};--orange:${c.accent};--display:${brand.fonts.display};--body:${brand.fonts.body};--radius:${brand.radius}px}\n`,
+);
 writeFileSync(
   join(out, "favicon.svg"),
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#0F1B2D"/><path d="M9 24V8h8a5 5 0 0 1 0 10h-3" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="9" r="2.4" fill="#F2551C"/></svg>\n`,

@@ -37,7 +37,7 @@ const readProdutos = node({
       sheetName: { __rl: true, mode: 'name', value: 'Produtos' }
     },
     credentials: { googleApi: newCredential('Google Drive account') },
-    output: [{ json: { sku: 'WPI-900', nome: 'Whey Protein Isolado 900g', categoria: 'proteina', claims: 'sem lactose, sem gluten', alergenos: 'leite' } }]
+    output: [{ json: { sku: 'WPI-900', nome: 'Whey Protein Isolado 900g', categoria: 'proteina', claims: 'sem lactose, sem gluten', alergenos: 'leite', imagem: 'https://exemplo.com.br/img/wpi-900.jpg' } }]
   }
 });
 
@@ -105,14 +105,22 @@ const codeValidarProdutos = node({
         "  seenSku[sku] = true;\n" +
         "  const claims = (d.claims || '').toString().split(',').map(function (s) { return s.trim(); }).filter(Boolean);\n" +
         "  const alergenos = (d.alergenos || '').toString().split(',').map(function (s) { return s.trim(); }).filter(Boolean);\n" +
+        "  // Foto: a planilha é a fonte da verdade (vazio = sem foto). Só link https:// (o widget recusa o resto); inválido não derruba o produto, vira AVISO.\n" +
+        "  const img = (d.imagem || '').toString().trim();\n" +
+        "  let imageUrl = null;\n" +
+        "  let aviso = null;\n" +
+        "  if (img) {\n" +
+        "    if (/^https:\\/\\/[^\\s]+$/i.test(img) && img.length >= 12 && img.length <= 500) imageUrl = img;\n" +
+        "    else aviso = 'AVISO: foto ignorada; use um link que comece com https:// (até 500 caracteres) e sem espaços';\n" +
+        "  }\n" +
         "  out.push({ json: {\n" +
-        "    _valid: true, _sheet: 'Produtos', _row: row,\n" +
-        "    row: { tenant_id: tenantId, sku: sku, name: nome, category: (d.categoria || '').toString().trim() || null, claims: claims, allergens: alergenos, active: true }\n" +
+        "    _valid: true, _sheet: 'Produtos', _row: row, _aviso: aviso,\n" +
+        "    row: { tenant_id: tenantId, sku: sku, name: nome, category: (d.categoria || '').toString().trim() || null, claims: claims, allergens: alergenos, image_url: imageUrl, active: true }\n" +
         "  } });\n" +
         "});\n" +
         "return out;"
     },
-    output: [{ json: { _valid: true, _sheet: 'Produtos', _row: 2, row: { tenant_id: 'a0000000-0000-0000-0000-000000000000', sku: 'WPI-900', name: 'Whey Protein Isolado 900g', category: 'proteina', claims: ['sem lactose'], allergens: ['leite'], active: true } } }]
+    output: [{ json: { _valid: true, _sheet: 'Produtos', _row: 2, row: { tenant_id: 'a0000000-0000-0000-0000-000000000000', sku: 'WPI-900', name: 'Whey Protein Isolado 900g', category: 'proteina', claims: ['sem lactose'], allergens: ['leite'], image_url: null, active: true } } }]
   }
 });
 
@@ -127,7 +135,7 @@ const ifProdutoValido = ifElse({
         combinator: 'and'
       }
     },
-    output: [{ json: { _valid: true, _sheet: 'Produtos', _row: 2, row: { tenant_id: 'a0000000-0000-0000-0000-000000000000', sku: 'WPI-900', name: 'Whey Protein Isolado 900g', category: 'proteina', claims: ['sem lactose'], allergens: ['leite'], active: true } } }]
+    output: [{ json: { _valid: true, _sheet: 'Produtos', _row: 2, row: { tenant_id: 'a0000000-0000-0000-0000-000000000000', sku: 'WPI-900', name: 'Whey Protein Isolado 900g', category: 'proteina', claims: ['sem lactose'], allergens: ['leite'], image_url: null, active: true } } }]
   }
 });
 
@@ -505,6 +513,12 @@ const codeMontarResumo = node({
         "const avisos = semCoordenadas.map(function (i) {\n" +
         "  return { _sheet: 'Revendedores', _row: i.json._row != null ? i.json._row : null, _error: 'AVISO: endereço não geocodificado; o revendedor foi salvo sem coordenadas e NÃO aparece na busca por distância (corrija o endereço e reimporte)' };\n" +
         "});\n" +
+        "// AVISO de foto inválida (o produto foi importado, sem a foto).\n" +
+        "try {\n" +
+        "  $('Validar Produtos').all().forEach(function (i) {\n" +
+        "    if (i.json && i.json._aviso) avisos.push({ _sheet: 'Produtos', _row: i.json._row != null ? i.json._row : null, _error: i.json._aviso });\n" +
+        "  });\n" +
+        "} catch (e) { /* sem produtos validados: nada a avisar */ }\n" +
         "const rowsProcessed = contarLinhas('Ler Aba Produtos') + contarLinhas('Ler Aba Revendedores') + contarLinhas('Ler Aba Cobertura');\n" +
         "const rowsFailed = erros.length;\n" +
         "let status = 'success';\n" +
