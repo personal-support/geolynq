@@ -49,7 +49,7 @@ async function setup(ctx) {
     calls.push({ path, body });
     const json = (j, status = 200) => r.fulfill({ status, headers: cors, json: j });
     if (path === 'rpc/widget_get_tenant_v2') {
-      if (body.p_slug === 'demo') return json([{ id: T.demo, name: 'Marca Demo', slug: 'demo', primary_color: null, logo_url: null, theme: { primary: '#0F766E', radius: 6, imageRatio: '4/3', font: "Georgia, 'Times New Roman', serif", card: '#ffffff' } }]);
+      if (body.p_slug === 'demo') return json([{ id: T.demo, name: 'Marca Demo', slug: 'demo', primary_color: null, logo_url: null, theme: { primary: '#0F766E', radius: 6, imageRatio: '4/3', font: "Georgia, 'Times New Roman', serif", card: '#ffffff', buttonRadius: 28, buttonUppercase: true } }]);
       if (body.p_slug === 'herda') return json([{ id: T.herda, name: 'Marca Herda', slug: 'herda', primary_color: '#B91C1C', logo_url: null, theme: {} }]);
       if (body.p_slug === 'grande') return json([{ id: T.grande, name: 'Marca Grande', slug: 'grande', primary_color: null, logo_url: null, theme: { buttonStyle: 'outline' } }]);
       return json([]);
@@ -110,8 +110,8 @@ async function setup(ctx) {
   check('contador: 30 produtos', /30 produtos/.test(await sel('.count').innerText()));
   const botoesPorCard = await sel('.prod').evaluateAll((cs) => cs.map((c) => c.querySelectorAll('button, a').length));
   check('cada produto tem UM só botão', botoesPorCard.every((n) => n === 1), JSON.stringify(botoesPorCard.slice(0, 5)));
-  check('o botão do produto é "Onde encontrar"', (await sel('.prod .btn').first().innerText()) === 'Onde encontrar');
-  check('botão "Lista de revendedores" no início', (await sel('.bar .btn').innerText()) === 'Lista de revendedores');
+  check('o botão do produto é "Onde encontrar"', (await sel('.prod .btn').first().innerText()).toLowerCase() === 'onde encontrar');
+  check('botão "Lista de revendedores" no início', (await sel('.bar .btn').innerText()).toLowerCase() === 'lista de revendedores');
   check('selo "Tecnologia GeoLynq" presente, discreto e no fim do widget', (await sel('.credit').count()) === 1 && (await sel('.credit').innerText()) === 'Tecnologia GeoLynq' && (await sel('.gl > :last-child').getAttribute('class')) === 'credit');
   const fsCredito = await sel('.credit').evaluate((el) => parseFloat(getComputedStyle(el).fontSize) / parseFloat(getComputedStyle(el.parentElement).fontSize));
   check('selo é menor que o texto do widget', fsCredito < 0.9, String(fsCredito));
@@ -223,7 +223,8 @@ async function setup(ctx) {
   await sel('.prod').first().waitFor();
   const estilo = await sel('.prod .btn').first().evaluate((b) => { const c = getComputedStyle(b); return { bg: c.backgroundColor, radius: c.borderTopLeftRadius }; });
   check('tema: cor principal do cliente no botão', estilo.bg === 'rgb(15, 118, 110)', estilo.bg);
-  check('tema: arredondamento do cliente', estilo.radius === '6px', estilo.radius);
+  const raioCartao = await sel('.prod').first().evaluate((c) => getComputedStyle(c).borderTopLeftRadius);
+  check('tema: arredondamento do cliente (cartão 6 px, botão em pílula 28 px)', raioCartao === '6px' && estilo.radius === '28px', raioCartao + ' / ' + estilo.radius);
   check('tema: proporção da foto do cliente (4 / 3)', (await sel('.ph').first().evaluate((e) => getComputedStyle(e).aspectRatio)) === '4 / 3');
   check('tema: fonte do cliente (Georgia)', /Georgia/.test(await sel('.prod-name').first().evaluate((e) => getComputedStyle(e).fontFamily)));
   check('o widget não mexe no cabeçalho e no rodapé do cliente', (await page.locator('header').innerText()) === 'Cabeçalho do cliente' && (await page.locator('footer').innerText()) === 'Rodapé do cliente');
@@ -271,6 +272,19 @@ async function setup(ctx) {
   const colunas = await pm.locator('geolynq-widget').locator('.grid').first().evaluate((g) => getComputedStyle(g).gridTemplateColumns.split(' ').length);
   await shot(pm, 'v2-05-celular');
   check('celular (390 px): sem rolagem lateral e 2 colunas', !over && colunas === 2, `overflow=${over} colunas=${colunas}`);
+  // texto dos botões (caixa alta + negrito + fonte grande do celular) nunca pode ficar cortado
+  const cortados = async (rotulo) => {
+    const lista = await pm.locator('geolynq-widget').locator('.btn').evaluateAll((bs) => bs.filter((b) => b.scrollWidth > b.clientWidth + 1 || b.scrollHeight > b.clientHeight + 1).map((b) => b.textContent));
+    check(`celular, fonte grande: nenhum botão com texto cortado (${rotulo})`, lista.length === 0, JSON.stringify(lista));
+  };
+  await pm.evaluate(() => { document.body.style.fontSize = '20px'; });
+  await pm.waitForTimeout(100);
+  await shot(pm, 'v2-05b-celular-fonte-grande');
+  await cortados('grade');
+  await pm.locator('geolynq-widget').locator('.prod .btn').first().click();
+  await pm.locator('geolynq-widget').locator('#gl-cep').waitFor();
+  await shot(pm, 'v2-05c-celular-onde-encontrar');
+  await cortados('telas do produto');
   await m.close();
 
   check('sem erros de JavaScript no console', errs.length === 0, errs.join(' | '));

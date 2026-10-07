@@ -30,6 +30,7 @@ label { display: block; font-weight: 600; margin-bottom: 6px; }
   display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 46px; padding: 8px 18px;
   border-radius: var(--gl-btn-radius); border: 2px solid var(--gl-primary); cursor: pointer; text-decoration: none;
   font-weight: 600; text-align: center; text-transform: var(--gl-btn-case); transition: opacity .15s;
+  white-space: normal; line-height: 1.2; max-width: 100%; overflow-wrap: anywhere;
   background: var(--gl-primary); color: var(--gl-on-primary);
 }
 .btn.outline { background: var(--gl-card); color: var(--gl-accent); border-color: var(--gl-accent); }
@@ -42,7 +43,6 @@ label { display: block; font-weight: 600; margin-bottom: 6px; }
 /* contagem */
 .count { margin: 0 0 12px; opacity: .8; font-size: .95em; }
 .list-host { margin-top: 14px; }
-.prod-body .btn { white-space: nowrap; }
 
 /* grade de produtos */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 16px; list-style: none; margin: 0; padding: 0; }
@@ -56,6 +56,7 @@ label { display: block; font-weight: 600; margin-bottom: 6px; }
 .prod-cat { font-size: .78em; text-transform: uppercase; letter-spacing: .06em; color: var(--gl-muted); }
 .prod-name { font-weight: 600; line-height: 1.3; }
 .prod-body .btn { margin-top: auto; min-height: 42px; padding: 6px 12px; }
+@media (max-width: 480px) { .prod-body .btn { font-size: .9em; } .row { flex-wrap: wrap; } .row .btn { width: 100%; } }
 .prod-body .spacer { flex: 1; }
 .more { display: flex; justify-content: center; margin-top: 18px; }
 
