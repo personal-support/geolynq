@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import type { Leitura } from "@/lib/ia";
 import type { Catalog, EventoRecente, Funil, ImportBatch, LacunasCompletas, Overview, RevendedorDesempenho, Tenant } from "@/lib/types";
 
 /** Usuário logado (validado no servidor do Supabase) + client. Uma consulta por requisição. */
@@ -147,4 +148,28 @@ export const getGaps = cache(async (tenantId: string, dias: number): Promise<Lac
   if (error) throw new Error(error.code === "PGRST202" ? REPORTS_HINT : `Lacunas indisponíveis: ${error.message}`);
   if (!data) throw new Error("Sem acesso a este cliente.");
   return data as LacunasCompletas;
+});
+
+/** Última leitura por IA guardada para o cliente e o período (ou null). */
+export interface LeituraGuardada {
+  id: string;
+  conteudo: Leitura;
+  modelo: string;
+  created_at: string;
+}
+export const getUltimaLeitura = cache(async (tenantId: string, dias: number): Promise<LeituraGuardada | null> => {
+  const { supabase } = await getSession();
+  const { data, error } = await supabase
+    .from("panel_ai_readings")
+    .select("id, conteudo, modelo, created_at")
+    .eq("tenant_id", tenantId)
+    .eq("dias", dias)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (error) {
+    // tabela ainda não criada neste banco: o painel segue sem o cartão
+    if (error.code === "PGRST205" || error.code === "42P01") return null;
+    throw new Error(`Leitura por IA indisponível: ${error.message}`);
+  }
+  return ((data ?? [])[0] as LeituraGuardada | undefined) ?? null;
 });

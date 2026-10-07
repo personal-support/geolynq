@@ -657,3 +657,16 @@ do banco agora é schema + migration acima.
   `panel_funnel` com EXECUTE só para authenticated); (2) simulação `11_` rodada no `demo` (prefixo `seed-pod-`): 300 product_select, 201 catalog_search, 83 list_open/list_search;
   (3) push `e089984` em `claude/bold-cray-vbbdyb` (widget); (4) `deployAppService` do `geolynq_admin` (a chamada estoura 60 s, mas o build segue). Deploys NÃO verificados ainda.
 - Cuidado: `listProjectsAndServices` do EasyPanel devolve as variáveis de ambiente (segredos) de TODOS os projetos da conta; use `getDockerContainers`.
+
+## Leitura do período por IA (2026-10-07) — PRONTO NO CÓDIGO; NADA APLICADO NA PRODUÇÃO; falta a chave
+- Cartão "Leitura do período" na Visão geral: resumo, destaques e ações, gerados sob demanda (botão), guardados em `panel_ai_readings` por cliente e período.
+  Números vêm do SQL (`montarDados`); a IA só narra; TODO número escrito é conferido contra os dados (`numerosNaoConferem`); se não conferir, tenta 1 vez
+  de novo e depois DESCARTA (nunca mostra número não verificado). Limitação: confere que o número existe nos dados, não que foi atribuído ao item certo.
+- Segurança: chamada só no servidor (`apps/admin/lib/ia.ts`, fetch direto, sem SDK novo); chave em `ANTHROPIC_API_KEY` e modelo em `ANTHROPIC_MODEL`
+  (variáveis de RUNTIME do serviço `geolynq_admin` no EasyPanel, sem prefixo NEXT_PUBLIC). Termos digitados por visitantes entram só como dado JSON (anti prompt injection).
+  Limite de custo: 1 leitura / 2 min (conferido ANTES de chamar o modelo) e 30 / dia por cliente (gatilho no banco). Sem chave, o cartão nem aparece.
+- Banco: migration `20261012000000_leitura_ia.sql` (tabela + RLS por cliente + gatilho de limite). Teste `supabase/tests/12_leitura_ia.sql` (OK 12).
+- Testes: `apps/admin/e2e/ia.test.mts` (14, lógica pura + modelo simulado), E2E do painel 86 (modelo simulado: leitura boa, repetição barrada, número inventado descartado,
+  isolamento entre clientes). NÃO testado com a API real da Anthropic (o sandbox não alcança).
+- Para ligar: (1) aplicar a migration em produção; (2) usuário põe `ANTHROPIC_API_KEY` e `ANTHROPIC_MODEL` no EasyPanel (geolynq_admin > Ambiente); (3) deploy do painel.
+- Privacidade: a IA recebe só números agregados, nomes de produto/cidade e os 6 termos mais buscados fora do catálogo (até 40 caracteres cada). Citar isso no texto de privacidade (operador de IA) na revisão jurídica.

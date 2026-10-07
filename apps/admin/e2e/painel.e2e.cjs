@@ -3,7 +3,7 @@
  * (relatórios vindos das funções SQL reais num Postgres local, com RLS).
  *
  * Pré-requisitos (ver supabase/tests/README.md): Postgres local com schema + migrations + 02_fixture + 03_eventos_simulados
- * + 11_eventos_funil_simulados (psql -v slug=fabrica-teste -v prefix=seed-),
+ * + 11_eventos_funil_simulados (psql -v slug=fabrica-teste -v prefix=seed-); a IA é simulada por um servidor local (startIA),
  * e o papel `e2e`. Build com as mesmas variáveis usadas aqui:
  *   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_test npm run build -w @geolynq/admin
  *   npm run e2e -w @geolynq/admin
@@ -14,7 +14,34 @@ const fs = require("fs");
 const path = require("path");
 const { Client } = require("pg");
 const { chromium } = require("playwright");
+const http = require("http");
 const { start: startMock } = require("./mock-supabase.cjs");
+
+// Modelo simulado (API de mensagens): devolve uma leitura com números tirados dos próprios dados recebidos, ou uma com número inventado.
+const ia = { modo: "boa", chamadas: [] };
+function startIA() {
+  const srv = http.createServer((req, res) => {
+    let b = "";
+    req.on("data", (c) => (b += c));
+    req.on("end", () => {
+      const corpo = JSON.parse(b);
+      ia.chamadas.push({ chave: req.headers["x-api-key"], corpo });
+      const dados = JSON.parse(corpo.messages[0].content.replace(/^DADOS DO PERÍODO \(JSON\):\n/, ""));
+      const texto = JSON.stringify(
+        ia.modo === "boa"
+          ? {
+              resumo: `Foram ${dados.buscas} buscas em ${dados.periodo_dias} dias e ${dados.buscas_sem_revendedor_a_100_km} ficaram sem revendedor por perto.`,
+              destaques: [{ titulo: "Lacuna principal", texto: `${dados.maiores_lacunas[0].produto} em ${dados.maiores_lacunas[0].cidade} teve ${dados.maiores_lacunas[0].buscas} buscas sem loja por perto.` }],
+              acoes: [{ acao: `Prospecte revendedor em ${dados.maiores_lacunas[0].cidade}.`, motivo: `Foram ${dados.maiores_lacunas[0].buscas} buscas sem loja por perto.` }],
+            }
+          : { resumo: "As buscas cresceram 7777% no período.", destaques: [], acoes: [{ acao: "Faça algo.", motivo: "Motivo." }] },
+      );
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ content: [{ type: "text", text: texto }], usage: { input_tokens: 10, output_tokens: 5 } }));
+    });
+  });
+  return new Promise((ok) => srv.listen(0, "127.0.0.1", () => ok(srv)));
+}
 
 const PORT = 3100;
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -66,6 +93,7 @@ async function esperado() {
 
 (async () => {
   const mock = await startMock(54321);
+  const iaSrv = await startIA();
   // E2E_STANDALONE=1: sobe o servidor da saída "standalone" (o que vai dentro da imagem Docker), montado como no Dockerfile.
   const raiz = path.join(__dirname, "..");
   let comando;
@@ -79,7 +107,15 @@ async function esperado() {
   }
   const next = spawn(process.execPath, comando, {
     cwd: process.env.E2E_STANDALONE ? path.join(raiz, ".next", "standalone", "apps", "admin") : raiz,
-    env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1", PORT: String(PORT), HOSTNAME: "127.0.0.1" },
+    env: {
+      ...process.env,
+      NEXT_TELEMETRY_DISABLED: "1",
+      PORT: String(PORT),
+      HOSTNAME: "127.0.0.1",
+      ANTHROPIC_API_KEY: "chave-e2e-nao-secreta",
+      ANTHROPIC_MODEL: "modelo-e2e",
+      ANTHROPIC_BASE_URL: `http://127.0.0.1:${iaSrv.address().port}`,
+    },
     stdio: ["ignore", "pipe", "pipe"],
   });
   let nextLog = "";
@@ -94,6 +130,7 @@ async function esperado() {
     const dbSeed = new Client({ connectionString: process.env.DATABASE_URL || "postgres://e2e:e2e@127.0.0.1:5432/geolynq_test" });
     await dbSeed.connect();
     await dbSeed.query("delete from public.widget_events where session_id like 'e2e-%'");
+    await dbSeed.query("delete from public.panel_ai_readings");
     await dbSeed.query(`insert into public.widget_events (tenant_id, session_id, event_type, query_text, results_count, telemetry_v, created_at)
       select (select id from public.tenants where slug='demo'), 'e2e-' || g, 'search', 'whey', 1, 2, now() - (g || ' hours')::interval from generate_series(1, 5) g`);
     browser = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });
@@ -191,6 +228,29 @@ async function esperado() {
       check("funil: o termo mais digitado aparece com o total do banco", (await cartaoFunil.innerText()).includes(fu.termos[0].termo) && (await cartaoFunil.innerText()).includes(String(fu.termos[0].buscas)), `${fu.termos[0].termo} = ${fu.termos[0].buscas}`);
       check("funil: o que não achou produto vem marcado 'fora do catálogo'", fu.termos.some((x) => !x.achou) ? (await cartaoFunil.innerText()).includes("fora do catálogo") : true);
       check("ao vivo: eventos de navegação aparecem com o rótulo 'Navegação'", ref.recentes.some((e) => ["catalog_search", "product_select", "list_open", "list_search"].includes(e.tipo)) ? (await ultimas.locator("li", { hasText: "Navegação" }).count()) > 0 : true);
+      // ---- Leitura do período por IA (modelo simulado; números conferidos contra os dados)
+      const cartaoIA = pageA.locator("section", { has: pageA.locator("h2", { hasText: "Leitura do período" }) });
+      check("IA: cartão 'Leitura do período' aparece (chave configurada) e ainda sem leitura", (await cartaoIA.count()) === 1 && (await cartaoIA.locator("[data-leitura]").count()) === 0 && (await cartaoIA.locator("button", { hasText: "Gerar leitura" }).count()) === 1);
+      await Promise.all([pageA.waitForLoadState("networkidle").catch(() => {}), cartaoIA.locator("button", { hasText: "Gerar leitura" }).click()]);
+      await pageA.waitForSelector("[data-leitura]", { timeout: 15000 });
+      const txIA = await cartaoIA.innerText();
+      const dadosEnviados = JSON.parse(ia.chamadas[0].corpo.messages[0].content.replace(/^DADOS DO PERÍODO \(JSON\):\n/, ""));
+      check("IA: mostra a leitura, com os números do banco (buscas e buscas sem revendedor)", txIA.includes(`Foram ${ref.ov.kpis.buscas} buscas`) && txIA.includes(`${ref.ov.kpis.sem_cobertura} ficaram sem revendedor`), txIA.replace(/\s+/g, " ").slice(0, 160));
+      check("IA: os dados enviados ao modelo são os do banco; a chave vai só no cabeçalho do servidor", dadosEnviados.buscas === ref.ov.kpis.buscas && dadosEnviados.funil.escolheram_produto === ref.funil.produto.escolheram && ia.chamadas[0].chave === "chave-e2e-nao-secreta" && !(await pageA.content()).includes("chave-e2e-nao-secreta"));
+      check("IA: a leitura foi guardada no banco (1 linha) e some o botão de 'primeira leitura'", Number((await dbSeed.query("select count(*) n from public.panel_ai_readings where tenant_id=(select id from public.tenants where slug='fabrica-teste')")).rows[0].n) === 1 && (await cartaoIA.locator("button", { hasText: "Gerar nova leitura" }).count()) === 1);
+      await pageA.reload({ waitUntil: "networkidle" });
+      check("IA: ao recarregar mostra a mesma leitura sem chamar o modelo de novo", (await cartaoIA.locator("[data-leitura]").count()) === 1 && ia.chamadas.length === 1);
+      await Promise.all([pageA.waitForURL(/ia=limite/, { timeout: 15000 }), cartaoIA.locator("button", { hasText: "Gerar nova leitura" }).click()]);
+      await cartaoIA.locator("[role=alert]").waitFor({ timeout: 15000 });
+      check("IA: segunda leitura logo em seguida é barrada ANTES de gastar o modelo", /Já foi gerada uma leitura há pouco/.test(await cartaoIA.innerText()) && ia.chamadas.length === 1, `chamadas=${ia.chamadas.length} | ${(await cartaoIA.innerText()).replace(/\s+/g, " ").slice(0, 200)} | ${pageA.url()}`);
+      await dbSeed.query("update public.panel_ai_readings set created_at = now() - interval '10 minutes'");
+      ia.modo = "inventada";
+      await Promise.all([pageA.waitForURL(/ia=nao_confiavel/, { timeout: 30000 }), cartaoIA.locator("button", { hasText: "Gerar nova leitura" }).click()]);
+      await cartaoIA.locator("[role=alert]").waitFor({ timeout: 15000 });
+      const txRuim = await cartaoIA.innerText();
+      check("IA: número inventado pelo modelo é descartado (2 tentativas) e NÃO aparece na tela", /descartada por segurança/.test(txRuim) && !txRuim.includes("7777") && ia.chamadas.length === 3, `chamadas=${ia.chamadas.length}`);
+      check("IA: a leitura boa anterior continua na tela e nada novo foi gravado", (await cartaoIA.locator("[data-leitura]").count()) === 1 && Number((await dbSeed.query("select count(*) n from public.panel_ai_readings")).rows[0].n) === 1);
+      ia.modo = "boa";
       const quem = pageA.locator("section", { has: pageA.locator("h2", { hasText: "Quem gera contato" }) });
       const topPerf = ref.perf.filter((r) => r.contatos > 0)[0];
       const txtQ = await quem.innerText();
@@ -369,6 +429,18 @@ async function esperado() {
       check("aviso 'Base pequena' com 5 buscas", (await base.count()) === 1 && /5 buscas neste período/.test(await base.innerText()), await base.innerText().then((x) => x.replace(/\s+/g, " ").slice(0, 110)));
       check("manchete NÃO diz que está tudo coberto quando nenhuma busca bateu com produto", /Nenhuma das 5 buscas bateu com um produto do catálogo/.test(t) && !/Todas as buscas com produto encontraram/.test(t), await page.locator("h2").first().innerText().then((x) => x.replace(/\s+/g, " ")));
       check("aviso sugere 90 dias quando o período é menor", /90 dias/.test(await base.innerText()));
+      check("IA: o outro cliente NÃO vê a leitura do cliente de teste", (await page.locator("[data-leitura]").count()) === 0);
+      {
+        const rls = new Client({ connectionString: process.env.DATABASE_URL || "postgres://e2e:e2e@127.0.0.1:5432/geolynq_test" });
+        await rls.connect();
+        await rls.query("begin");
+        await rls.query("set local role authenticated");
+        await rls.query("select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-0000000000bb', true)");
+        const vistas = Number((await rls.query("select count(*) n from public.panel_ai_readings where tenant_id=(select id from public.tenants where slug='fabrica-teste')")).rows[0].n);
+        await rls.query("rollback");
+        await rls.end();
+        check("IA (banco): usuário de outro cliente não lê leituras do cliente de teste (RLS)", vistas === 0);
+      }
       await page.screenshot({ path: `${OUT}/13-demo-base-pequena.png`, fullPage: true });
       await page.goto(`${BASE}/dashboard?dias=90`);
       check("no período de 90 dias o aviso não repete a sugestão de 90 dias", !/90 dias dá/.test(await texto(page)) && (await page.locator('[role="note"]', { hasText: "Base pequena" }).count()) === 1);
@@ -406,6 +478,7 @@ async function esperado() {
       await c.end();
     } catch {}
     next.kill();
+    iaSrv.close();
     mock.server.close();
   }
 

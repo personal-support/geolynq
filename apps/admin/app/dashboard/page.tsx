@@ -7,7 +7,8 @@ import { PeriodTabs } from "@/components/period-tabs";
 import { Card, CardHeader, Delta, Empty, Kpi, PageHeader } from "@/components/ui";
 import { UltimasBuscas, QuemGeraContato } from "@/components/ao-vivo";
 import { FunilDeUso } from "@/components/funil";
-import { carregar, getCatalog, getFunnel, getMembership, getOverview, getRecent, getResellerPerf, parseDias } from "@/lib/data";
+import { LeituraDoPeriodo } from "@/components/leitura";
+import { carregar, getCatalog, getFunnel, getMembership, getUltimaLeitura, getOverview, getRecent, getResellerPerf, parseDias } from "@/lib/data";
 import { avisoDeBase } from "@/lib/avisos";
 import { ACAO_CLIQUE, km, num, pct, variacao } from "@/lib/format";
 
@@ -20,12 +21,15 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
   const m = await getMembership();
   if (!m) return null;
 
-  const [ov, cat, rec, perf, fun] = await Promise.all([
+  const iaAtiva = Boolean(process.env.ANTHROPIC_API_KEY);
+  const erroIA = (await searchParams).ia;
+  const [ov, cat, rec, perf, fun, leitura] = await Promise.all([
     carregar(() => getOverview(m.tenant.id, dias)),
     carregar(() => getCatalog(m.tenant.id)),
     carregar(() => getRecent(m.tenant.id, 10)),
     carregar(() => getResellerPerf(m.tenant.id, dias)),
     carregar(() => getFunnel(m.tenant.id, dias)),
+    iaAtiva ? carregar(() => getUltimaLeitura(m.tenant.id, dias)) : Promise.resolve(null),
   ]);
   if ("erro" in ov) return <ErroPainel erro={ov.erro} />;
   if ("erro" in cat) return <ErroPainel erro={cat.erro} />;
@@ -122,6 +126,10 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
           </div>
         </div>
       </Card>
+
+      {iaAtiva && leitura && !("erro" in leitura) ? (
+        <LeituraDoPeriodo leitura={leitura.dados} dias={dias} erro={typeof erroIA === "string" ? erroIA : null} />
+      ) : null}
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <Kpi

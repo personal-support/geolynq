@@ -24,6 +24,19 @@ Os relatórios vêm de 2 funções do banco (`panel_overview`, `panel_catalog`) 
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | chave **publishable** (`sb_publishable_…`). Nunca `service_role` |
 | `NEXT_PUBLIC_WIDGET_SCRIPT_URL` | (opcional) bundle do widget; padrão `https://widget.geolynq.personalsupport.tech/v1/embed.js` |
 
+## Leitura do período por IA (variáveis SECRETAS, só do servidor)
+Definir no EasyPanel, serviço `geolynq_admin`, aba Ambiente (em tempo de execução; **sem** prefixo `NEXT_PUBLIC_`, nunca no Dockerfile nem no repositório):
+
+| Nome | Valor |
+|---|---|
+| `ANTHROPIC_API_KEY` | chave da API da Anthropic (de preferência uma chave só da GeoLynq, com limite de gasto no console da Anthropic) |
+| `ANTHROPIC_MODEL` | nome do modelo a usar (obrigatório; trocar aqui muda custo e qualidade sem mexer no código) |
+| `ANTHROPIC_BASE_URL` | (opcional; só testes) padrão `https://api.anthropic.com` |
+
+Sem `ANTHROPIC_API_KEY` o cartão "Leitura do período" nem aparece. Requer a migration `20261012000000_leitura_ia.sql`. Regras: números vêm do SQL e são
+conferidos contra os dados antes de aparecer (`lib/ia.ts`); no máximo 1 leitura a cada 2 minutos e 30 por dia por cliente.
+Teste da lógica pura: `node --experimental-strip-types apps/admin/e2e/ia.test.mts`.
+
 ## Rodar e testar
 ```bash
 npm run build -w @geolynq/admin && npm run typecheck -w @geolynq/admin && npm run lint -w @geolynq/admin

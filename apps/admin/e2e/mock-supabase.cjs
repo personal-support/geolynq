@@ -141,6 +141,32 @@ function start(port = 54321) {
           res.writeHead(200, { "content-type": "application/json", "access-control-allow-origin": "*", "content-range": n === 0 ? "*/0" : `0-${n - 1}/${n}` });
           return res.end(req.method === "HEAD" ? undefined : "[]");
         }
+        if (rota === "panel_ai_readings") {
+          // leitura por IA: sob RLS (membro lê/grava só o do próprio cliente) e com o gatilho de limite do banco
+          if (req.method === "POST") {
+            const b = Array.isArray(body) ? body[0] : body;
+            try {
+              await comoUsuario(claims.sub, (db) =>
+                db.query(
+                  "insert into public.panel_ai_readings (tenant_id, dias, conteudo, modelo, tokens_in, tokens_out) values ($1::uuid, $2::int, $3::jsonb, $4, $5, $6)",
+                  [b.tenant_id, b.dias, JSON.stringify(b.conteudo), b.modelo, b.tokens_in ?? null, b.tokens_out ?? null],
+                ),
+              );
+            } catch (e) {
+              return send(400, { code: e.code || "P0001", message: String(e.message || e) });
+            }
+            return send(201);
+          }
+          const tenant = (url.searchParams.get("tenant_id") || "").replace(/^eq\./, "");
+          const dias = (url.searchParams.get("dias") || "").replace(/^eq\./, "");
+          const r = await comoUsuario(claims.sub, (db) =>
+            db.query(
+              `select id, conteudo, modelo, created_at from public.panel_ai_readings where tenant_id = $1::uuid ${dias ? "and dias = $2::int" : ""} order by created_at desc limit 1`,
+              dias ? [tenant, dias] : [tenant],
+            ),
+          );
+          return send(200, r.rows);
+        }
         if (rota === "import_batches") {
           const tenant = (url.searchParams.get("tenant_id") || "").replace(/^eq\./, "");
           const r = await comoUsuario(claims.sub, (db) =>
