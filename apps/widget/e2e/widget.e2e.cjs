@@ -34,8 +34,18 @@ async function setup(ctx) {
     supabaseCalls.push({ path: u.pathname.replace('/rest/v1/',''), apikey: rq.headers()['apikey'], auth: rq.headers()['authorization'], q: u.search, body });
     const json = (j, status=200) => r.fulfill({ status, headers: cors, json: j });
     if (u.pathname.endsWith('/rpc/widget_get_tenant')) return json(body.p_slug === 'demo' ? [{ id: TENANT_ID, name: 'Demo', slug: 'demo', primary_color: null, logo_url: null }] : []);
+    if (u.pathname.endsWith('/rpc/widget_search_products')) {
+      const t = String(body.p_term || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      if (t.includes('legado')) return json({ message: 'função inexistente' }, 404); // simula banco sem a migration
+      if (t.includes('whey')) return json([{ id: PRODUCT_ID, sku: 'WPI-900', name: 'Whey Protein Isolado 900g', category: 'Proteínas' }]);
+      if (t.includes('proteina')) return json([{ id: 'p-far', sku: 'BAR-012', name: 'Barra de Proteína', category: 'proteina' }]);
+      if (t.includes('barra')) return json([{ id: 'p-far', sku: 'BAR-012', name: 'Barra de Proteína', category: 'proteina' }]);
+      if (t.includes('hiper')) return json([{ id: 'p-none', sku: 'HIP-3000', name: 'Hipercalórico 3kg', category: 'proteina' }]);
+      return json([]);
+    }
     if (u.pathname.endsWith('/products')) {
       const q = decodeURIComponent(u.search);
+      if (/legado/i.test(q)) return json([{ id: PRODUCT_ID, sku: 'WPI-900', name: 'Whey Protein Isolado 900g', category: 'Proteínas' }]);
       if (/sku=eq\.WPI-900/.test(q)) return json([{ id: PRODUCT_ID, sku: 'WPI-900', name: 'Whey Protein Isolado 900g', category: 'Proteínas' }]);
       if (/sku=eq\./.test(q)) return json([]);
       if (/whey/i.test(q)) return json([{ id: PRODUCT_ID, sku: 'WPI-900', name: 'Whey Protein Isolado 900g', category: 'Proteínas' }]);
@@ -83,8 +93,17 @@ async function setup(ctx) {
   check('termo sem produto mostra mensagem', true);
 
   await sel('input#gl-term').fill('whey),sku.neq.x'); await sel('button[type=submit]').click(); await page.waitForTimeout(500);
-  const injQ = supabaseCalls.filter(c => c.path === 'products').pop().q;
-  check('termo com sintaxe de filtro é neutralizado antes de ir à API', !/\),sku\.neq/.test(decodeURIComponent(injQ)), decodeURIComponent(injQ).slice(0,140));
+  const injTerm = supabaseCalls.filter(c => c.path === 'rpc/widget_search_products').pop().body.p_term;
+  check('termo com sintaxe de filtro é neutralizado antes de ir à API', !/[,()]/.test(injTerm), injTerm);
+
+  await sel('input#gl-term').fill('PROTEINA'); await sel('button[type=submit]').click();
+  await sel('button.pick:has-text("Barra de Proteína")').first().waitFor({ timeout: 10000 });
+  check('busca sem acento ("PROTEINA") acha "Barra de Proteína" via RPC', /Barra de Proteína/.test(await sel('button.pick').first().innerText()) && supabaseCalls.filter(c => c.path === 'rpc/widget_search_products').pop().body.p_term === 'PROTEINA');
+
+  const antes = supabaseCalls.filter(c => c.path === 'products').length;
+  await sel('input#gl-term').fill('legado'); await sel('button[type=submit]').click();
+  await sel('button.pick:has-text("Whey")').first().waitFor({ timeout: 10000 });
+  check('RPC fora do ar: cai na consulta antiga e ainda lista o produto', /Whey Protein Isolado/.test(await sel('button.pick').first().innerText()) && supabaseCalls.filter(c => c.path === 'products').length === antes + 1, (await sel('button.pick').first().innerText()) + ' | products=' + (supabaseCalls.filter(c => c.path === 'products').length - antes));
 
   await sel('input#gl-term').fill('whey'); await sel('button[type=submit]').click();
   await sel('button.pick').first().waitFor({ timeout: 10000 });

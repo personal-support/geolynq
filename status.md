@@ -111,8 +111,7 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   real; (c) **riscos de precisão com dados reais, a tratar antes do 1º cliente:** busca sensível a acento ("proteina" não acha "Proteína" e
   vira falsamente "fora do catálogo"), `widget_events` aceita INSERT anônimo sem limite (inflável por robô), "pessoas" = sessões do navegador
   (não pessoas), buscas sem localização não entram como lacuna, raio fixo de 100 km, base pequena (≤ 500 acessos/mês) = números instáveis.
-  **Ideias aprovadas:** faixa "Dados de demonstração" e aviso "base pequena" → **feitos** (ver abaixo). **Ainda a propor (mexe em produção, precisa de OK):**
-  busca sem acento (`unaccent`, toca banco e widget) e limite de eventos por visitante em `widget_events`.
+  **Ideias aprovadas:** faixa "Dados de demonstração" e aviso "base pequena" → **feitos** (ver abaixo). **Feitos em 2026-10-07:** busca sem acento e limite de eventos (ver abaixo).
 - **Faixa "Dados de demonstração" + aviso "Base pequena" (feitos em 2026-10-06, só no painel, sem mudar o banco):**
   - Faixa amarela no topo de todas as telas quando o tenant tem eventos com `session_id` `seed-…` (simulados). Mostra a contagem real
     ("Todos os N eventos…" ou "X de N eventos…"). Some sozinha quando os simulados forem apagados; o `demo` não mostra (não tem simulados).
@@ -124,6 +123,20 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
     Agora a manchete diz "Nenhuma das N buscas bateu com um produto do catálogo" e os cartões dizem "Sem dados para medir lacunas".
   - **Publicado (2026-10-07):** commit `aeb844b` redeployado em `geolynq_admin`; contêiner novo `running` e `healthy` (conferido no EasyPanel; a tela em si só o usuário vê, o domínio dá 403 no proxy daqui).
   - E2E em Chromium agora **52/52** (`next start` e standalone). Limiar de 30 é uma hipótese; ajustar com dados reais.
+- **Itens 3 e 4 — precisão com dados reais (2026-10-07, com OK do usuário):** migration `20261007000000_busca_sem_acento_e_limite_eventos.sql`.
+  - **Busca sem acento:** RPC `widget_search_products` (+ `norm_busca`, só `translate`, sem extensão). "PROTEINA" acha "Proteína"; `%` e `_` são
+    literais; SECURITY INVOKER (RLS pública vale). Widget (`apps/widget/src/api.ts`) usa a RPC e, se ela falhar, cai na consulta antiga (`ilike`).
+  - **Limite de eventos:** trigger `widget_events_limit` em `widget_events` (SECURITY DEFINER; papel lido de `current_setting('role')`):
+    para `anon`/`authenticated` força `created_at = now()` e DESCARTA em silêncio o evento acima de 20/min e 200/h por `session_id` e 600/min por
+    cliente. `service_role`/postgres não são limitados (importação e simulados continuam). Limites são hipóteses; ajustar na função.
+    **Limite conhecido:** robô que troca de `session_id` a cada evento só é barrado pelo teto do cliente; por IP exigiria guardar IP (LGPD) ou WAF.
+  - **Testes:** `supabase/tests/05_*.sql` no Postgres local (OK 05; controle negativo: com o trigger desligado o teste falha); widget 24 testes
+    unitários (3 novos) e E2E 48/48 (3 novos: sem acento, sanitização, fallback).
+  - **Aplicado na produção (`geolynq-prod`) em 3 partes:** funções + trigger. Conferido lá: trigger ativo (1), `created_at` forjado de 40 dias
+    virou agora, busca "PROTEÍN" como `anon` achou 3 produtos do `demo`; transação de prova desfeita (0 sobras; `widget_events` segue com 535).
+  - **NÃO publicado ainda:** o código do widget (usa a RPC) só vai ao ar com push/merge na `claude/bold-cray-vbbdyb`, que NÃO foi feito (a sessão
+    trabalha na `claude/keen-johnson-c0x5hs` e publicar o widget precisa de permissão explícita). Enquanto isso o widget antigo segue funcionando
+    (busca com `ilike`) e já está protegido pelo trigger.
 - **Falta:** a conferência visual completa pelo usuário (mapa com os blocos reais do OSM, pré-visualização do widget só aparece com o
   cliente `active`). Depois do merge na `main`, trocar a branch do serviço `geolynq_admin` para `main`.
 - **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário

@@ -13,6 +13,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d geolynq_test -
 psql -d geolynq_test -f supabase/tests/02_fixture_fabrica_teste.sql      # cliente de teste + catálogo
 psql -d geolynq_test -f supabase/tests/03_eventos_simulados.sql          # 420 buscas + cliques simulados
 psql -t -A -d geolynq_test -f supabase/tests/04_painel_isolamento_e_relatorios.sql   # grava /tmp/res.json
+psql -d geolynq_test -f supabase/tests/05_busca_sem_acento_e_limite_eventos.sql        # busca sem acento + limite de eventos (imprime OK 05; faz rollback)
 ```
 
 `04_*` confere: membro do cliente A lê os relatórios do A; usuário só do cliente B recebe NULL/0 linhas ao tentar ler o A;

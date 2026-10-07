@@ -98,9 +98,25 @@ export class GeoLynqApi {
     return rows[0] ?? null;
   }
 
+  /**
+   * Busca por nome/SKU sem diferença de acento nem de maiúscula (RPC `widget_search_products`).
+   * Se a RPC não existir/falhar (ex.: banco ainda sem a migration 20261007), cai na consulta antiga (`ilike`), que é
+   * sensível a acento mas mantém o widget funcionando.
+   */
   async searchProducts(tenantId: string, term: string): Promise<ProductPublic[]> {
     const clean = sanitizeSearchTerm(term);
     if (!clean) return [];
+    try {
+      return await this.request<ProductPublic[]>("rpc/widget_search_products", {
+        method: "POST",
+        body: JSON.stringify({ p_tenant_id: tenantId, p_term: clean, p_limit: 8 }),
+      });
+    } catch {
+      return this.searchProductsLegacy(tenantId, clean);
+    }
+  }
+
+  private async searchProductsLegacy(tenantId: string, clean: string): Promise<ProductPublic[]> {
     const params = new URLSearchParams({
       select: "id,sku,name,category",
       tenant_id: `eq.${tenantId}`,
