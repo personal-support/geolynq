@@ -3,20 +3,31 @@ import { BarList } from "@/components/charts";
 import { ErroPainel } from "@/components/erro-painel";
 import { PeriodTabs } from "@/components/period-tabs";
 import { Card, CardHeader, Empty, PageHeader, TD, TH } from "@/components/ui";
-import { carregar, getMembership, getOverview, parseDias } from "@/lib/data";
+import { carregar, getGaps, getMembership, getOverview, parseDias } from "@/lib/data";
+import { filtrarLacunas, lerFiltro } from "@/lib/lacunas";
 import { avisoDeBase } from "@/lib/avisos";
 import { num } from "@/lib/format";
 
 export const metadata = { title: "Lacunas" };
 
 export default async function Lacunas({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const dias = parseDias((await searchParams).dias);
+  const sp = await searchParams;
+  const dias = parseDias(sp.dias);
+  const filtro = lerFiltro(sp);
   const m = await getMembership();
   if (!m) return null;
-  const r = await carregar(() => getOverview(m.tenant.id, dias));
+  const [r, g] = await Promise.all([carregar(() => getOverview(m.tenant.id, dias)), carregar(() => getGaps(m.tenant.id, dias))]);
   if ("erro" in r) return <ErroPainel erro={r.erro} />;
+  if ("erro" in g) return <ErroPainel erro={g.erro} />;
   const o = r.dados;
-  const totalBuscas = o.lacunas.reduce((s, l) => s + l.buscas, 0);
+  const todas = g.dados;
+  const lista = filtrarLacunas(todas.itens, filtro);
+  const filtrando = Boolean(filtro.uf || filtro.sku);
+  const totalBuscas = lista.reduce((s, l) => s + l.buscas, 0);
+  const ufs = [...new Set(todas.itens.map((l) => l.uf).filter((x): x is string => !!x))].sort();
+  const produtos = [...new Map(todas.itens.map((l) => [l.sku, l.produto])).entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
+  const qs = new URLSearchParams({ dias: String(dias), ...(filtro.uf && { uf: filtro.uf }), ...(filtro.sku && { produto: filtro.sku }) }).toString();
+  const truncada = todas.combinacoes > todas.itens.length;
   const aviso = avisoDeBase(o.kpis.buscas, o.anterior.buscas, dias, false);
 
   return (
@@ -31,14 +42,63 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
 
       <Card className="mb-6">
         <CardHeader
-          titulo={`${num(o.lacunas.length)} ${o.lacunas.length === 1 ? "combinação" : "combinações"} de produto e cidade`}
+          titulo={`${num(lista.length)} ${lista.length === 1 ? "combinação" : "combinações"} de produto e cidade`}
           dica={
-            o.lacunas.length
-              ? `${num(totalBuscas)} buscas nos últimos ${dias} dias. Ordenadas das mais procuradas para as menos.`
+            lista.length
+              ? `${num(totalBuscas)} ${filtrando ? `de ${num(todas.total_buscas)} ` : ""}buscas sem revendedor por perto nos últimos ${dias} dias. Ordenadas das mais procuradas para as menos.${
+                  truncada ? ` Mostrando as ${num(todas.itens.length)} maiores de ${num(todas.combinacoes)}.` : ""
+                }`
               : undefined
           }
+          direita={
+            lista.length ? (
+              <a
+                href={`/dashboard/lacunas/export?${qs}`}
+                className="shrink-0 rounded-lg border border-line-2 px-3 py-1.5 text-[13px] font-medium text-ink-2 hover:bg-line"
+              >
+                Exportar CSV
+              </a>
+            ) : undefined
+          }
         />
-        {o.lacunas.length === 0 ? (
+        {todas.itens.length > 0 ? (
+          <form method="get" className="flex flex-wrap items-end gap-3 px-5 pt-4">
+            <input type="hidden" name="dias" value={dias} />
+            <label className="text-[13px] font-medium text-ink-2">
+              Estado
+              <select name="uf" defaultValue={filtro.uf} className="mt-1 block rounded-lg border border-line-2 bg-white px-3 py-2 text-sm font-normal text-ink">
+                <option value="">Todos</option>
+                {ufs.map((u) => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="min-w-0 text-[13px] font-medium text-ink-2">
+              Produto
+              <select name="produto" defaultValue={filtro.sku} className="mt-1 block max-w-[260px] rounded-lg border border-line-2 bg-white px-3 py-2 text-sm font-normal text-ink">
+                <option value="">Todos</option>
+                {produtos.map(([sku, nome]) => (
+                  <option key={sku} value={sku}>
+                    {nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" className="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white hover:bg-ink-2">
+              Filtrar
+            </button>
+            {filtrando ? (
+              <a href={`/dashboard/lacunas?dias=${dias}`} className="py-2 text-sm font-medium text-ink-2 underline underline-offset-2">
+                Limpar
+              </a>
+            ) : null}
+          </form>
+        ) : null}
+        {lista.length === 0 && filtrando ? (
+          <Empty titulo="Nenhuma lacuna com esses filtros">Tente outro estado ou produto, ou limpe os filtros.</Empty>
+        ) : lista.length === 0 ? (
           o.kpis.buscas_com_produto === 0 ? (
             <Empty titulo="Sem dados para medir lacunas">Nenhuma busca do período identificou um produto do catálogo.</Empty>
           ) : (
@@ -48,18 +108,17 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
           )
         ) : (
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
+            <table className="w-full min-w-[560px] text-sm">
               <thead>
                 <tr className="border-b border-line">
                   <th className={TH}>Produto</th>
                   <th className={TH}>Onde buscaram</th>
                   <th className={`${TH} text-right`}>Buscas</th>
                   <th className={`${TH} text-right`}>Pessoas</th>
-                  <th className={TH}>Próximo passo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {o.lacunas.map((l) => (
+                {lista.map((l) => (
                   <tr key={`${l.product_id}-${l.cidade}-${l.uf}`}>
                     <td className={TD}>
                       <p className="font-semibold">{l.produto}</p>
@@ -71,11 +130,13 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
                     </td>
                     <td className={`${TD} text-right font-display text-lg font-semibold text-gap`}>{num(l.buscas)}</td>
                     <td className={`${TD} text-right`}>{num(l.sessoes)}</td>
-                    <td className={`${TD} text-[13px] text-ink-3`}>Lista de candidatos a revendedor: em breve</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            <p className="border-t border-line px-5 py-3 text-[13px] text-ink-3">
+              Em breve: para cada lacuna, a lista de candidatos a revendedor na região (empresas do ramo que ainda não vendem a sua marca).
+            </p>
           </div>
         )}
       </Card>

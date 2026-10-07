@@ -151,3 +151,10 @@ export interface RevendedorDesempenho {
   site: number;
   ultimo_contato: string | null;
 }
+
+export interface LacunasCompletas {
+  dias: number;
+  total_buscas: number;
+  combinacoes: number;
+  itens: Lacuna[];
+}

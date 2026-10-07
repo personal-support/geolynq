@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import type { Catalog, EventoRecente, ImportBatch, Overview, RevendedorDesempenho, Tenant } from "@/lib/types";
+import type { Catalog, EventoRecente, ImportBatch, LacunasCompletas, Overview, RevendedorDesempenho, Tenant } from "@/lib/types";
 
 /** Usuário logado (validado no servidor do Supabase) + client. Uma consulta por requisição. */
 export const getSession = cache(async () => {
@@ -128,4 +128,14 @@ export const getResellerPerf = cache(async (tenantId: string, dias: number): Pro
   const { data, error } = await supabase.rpc("panel_resellers", { p_tenant_id: tenantId, p_days: dias });
   if (error) throw new Error(error.code === "PGRST202" ? REPORTS_HINT : `Desempenho da rede indisponível: ${error.message}`);
   return (data ?? []) as RevendedorDesempenho[];
+});
+
+
+/** Todas as lacunas do período (até 500 combinações) com o total exato de buscas sem revendedor por perto. */
+export const getGaps = cache(async (tenantId: string, dias: number): Promise<LacunasCompletas> => {
+  const { supabase } = await getSession();
+  const { data, error } = await supabase.rpc("panel_gaps", { p_tenant_id: tenantId, p_days: dias });
+  if (error) throw new Error(error.code === "PGRST202" ? REPORTS_HINT : `Lacunas indisponíveis: ${error.message}`);
+  if (!data) throw new Error("Sem acesso a este cliente.");
+  return data as LacunasCompletas;
 });

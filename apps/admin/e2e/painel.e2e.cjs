@@ -52,13 +52,14 @@ async function esperado() {
   const ov = (await db.query("select public.panel_overview($1::uuid, 30) j", [t])).rows[0].j;
   const ov7 = (await db.query("select public.panel_overview($1::uuid, 7) j", [t])).rows[0].j;
   const cat = (await db.query("select public.panel_catalog($1::uuid) j", [t])).rows[0].j;
+  const gaps30 = (await db.query("select public.panel_gaps($1::uuid, 30) j", [t])).rows[0].j;
   const recentes = (await db.query("select public.panel_recent($1::uuid, 10) j", [t])).rows[0].j;
   const perf = (await db.query("select public.panel_resellers($1::uuid, 30) j", [t])).rows[0].j;
   const totalEventos = (await db.query("select count(*)::int n from public.widget_events where tenant_id=$1::uuid", [t])).rows[0].n;
   const simulados = (await db.query("select count(*)::int n from public.widget_events where tenant_id=$1::uuid and session_id like 'seed-%'", [t])).rows[0].n;
   await db.query("rollback");
   await db.end();
-  return { ov, ov7, cat, recentes, perf, totalEventos, simulados };
+  return { ov, ov7, cat, recentes, perf, gaps30, totalEventos, simulados };
 }
 
 (async () => {
@@ -207,6 +208,40 @@ async function esperado() {
       check("lacunas: tabela com todas as combinações", linhas === ref.ov.lacunas.length, `${linhas} de ${ref.ov.lacunas.length}`);
       check("lacunas: orienta o próximo passo sem prometer o que não existe", /em breve/i.test(await texto(pageA)));
       await pageA.screenshot({ path: `${OUT}/03-lacunas-desktop.png`, fullPage: true });
+      const g = ref.gaps30;
+      check("lacunas: título e total vêm de panel_gaps (exato), não da soma truncada", new RegExp(`${g.combinacoes} combinações de produto e cidade`).test(await texto(pageA)) && (await texto(pageA)).includes(String(g.total_buscas)), `${g.combinacoes} combinações / ${g.total_buscas} buscas`);
+      // filtro por estado
+      const ufX = g.itens[0].uf;
+      const esperadasUf = g.itens.filter((l) => l.uf === ufX);
+      await pageA.selectOption("select[name=uf]", ufX);
+      await Promise.all([pageA.waitForLoadState("networkidle").catch(() => {}), pageA.click("main form[method=get] button[type=submit]")]);
+      check("lacunas: filtro por estado mostra só as combinações do estado", (await pageA.locator("table tbody tr").count()) === esperadasUf.length && /\?.*uf=/.test(pageA.url()), `${ufX}: ${esperadasUf.length}`);
+      check("lacunas: com filtro, o total mostra 'X de Y'", new RegExp(`${esperadasUf.reduce((a, l) => a + l.buscas, 0)} de ${g.total_buscas} buscas`).test(await texto(pageA)));
+      // filtro por produto (sku) via URL
+      const skuX = g.itens[0].sku;
+      await pageA.goto(`${BASE}/dashboard/lacunas?produto=${encodeURIComponent(skuX)}`);
+      check("lacunas: filtro por produto", (await pageA.locator("table tbody tr").count()) === g.itens.filter((l) => l.sku === skuX).length);
+      await pageA.goto(`${BASE}/dashboard/lacunas?uf=%3Cb%3E&produto=%27%3B--`);
+      check("lacunas: filtro com lixo na URL é ignorado (mostra tudo, sem quebrar)", (await pageA.locator("table tbody tr").count()) === g.itens.length);
+      // exportação CSV: mesmos filtros da tela
+      // o fetch roda DENTRO do navegador (usa os cookies httpOnly/Secure reais da sessão)
+      const baixar = (url) =>
+        pageA.evaluate(async (u) => {
+          const x = await fetch(u);
+          const bytes = new Uint8Array(await x.clone().arrayBuffer());
+          return { status: x.status, tipo: x.headers.get("content-type"), anexo: x.headers.get("content-disposition"), texto: await x.text(), bom: bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf };
+        }, url);
+      const csvTodos = await baixar(`${BASE}/dashboard/lacunas/export?dias=30`);
+      const linhasTodos = csvTodos.texto.split("\r\n").filter(Boolean);
+      check("CSV: 200, tipo csv, anexo com nome do cliente", csvTodos.status === 200 && /text\/csv/.test(csvTodos.tipo) && /attachment; filename="lacunas-fabrica-teste-30d\.csv"/.test(csvTodos.anexo), `${csvTodos.status} ${csvTodos.tipo} ${csvTodos.anexo}`);
+      check("CSV: BOM, cabeçalho e uma linha por combinação", csvTodos.bom && csvTodos.texto.startsWith("Produto;SKU;Cidade;UF;") && linhasTodos.length === g.combinacoes + 1, `${linhasTodos.length - 1} de ${g.combinacoes}`);
+      const csvUf = await baixar(`${BASE}/dashboard/lacunas/export?dias=30&uf=${ufX}`);
+      check("CSV: respeita o filtro de estado", csvUf.texto.split("\r\n").filter(Boolean).length === esperadasUf.length + 1);
+      const { request: pwRequest } = require("playwright");
+      const anon = await pwRequest.newContext();
+      const semLogin = await anon.get(`${BASE}/dashboard/lacunas/export?dias=30`, { maxRedirects: 0 });
+      check("CSV: sem login não entrega o arquivo", semLogin.status() !== 200 && !/text\/csv/.test(semLogin.headers()["content-type"] ?? ""), `status ${semLogin.status()}`);
+      await anon.dispose();
     }
 
     await pageA.goto(`${BASE}/dashboard/rede`);

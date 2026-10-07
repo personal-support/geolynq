@@ -17,21 +17,23 @@ Fabricante ──planilha──▶ n8n (valida + geocodifica) ──▶ Supabase
                                                                               (Fase 5: ainda NÃO existe)
 ```
 
-| Etapa | Estado hoje |
+| Etapa | Estado hoje (atualizado em 2026-10-07) |
 |---|---|
-| Widget no site do cliente (2 linhas de HTML, Shadow DOM, qualquer CMS) | **No ar** |
-| Busca → CEP/localização → revendedores até 100 km (+ lojas online) → WhatsApp/Ligar/Site/Como chegar | **No ar** |
+| Widget no site do cliente (2 linhas de HTML, Shadow DOM, qualquer CMS) | **No ar** (busca sem acento, limite de eventos por visitante) |
+| Busca → CEP/localização → revendedores até 100 km (+ lojas online) → WhatsApp/Ligar/Site/Como chegar | **No ar** (raio fixo de 100 km; configurável por cliente ainda não existe) |
 | Telemetria (cada busca e clique, anônima) | **Gravando** |
-| Importação de catálogo por planilha (n8n) | **Funciona**, trigger manual |
-| Site de amostra (demo) | **No ar** |
-| Deploy automático por push | **No ar** (sem testes antes) |
-| Criar cliente (tenant) | **Manual**, por SQL |
-| Painel do cliente + relatórios (Fase 5) | **Não existe** |
-| Login do cliente, atualização de catálogo sozinho | **Não existe** |
+| Importação de catálogo por planilha (n8n) | **Funciona**, disparo manual por você |
+| Cadastro de cliente por CNPJ (n8n) | **Funciona**, disparo manual; cliente nasce `trial` (invisível ao público) |
+| Ativar cliente, criar login e vincular ao cliente | **Manual** (SQL e Supabase Auth) |
+| Site de amostra (demo "Pódio") + página interna de roteiro (`/apresentacao.html`) | **No ar** |
+| **Painel do cliente** (`painel.geolynq.personalsupport.tech`): visão geral, ao vivo, lacunas (filtros e CSV), rede, catálogo, importações, widget | **No ar** |
+| Login do cliente | **Existe** (e-mail e senha criados por você); **não existe** "esqueci a senha" nem convite |
+| Atualização de catálogo pelo próprio cliente | **Não existe** (planilha → você importa) |
+| Análise de IA ("Leitura do período"), valor em R$, lista de candidatos a revendedor | **Não existem** (planejados) |
 | Cobrança | Manual (PIX/boleto) por decisão do blueprint |
 
-**Consequência honesta:** até a Fase 5, o GeoLynq é um **serviço apoiado por produto**: o cliente manda planilha e
-recebe relatório; quem opera é você.
+**Consequência honesta:** o GeoLynq ainda é um **serviço apoiado por produto**: o cliente lê o painel, mas é você quem cadastra,
+ativa, cria o login e importa/atualiza o catálogo.
 
 ## 2. Implantação de um novo cliente (roteiro)
 
@@ -49,7 +51,7 @@ Tempo estimado de implantação: **6 a 10 horas de trabalho** (hipótese). Risco
 
 ## 3. Como o cliente usa
 - **Equipe comercial/marketing do fabricante:** envia a planilha, lê o relatório (buscas, produtos sem cobertura, regiões
-  com demanda, cliques em revendedor). Hoje por e-mail/PDF; na Fase 5, por painel com login.
+  com demanda, cliques em revendedor). Pelo painel com login (relatório mensal em PDF por e-mail ainda não existe).
 - **Consumidor final:** acha o produto, informa o CEP e chama o revendedor mais próximo.
 - **Revendedor:** recebe contato; não usa o sistema.
 

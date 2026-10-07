@@ -161,8 +161,11 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
     Rede do `demo`: duplicata "Farmácia Saúde Total" **inativada** (não apagada) e telefone `13999990000` trocado por fictício plausível. O e-mail do usuário do painel
     foi vinculado como `owner` ao `demo` (agora com 2 clientes: `fabrica-teste` e `demo`).
   - Roteiro (`/apresentacao.html`) atualizado no repositório; só vai ao ar no próximo push na `bold-cray` (precisa de OK).
-  - **Ainda por fazer (Pacote 2 e IA):** valor em R$ (premissas editáveis), raio configurável por cliente (hoje 100 km fixo no widget), exportar CSV, filtro por região,
-    lista de candidatos a revendedor (B3, hoje "em breve" 22× na tela de Lacunas), "Leitura do período" com IA.
+  - **Lacunas completas (2026-10-07):** achado e corrigido um defeito de precisão: `panel_overview` devolve só as 30 maiores lacunas e a tela Lacunas somava essas 30
+    como se fosse o total (com 90 dias no `demo`: tela mostraria 30 combinações / ~116 buscas; real 44 / 135). Nova função `panel_gaps` (migration
+    `20261009000000_painel_lacunas_completas.sql`, teste `08_*.sql` OK 08; **aplicada na produção**, conferida: total = indicador). Tela Lacunas agora tem filtro por
+    estado e produto, **Exportar CSV** (`;`, BOM, fórmulas neutralizadas; exige login) e o "em breve" virou um aviso único. E2E **70/70**.
+  - **Ainda por fazer (Pacote 2 e IA):** valor em R$ (premissas editáveis), raio configurável por cliente (hoje 100 km fixo no widget), lista de candidatos a revendedor (B3, hoje "em breve" 22× na tela de Lacunas), "Leitura do período" com IA.
 - **Falta:** a conferência visual completa pelo usuário (mapa com os blocos reais do OSM, pré-visualização do widget só aparece com o
   cliente `active`). Depois do merge na `main`, trocar a branch do serviço `geolynq_admin` para `main`.
 - **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário

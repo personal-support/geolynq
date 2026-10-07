@@ -107,6 +107,10 @@ function start(port = 54321) {
           const r = await comoUsuario(claims.sub, (db) => db.query("select public.panel_catalog($1::uuid) as j", [body.p_tenant_id]));
           return send(200, r.rows[0].j);
         }
+        if (rota === "rpc/panel_gaps") {
+          const r = await comoUsuario(claims.sub, (db) => db.query("select public.panel_gaps($1::uuid, $2::int) as j", [body.p_tenant_id, body.p_days]));
+          return send(200, r.rows[0].j);
+        }
         if (rota === "rpc/panel_recent") {
           const r = await comoUsuario(claims.sub, (db) => db.query("select public.panel_recent($1::uuid, $2::int) as j", [body.p_tenant_id, body.p_limit]));
           return send(200, r.rows[0].j);
