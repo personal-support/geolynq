@@ -125,7 +125,7 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
         <Kpi
           rotulo="Buscas no widget"
           valor={num(k.buscas)}
-          detalhe={`${num(k.sessoes)} ${k.sessoes === 1 ? "pessoa buscou" : "pessoas buscaram"}`}
+          detalhe={`${num(k.sessoes)} ${k.sessoes === 1 ? "visita com busca" : "visitas com busca"}`}
           rodape={<Delta v={variacao(k.buscas, o.anterior.buscas)} />}
         />
         <Kpi

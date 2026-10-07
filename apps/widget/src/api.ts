@@ -57,7 +57,7 @@ export class GeoLynqApi {
     private readonly anonKey: string,
   ) {}
 
-  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  protected async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {

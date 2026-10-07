@@ -23,7 +23,7 @@ export async function GET(req: Request) {
   }
   const itens = filtrarLacunas(gaps.itens, filtro);
   const csv = paraCsv([
-    ["Produto", "SKU", "Cidade", "UF", "Buscas sem revendedor por perto", "Pessoas"],
+    ["Produto", "SKU", "Cidade", "UF", "Buscas sem revendedor por perto", "Visitas"],
     ...itens.map((l) => [l.produto, l.sku, l.cidade, l.uf, l.buscas, l.sessoes]),
   ]);
   const nome = `lacunas-${m.tenant.slug.replace(/[^a-z0-9-]/gi, "")}-${dias}d.csv`;

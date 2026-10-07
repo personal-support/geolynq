@@ -10,7 +10,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, "dist");
 const { categories, products } = JSON.parse(readFileSync(join(here, "products.json"), "utf8"));
 
-const WIDGET_SRC = process.env.WIDGET_SRC ?? "https://widget.geolynq.personalsupport.tech/v1/embed.js";
+const WIDGET_SRC = process.env.WIDGET_SRC ?? "https://widget.geolynq.personalsupport.tech/v2/embed.js";
 const TENANT = "demo";
 const COLOR = "#1F3FFF"; // cobalto da marca; o widget escolhe sozinho a cor legível do texto
 const NAVY = "#0F1B2D";
@@ -140,7 +140,7 @@ ${noindexOnly ? "" : `<script src="${esc(WIDGET_SRC)}" defer></script>`}
     <nav aria-label="Principal">
 ${nav.map(([h, t]) => `      <a href="${h}">${t}</a>`).join("\n")}
     </nav>
-    <a class="btn btn--sm" href="/#onde-encontrar">Onde encontrar</a>
+    <a class="btn btn--sm" href="/onde-encontrar.html">Onde encontrar</a>
   </div>
 </header>
 <main id="conteudo">
@@ -154,7 +154,7 @@ ${body}
     </div>
     <nav aria-label="Rodapé">
       <a href="/#produtos">Produtos</a>
-      <a href="/#onde-encontrar">Onde encontrar</a>
+      <a href="/onde-encontrar.html">Onde encontrar</a>
       <a href="/sobre.html">Sobre a Pódio</a>
     </nav>
   </div>
@@ -168,7 +168,8 @@ ${body}
 `;
 }
 
-const widget = (extra = "") => `<geolynq-widget tenant="${TENANT}" color="${COLOR}"${extra}></geolynq-widget>`;
+// Tema (cor, arredondamento, proporção da foto) vem do banco (tenants.widget_theme); a fonte é herdada do site. `scroll-offset` = altura do cabeçalho fixo.
+const widget = (extra = "") => `<geolynq-widget tenant="${TENANT}" scroll-offset="76"${extra}></geolynq-widget>`;
 
 const card = (p) => `<li><a class="card" href="${href(p)}">
   <span class="card__img" style="--tint:${catOf(p).tint}">${pack(p, "c")}</span>
@@ -179,14 +180,15 @@ const card = (p) => `<li><a class="card" href="${href(p)}">
   </span>
 </a></li>`;
 
-const locator = (inner, id = "onde-encontrar") => `<section class="where" id="${id}" aria-labelledby="${id}-t">
-  <div class="where__in">
+// Faixa da home que leva à página "Onde encontrar" (o widget mora lá, não aqui).
+const teaser = `<section class="where" aria-labelledby="onde-t">
+  <div class="where__in where__in--solo">
     <div class="where__copy">
       <p class="eyebrow">Onde encontrar</p>
-      <h2 id="${id}-t">Encontre a Pódio perto de você.</h2>
+      <h2 id="onde-t">Encontre a Pódio perto de você.</h2>
       <p class="lead">Escolha o produto, informe o CEP e veja as lojas e farmácias mais próximas que vendem, com telefone, WhatsApp e rota.</p>
     </div>
-    <div class="where__card">${inner}</div>
+    <div class="where__cta"><a class="btn" href="/onde-encontrar.html">Ver onde encontrar</a></div>
   </div>
 </section>`;
 
@@ -211,7 +213,7 @@ function home() {
       <p class="lead">Whey, creatina, aminoácidos e vitaminas com fórmulas simples e rótulo claro, para você treinar sem complicação.</p>
       <div class="hero__cta">
         <a class="btn" href="#produtos">Ver produtos</a>
-        <a class="btn btn--ghost" href="#onde-encontrar">Onde encontrar</a>
+        <a class="btn btn--ghost" href="/onde-encontrar.html">Onde encontrar</a>
       </div>
       <ul class="trust">
         <li>Fabricação nacional</li>
@@ -234,7 +236,7 @@ function home() {
   <ul class="grid">${grid}</ul>
 </section>
 
-${locator(widget())}`;
+${teaser}`;
 
   return layout({
     title: "Pódio: suplementos para quem treina de verdade",
@@ -282,6 +284,20 @@ function productPage(p) {
   return layout({ title: `${p.name}: Pódio`, description: p.blurb, body });
 }
 
+// ---------- página "Onde encontrar": cabeçalho e rodapé do cliente + o widget no corpo ----------
+const ondeEncontrar = layout({
+  title: "Onde encontrar: Pódio",
+  description: "Encontre a loja ou farmácia mais próxima que vende os produtos Pódio.",
+  body: `<section class="wpage">
+  <div class="wpage__in">
+    <p class="eyebrow">Onde encontrar</p>
+    <h1>Encontre a Pódio perto de você.</h1>
+    <p class="lead">Escolha o produto e veja as lojas e farmácias mais próximas que vendem.</p>
+    ${widget()}
+  </div>
+</section>`,
+});
+
 // ---------- sobre ----------
 const about = layout({
   title: "Sobre a Pódio",
@@ -293,7 +309,7 @@ const about = layout({
   <div class="values">
     <div><h3>Fórmulas simples</h3><p>Poucos ingredientes, nomes que você reconhece e informação nutricional completa em cada embalagem.</p></div>
     <div><h3>Controle de qualidade</h3><p>Cada lote é analisado antes de sair da fábrica, com laudo disponível para quem quiser conferir.</p></div>
-    <div><h3>Perto de você</h3><p>Vendemos pelas melhores lojas e farmácias do país. Use o <a href="/#onde-encontrar">Onde encontrar</a> e ache a mais próxima.</p></div>
+    <div><h3>Perto de você</h3><p>Vendemos pelas melhores lojas e farmácias do país. Use o <a href="/onde-encontrar.html">Onde encontrar</a> e ache a mais próxima.</p></div>
   </div>
 </section>`,
 });
@@ -317,14 +333,15 @@ const presenter = layout({
   <p class="lead">Duas partes. Na primeira, o cliente do fabricante usa o site. Na segunda, a equipe comercial vê os dados na plataforma.</p>
 
   <h2>Parte 1 — o site (o consumidor)</h2>
-  <p>Abra a <a href="/">página inicial</a> como se fosse o site do cliente. Nada aqui diz "demonstração" além do rodapé.</p>
+  <p>Abra o site como se fosse o do cliente: <a href="/">página inicial</a> e, no botão <b>Onde encontrar</b>, a <a href="/onde-encontrar.html">página Onde encontrar</a> (cabeçalho e rodapé são do cliente; no meio, o widget). Nada aqui diz "demonstração" além do rodapé.</p>
   <ol class="steps">
-    <li>Em <b>Onde encontrar</b>, busque <b>whey</b> e informe o CEP <code>11060-001</code> (Santos). As lojas aparecem da mais próxima à mais distante.</li>
-    <li>Troque o CEP para <code>01310-100</code> (Av. Paulista): a lista passa a mostrar lojas de São Paulo.</li>
+    <li>Na página <b>Onde encontrar</b>, digite <b>whey</b> no campo de busca: a grade filtra na hora. Clique em <b>Onde encontrar</b> no produto, informe o CEP <code>11060-001</code> (Santos) e veja as lojas da mais próxima à mais distante.</li>
+    <li>Volte e troque o CEP para <code>01310-100</code> (Av. Paulista): a lista passa a mostrar lojas de São Paulo. Também há <b>Usar minha localização</b> e <b>Ver lista de revendedores</b>.</li>
     <li>Busque <b>glutamina</b> com o CEP de Santos: só há lojas em São Paulo, a cerca de 55 km, dentro do raio de 100 km.</li>
-    <li>Busque <b>hipercalórico</b>: nenhuma loja vende. O widget avisa o visitante e a busca fica registrada como lacuna de cobertura.</li>
+    <li>Escolha <b>hipercalórico</b> com o CEP de Santos: nenhuma loja vende por perto. O widget avisa o visitante e a busca fica registrada como lacuna de cobertura.</li>
+    <li>No botão <b>Lista de revendedores</b> (início da página), escolha o estado <b>SP</b>, depois a cidade; use <b>Ordenar pelos mais próximos de mim</b>.</li>
     <li>Abra um produto (ex.: Whey Isolado): o widget já vem com o produto escolhido, falta só o CEP.</li>
-    <li>Teste também sem acento: <b>proteina</b>, <b>creatina</b>.</li>
+    <li>Teste também sem acento: <b>proteina</b>, <b>creatina</b>. Digitar algo que não existe (ex.: <b>ashwagandha</b>) vira "Procuraram e você não tem" no painel.</li>
   </ol>
   <p>Cada busca e cada clique em revendedor ficam registrados. É isso que a Parte 2 mostra.</p>
 
@@ -341,7 +358,7 @@ const presenter = layout({
 
   <h2>Como o webmaster instala</h2>
   <pre class="code"><code>${snippet}</code></pre>
-  <p>Duas linhas, em qualquer site ou CMS. Numa página de produto, acrescente <code>product="WPC-900"</code> para o widget abrir já no item.</p>
+  <p>Duas linhas, em qualquer site ou CMS, na página "Onde encontrar" do cliente. As cores e o estilo vêm do cadastro do cliente (só a GeoLynq altera); a fonte é a do próprio site. Numa página de produto, acrescente <code>product="WPC-900"</code> para o widget abrir já no item.</p>
 </section>`,
 });
 
@@ -351,6 +368,10 @@ mkdirSync(join(out, "produto"), { recursive: true });
 writeFileSync(join(out, "index.html"), home());
 for (const p of products) writeFileSync(join(out, "produto", `${slug(p)}.html`), productPage(p));
 writeFileSync(join(out, "sobre.html"), about);
+writeFileSync(join(out, "onde-encontrar.html"), ondeEncontrar);
+// Fotos dos produtos (usadas pelo widget: products.image_url aponta para estes arquivos).
+mkdirSync(join(out, "img"), { recursive: true });
+for (const p of products) writeFileSync(join(out, "img", `${slug(p)}.svg`), pack(p, "i").replace("<svg class=\"pack\"", "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"pack\""));
 writeFileSync(join(out, "apresentacao.html"), presenter);
 writeFileSync(join(out, "404.html"), notFound);
 writeFileSync(join(out, "robots.txt"), "User-agent: *\nDisallow: /\n");
@@ -359,4 +380,4 @@ writeFileSync(
   join(out, "favicon.svg"),
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#0F1B2D"/><path d="M9 24V8h8a5 5 0 0 1 0 10h-3" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="9" r="2.4" fill="#F2551C"/></svg>\n`,
 );
-console.log(`demo: ${products.length + 4} páginas em ${out}`);
+console.log(`demo: ${products.length + 5} páginas e ${products.length} imagens em ${out}`);

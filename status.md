@@ -166,6 +166,25 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
     `20261009000000_painel_lacunas_completas.sql`, teste `08_*.sql` OK 08; **aplicada na produção**, conferida: total = indicador). Tela Lacunas agora tem filtro por
     estado e produto, **Exportar CSV** (`;`, BOM, fórmulas neutralizadas; exige login) e o "em breve" virou um aviso único. E2E **70/70**.
   - **Ainda por fazer (Pacote 2 e IA):** valor em R$ (premissas editáveis), raio configurável por cliente (hoje 100 km fixo no widget), lista de candidatos a revendedor (B3, hoje "em breve" 22× na tela de Lacunas), "Leitura do período" com IA.
+- **Widget v2 — Etapa 1 "núcleo" (2026-10-07; construído e testado; NÃO publicado):** decisões do usuário: (1) começar com produtos planos e agrupar sabor/tamanho depois;
+  (2) lista geral de revendedores aceita com ao menos 1 filtro e 10 por página; (3) rastreio ANÔNIMO por desenho (nada guardado no navegador; id de visita só em memória;
+  o painel passa a falar em "visitas", não "pessoas"); (4) o visual/estrutura do widget é nosso e igual para todos, e SÓ a GeoLynq define cores/estilo/fonte do cliente (o cliente não
+  edita); a página "Onde encontrar" (cabeçalho/rodapé) é do cliente. Fotos: dois caminhos na MESMA coluna `products.image_url` (link do cliente ou nosso armazenamento) — decisão de
+  espelhar ou não ainda em aberto; só https é aceito. Rastreio só a partir de digitar na busca ou abrir a lista (a parte 2 — eventos novos + pop-up de consentimento/LGPD — vem depois, com
+  advogado; o rastreio de hoje reaproveita os eventos existentes e não precisa de migration).
+  - **Código:** bundle novo `/v2/embed.js` (`apps/widget/src/v2/`, `vite.config.v2.ts`; `npm run build` gera v1 e v2; nginx ganhou `/v2/`); o **v1 não foi tocado** (só `api.ts` ganhou `protected`).
+    Fluxo: busca (filtra na hora, sem acento, no navegador; >500 produtos vai ao servidor) → grade com foto e UM botão "Onde encontrar" → 3 opções (minha localização / CEP / lista de
+    revendedores) → resultados como antes; botão "Lista de revendedores" no início com filtros produto/estado/cidade/tipo e "ordenar pelos mais próximos". Tema validado
+    (`theme.ts`: nunca aplica texto livre do banco como CSS; contraste WCAG automático; fonte herdada do site). Texto digitado que parece dado pessoal (e-mail, telefone, CPF, CEP) NÃO é gravado.
+  - **Banco (migration `20261010000000_widget_v2_nucleo.sql`, APLICADA na produção em 2 partes e conferida como `anon`):** `products.image_url`, `tenants.widget_theme`,
+    `widget_get_tenant_v2`, `widget_find_products`, `widget_list_resellers` (exige filtro; máx. 20/página; online fora do filtro por UF/cidade), `widget_list_places`. Teste `supabase/tests/09_*.sql`
+    (OK 09; quebrei as regras de propósito e o teste falhou). Conferido na produção: `anon` não lê `tenants`, lista sem filtro = 0, v1 intacto (tenant e busca por raio).
+  - **Testes:** 43 unitários, E2E do v1 48/48 (intacto), E2E do v2 53/53 (`npm run e2e:v2 -w @geolynq/widget`; geolocalização exige https), painel E2E 70/70, nginx real (`/v2/` ok, `/v3/` 404).
+  - **Site demo (`apps/demo`):** passou a usar o v2; página nova `/onde-encontrar.html` (cabeçalho e rodapé da Pódio + widget); fotos geradas em `/img/<sku>.svg`; roteiro atualizado.
+  - **Para publicar (cada item precisa de OK):** (a) gravar no `demo`: `products.image_url` (12 links para `https://demo.geolynq.personalsupport.tech/img/<sku>.svg`) e `tenants.widget_theme`
+    (`{"primary":"#1F3FFF","radius":14,"cardText":"#0F1B2D","border":"#E4E2DA","imageRatio":"3/4"}`); (b) push na `claude/bold-cray-vbbdyb` (publica widget v1+v2 e o site demo).
+  - **Pendências deste bloco:** coluna de foto na planilha-modelo e no importador n8n; espelhar/otimizar fotos no nosso armazenamento; eventos novos (abrir lista, escolher produto) e funil no painel;
+    pop-up de consentimento/LGPD + texto de privacidade/contrato (advogado); trava de domínio; agrupar sabor/tamanho; ViaCEP/Nominatim públicos (dados de CEP saem para terceiros).
 - **Falta:** a conferência visual completa pelo usuário (mapa com os blocos reais do OSM, pré-visualização do widget só aparece com o
   cliente `active`). Depois do merge na `main`, trocar a branch do serviço `geolynq_admin` para `main`.
 - **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário

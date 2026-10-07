@@ -114,7 +114,7 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
                   <th className={TH}>Produto</th>
                   <th className={TH}>Onde buscaram</th>
                   <th className={`${TH} text-right`}>Buscas</th>
-                  <th className={`${TH} text-right`}>Pessoas</th>
+                  <th className={`${TH} text-right`} title="Visitas ao site com essa busca (o widget não identifica pessoas)">Visitas</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -169,7 +169,7 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
               itens={o.fora_do_catalogo.map((t) => ({
                 rotulo: t.termo,
                 valor: t.buscas,
-                extra: t.sessoes !== t.buscas ? `${num(t.sessoes)} ${t.sessoes === 1 ? "pessoa" : "pessoas"}` : undefined,
+                extra: t.sessoes !== t.buscas ? `${num(t.sessoes)} ${t.sessoes === 1 ? "visita" : "visitas"}` : undefined,
               }))}
               vazio="Nenhuma busca fora do catálogo no período."
               neutro
