@@ -78,6 +78,7 @@ export class GeoLynqWidgetV2 extends HTMLElement {
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
   private logTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly loggedTerms = new Set<string>();
+  private readonly loggedLists = new Set<string>();
   private gridHost: HTMLElement | null = null;
 
   // fluxo do produto
@@ -199,6 +200,7 @@ export class GeoLynqWidgetV2 extends HTMLElement {
     this.term = "";
     this.visible = PAGE;
     this.loggedTerms.clear();
+    this.loggedLists.clear();
     this.product = null;
     this.point = null;
     this.resellers = null;
@@ -242,7 +244,7 @@ export class GeoLynqWidgetV2 extends HTMLElement {
     }
     // Telemetria só depois de uma pausa na digitação (nada de gravar tecla por tecla).
     clearTimeout(this.logTimer);
-    this.logTimer = setTimeout(() => this.logNoMatch(), 1200);
+    this.logTimer = setTimeout(() => this.logTyped(), 1200);
   }
 
   private async remoteSearch(): Promise<void> {
@@ -275,14 +277,17 @@ export class GeoLynqWidgetV2 extends HTMLElement {
     this.updateGrid();
   }
 
-  /** Texto digitado que não casou com nenhum produto = demanda fora do catálogo (vira "Procuraram e você não tem" no painel). */
-  private logNoMatch(): void {
+  /**
+   * Texto digitado no campo de busca, depois de uma pausa. Sem produto correspondente = demanda fora do catálogo (`search`, vira
+   * "Procuraram e você não tem" no painel). Com produtos = interesse do visitante (`catalog_search`, entra no funil). 1 por termo e visita.
+   */
+  private logTyped(): void {
     const term = termForTelemetry(this.term);
-    if (!term || !this.tenant || this.loggedTerms.has(term)) return;
+    if (!term || !this.tenant || this.searching || this.loggedTerms.has(term)) return;
     const matches = this.complete ? filterProducts(this.catalog, this.term).length : this.remoteTotal;
-    if (matches > 0 || this.searching) return;
     this.loggedTerms.add(term);
-    this.log({ event_type: "search", query_text: term, product_id: null, results_count: 0, ...locationFields(null) });
+    if (matches > 0) this.log({ event_type: "catalog_search", query_text: term, product_id: null, results_count: matches });
+    else this.log({ event_type: "search", query_text: term, product_id: null, results_count: 0, ...locationFields(null) });
   }
 
   private placeholder(p: ProductCard): HTMLElement {
@@ -401,6 +406,7 @@ export class GeoLynqWidgetV2 extends HTMLElement {
   }
 
   private selectProduct(p: ProductCard): void {
+    this.log({ event_type: "product_select", product_id: p.id });
     this.product = p;
     this.point = null;
     this.resellers = null;
@@ -526,6 +532,7 @@ export class GeoLynqWidgetV2 extends HTMLElement {
   // ---- lista de revendedores ----------------------------------------------------------
 
   private openList(prefill: ProductCard | null): void {
+    this.log({ event_type: "list_open", product_id: prefill?.id ?? null });
     this.filters = { sku: prefill?.sku ?? "", uf: "", city: "", type: "" };
     this.listPoint = null;
     this.list = [];
@@ -578,12 +585,29 @@ export class GeoLynqWidgetV2 extends HTMLElement {
       this.list = offset === 0 ? page.items : [...this.list, ...page.items];
       this.listTotal = page.total;
       this.listSearched = true;
+      if (offset === 0) this.logListSearch(product?.id ?? null);
     } catch {
       if (seq !== this.listSeq) return;
       this.error = "Não foi possível buscar os revendedores agora. Tente novamente.";
     }
     this.listBusy = false;
     this.fillList();
+  }
+
+  /** Filtros aplicados na lista de revendedores (estado, cidade, produto). Uma vez por combinação e visita. */
+  private logListSearch(productId: string | null): void {
+    const { uf, city } = this.filters;
+    const key = `${productId ?? ""}|${uf}|${city}|${this.listPoint ? "perto" : ""}`;
+    if (this.loggedLists.has(key)) return;
+    this.loggedLists.add(key);
+    this.log({
+      event_type: "list_search",
+      product_id: productId,
+      state: uf || null,
+      city: city || null,
+      results_count: this.listTotal,
+      location_source: this.listPoint ? "gps" : "none",
+    });
   }
 
   private async sortByDistance(): Promise<void> {

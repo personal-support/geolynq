@@ -345,6 +345,44 @@ async function setup(ctx) {
   check('RECUSOU: depois de recarregar a página o aviso não volta e continua sem gravar nada', (await gw2.locator('.consent').count()) === 0 && events.length === 0 && reqEventos.length === 0, `${events.length}/${reqEventos.length}`);
   await c2.close();
 
+  // ───────── 13. eventos de funil (anônimos, só depois de interagir)
+  const c3 = await browser.newContext({ viewport: { width: 1100, height: 900 } });
+  const p3 = await setup(c3);
+  events.length = 0;
+  await p3.goto('https://host.test/page?t=demo');
+  const g3 = p3.locator('geolynq-widget');
+  await g3.locator('.prod').first().waitFor();
+  await p3.waitForTimeout(1500);
+  check('FUNIL: só abrir a página não grava nada (rastreio começa na interação)', events.length === 0);
+  await g3.locator('#gl-term').fill('whey'); await p3.waitForTimeout(1700);
+  const ct = events.filter((e) => e.event_type === 'catalog_search');
+  check('FUNIL: termo digitado que acha produtos grava catalog_search (1 por termo) com a contagem', ct.length === 1 && ct[0].query_text === 'whey' && ct[0].results_count >= 1 && ct[0].product_id === null, JSON.stringify(ct));
+  check('FUNIL: termo que acha produtos NÃO vira "fora do catálogo"', !events.some((e) => e.event_type === 'search'));
+  await g3.locator('.prod', { hasText: 'Whey Protein Isolado' }).locator('.btn').click();
+  await g3.locator('#gl-cep').waitFor();
+  const ps = events.filter((e) => e.event_type === 'product_select');
+  check('FUNIL: "Onde encontrar" no produto grava product_select', ps.length === 1 && ps[0].product_id === 'p-1', JSON.stringify(ps));
+  await g3.locator('button', { hasText: 'Ver lista de revendedores' }).click();
+  await g3.locator('article.card').first().waitFor({ timeout: 10000 });
+  const lo = events.filter((e) => e.event_type === 'list_open'), ls = events.filter((e) => e.event_type === 'list_search');
+  check('FUNIL: abrir a lista a partir do produto grava list_open (com o produto) e list_search', lo.length === 1 && lo[0].product_id === 'p-1' && ls.length === 1 && ls[0].product_id === 'p-1' && ls[0].results_count > 0, JSON.stringify([lo, ls]));
+  await g3.locator('button', { hasText: 'Todos os produtos' }).click().catch(() => {});
+  await g3.locator('.prod').first().waitFor();
+  events.length = 0;
+  await g3.locator('button', { hasText: 'Lista de revendedores' }).click();
+  await g3.locator('select').first().waitFor();
+  await g3.locator('select').nth(1).selectOption('SP').catch(() => {});
+  await p3.waitForTimeout(600);
+  const loSp = events.filter((e) => e.event_type === 'list_open'), lsSp = events.filter((e) => e.event_type === 'list_search');
+  check('FUNIL: lista aberta pelo início grava list_open sem produto; filtro de estado grava list_search com UF', loSp.length === 1 && loSp[0].product_id === null && lsSp.length === 1 && lsSp[0].state === 'SP' && lsSp[0].product_id === null, JSON.stringify([loSp, lsSp]));
+  await g3.locator('select').nth(1).selectOption('').catch(() => {});
+  await g3.locator('select').nth(1).selectOption('SP').catch(() => {});
+  await p3.waitForTimeout(600);
+  check('FUNIL: repetir o mesmo filtro na visita não grava de novo', events.filter((e) => e.event_type === 'list_search').length === 1);
+  const funil = events.filter((e) => ['catalog_search', 'product_select', 'list_open', 'list_search'].includes(e.event_type));
+  check('FUNIL: eventos de funil não carregam localização precisa nem texto pessoal', funil.every((e) => e.lat_approx == null && e.lng_approx == null && e.cep5 == null && e.neighborhood == null && e.telemetry_v === 2 && /^[0-9a-f-]{36}$/.test(e.session_id || '')));
+  await c3.close();
+
   check('sem erros de JavaScript no console', errs.length === 0, errs.join(' | '));
   await browser.close();
   const falhas = results.filter((x) => !x).length;

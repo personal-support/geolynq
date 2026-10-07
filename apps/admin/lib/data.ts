@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import type { Catalog, EventoRecente, ImportBatch, LacunasCompletas, Overview, RevendedorDesempenho, Tenant } from "@/lib/types";
+import type { Catalog, EventoRecente, Funil, ImportBatch, LacunasCompletas, Overview, RevendedorDesempenho, Tenant } from "@/lib/types";
 
 /** Usuário logado (validado no servidor do Supabase) + client. Uma consulta por requisição. */
 export const getSession = cache(async () => {
@@ -130,6 +130,15 @@ export const getResellerPerf = cache(async (tenantId: string, dias: number): Pro
   return (data ?? []) as RevendedorDesempenho[];
 });
 
+
+/** Funil de uso do widget (digitou, escolheu produto, informou local, achou revendedor, clicou; e o caminho pela lista). */
+export const getFunnel = cache(async (tenantId: string, dias: number): Promise<Funil> => {
+  const { supabase } = await getSession();
+  const { data, error } = await supabase.rpc("panel_funnel", { p_tenant_id: tenantId, p_days: dias });
+  if (error) throw new Error(error.code === "PGRST202" ? REPORTS_HINT : `Funil indisponível: ${error.message}`);
+  if (!data) throw new Error("Sem acesso a este cliente.");
+  return data as Funil;
+});
 
 /** Todas as lacunas do período (até 500 combinações) com o total exato de buscas sem revendedor por perto. */
 export const getGaps = cache(async (tenantId: string, dias: number): Promise<LacunasCompletas> => {

@@ -19,7 +19,8 @@ export type ChannelType = "varejo" | "atacado" | "representante" | "online" | "o
 export type TerritoryScope = "brasil" | "uf" | "municipio";
 export type TenantProfileSource = "brasilapi" | "receita_dump" | "manual";
 export type ImportBatchStatus = "processing" | "success" | "partial" | "failed";
-export type WidgetEventType = "search" | "reseller_click";
+/** `catalog_search`, `product_select`, `list_open` e `list_search` são os eventos de funil do widget v2 (migration 20261011000000). */
+export type WidgetEventType = "search" | "reseller_click" | "catalog_search" | "product_select" | "list_open" | "list_search";
 /** Como a localização do visitante foi obtida (telemetria v2). */
 export type WidgetLocationSource = "cep" | "gps" | "none";
 /** Ação escolhida pelo visitante num revendedor (telemetria v2). */

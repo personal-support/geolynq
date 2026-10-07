@@ -640,3 +640,16 @@ do banco agora é schema + migration acima.
 - Testes: 47 unitários, 67 checks E2E v2 (aviso não bloqueia, "Entendi" mantém medição, recusa = 0 eventos e 0 chamadas a `widget_events`,
   vale após recarregar), E2E v1 48 ok. Widget v1 (legado) não tem o aviso.
 - Pendente: publicar (push em bold-cray, OK do usuário); revisão jurídica do texto; endereço do contato do encarregado.
+
+## Eventos de funil (2026-10-07) — PRONTO NO CÓDIGO; NADA APLICADO NA PRODUÇÃO AINDA
+- Widget v2 grava 4 novos `event_type` (anônimos, sem coordenada/CEP/bairro; só depois da interação e respeitando a recusa da medição):
+  `catalog_search` (termo digitado que ACHOU produto; sem produto continua `search` = "fora do catálogo"), `product_select`, `list_open`,
+  `list_search` (UF/cidade/produto; 1 por combinação e visita). Abrir a página não grava nada.
+- Banco: migration `20261011000000_funil_eventos.sql` (troca a constraint de `event_type` + função `panel_funnel(tenant, dias)`; unidade = visita;
+  degraus do caminho do produto são aninhados). Teste `supabase/tests/10_funil_eventos.sql` (OK 10; os relatórios antigos não mudam).
+  **Aplicar em produção ANTES de publicar o widget novo**, senão o INSERT de eventos novos falha na constraint (o widget ignora o erro; só perde o evento).
+  A constraint usa DROP: o conector pode travar; se travar, rodar a etapa 1 no SQL Editor.
+- Simulação: `supabase/tests/11_eventos_funil_simulados.sql` (parâmetros `-v slug=... -v prefix=...`; idempotente) para o demo (`slug=demo prefix=seed-pod-`).
+- Painel: cartão "Como as pessoas usam o localizador" na Visão geral (caminho do produto, caminho da lista, termos digitados) e feed "Atividade ao vivo"
+  com linhas de navegação. Painel precisa de novo deploy do `geolynq_admin` (branch keen-johnson) para aparecer.
+- Testes: widget 47 unitários + 75 E2E v2; painel 76 E2E; banco 04, 05, 07, 08, 09, 10 ok.

@@ -127,7 +127,7 @@ export interface ImportBatch {
 
 export interface EventoRecente {
   quando: string;
-  tipo: "search" | "reseller_click";
+  tipo: "search" | "reseller_click" | "catalog_search" | "product_select" | "list_open" | "list_search";
   termo: string | null;
   produto: string | null;
   cidade: string | null;
@@ -136,6 +136,17 @@ export interface EventoRecente {
   online: number | null;
   acao: "whatsapp" | "call" | "site" | "directions" | null;
   revendedor: string | null;
+}
+
+/** Funil de uso do widget no período (panel_funnel). Unidade: visita (uma abertura da página). Quem recusou a medição não entra. */
+export interface Funil {
+  dias: number;
+  visitas: number;
+  digitaram: number;
+  visitas_com_clique: number;
+  produto: { escolheram: number; localizacao: number; com_revendedor: number; clicaram: number };
+  lista: { abriram: number; filtraram: number; clicaram: number };
+  termos: { termo: string; buscas: number; achou: boolean }[];
 }
 
 export interface RevendedorDesempenho {

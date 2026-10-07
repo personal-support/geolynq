@@ -6,7 +6,8 @@ import { ErroPainel } from "@/components/erro-painel";
 import { PeriodTabs } from "@/components/period-tabs";
 import { Card, CardHeader, Delta, Empty, Kpi, PageHeader } from "@/components/ui";
 import { UltimasBuscas, QuemGeraContato } from "@/components/ao-vivo";
-import { carregar, getCatalog, getMembership, getOverview, getRecent, getResellerPerf, parseDias } from "@/lib/data";
+import { FunilDeUso } from "@/components/funil";
+import { carregar, getCatalog, getFunnel, getMembership, getOverview, getRecent, getResellerPerf, parseDias } from "@/lib/data";
 import { avisoDeBase } from "@/lib/avisos";
 import { ACAO_CLIQUE, km, num, pct, variacao } from "@/lib/format";
 
@@ -19,11 +20,12 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
   const m = await getMembership();
   if (!m) return null;
 
-  const [ov, cat, rec, perf] = await Promise.all([
+  const [ov, cat, rec, perf, fun] = await Promise.all([
     carregar(() => getOverview(m.tenant.id, dias)),
     carregar(() => getCatalog(m.tenant.id)),
     carregar(() => getRecent(m.tenant.id, 10)),
     carregar(() => getResellerPerf(m.tenant.id, dias)),
+    carregar(() => getFunnel(m.tenant.id, dias)),
   ]);
   if ("erro" in ov) return <ErroPainel erro={ov.erro} />;
   if ("erro" in cat) return <ErroPainel erro={cat.erro} />;
@@ -145,6 +147,8 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
           detalhe="Pessoas procuraram algo que a sua marca não cadastrou"
         />
       </div>
+
+      {"erro" in fun ? <ErroPainel erro={fun.erro} /> : <FunilDeUso f={fun.dados} />}
 
       <div className="mb-6 grid gap-6 xl:grid-cols-[1.6fr_1fr]">
         <Card>

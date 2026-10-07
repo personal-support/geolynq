@@ -2,6 +2,37 @@ import { Card, CardHeader, Empty } from "@/components/ui";
 import { ACAO_CLIQUE, haQuanto, num, TIPO_REVENDEDOR } from "@/lib/format";
 import type { EventoRecente, RevendedorDesempenho } from "@/lib/types";
 
+/** Passos de navegação (digitou, escolheu produto, abriu a lista, filtrou a lista). */
+function LinhaNavegacao({ e, local }: { e: EventoRecente; local: string | null }) {
+  let titulo = "";
+  let detalhe = "";
+  if (e.tipo === "catalog_search") {
+    titulo = `Digitou “${e.termo ?? "—"}”`;
+    detalhe = `${num(e.resultado)} ${e.resultado === 1 ? "produto encontrado" : "produtos encontrados"}`;
+  } else if (e.tipo === "product_select") {
+    titulo = `Escolheu ${e.produto ?? "um produto"}`;
+    detalhe = "Clicou em “Onde encontrar”";
+  } else if (e.tipo === "list_open") {
+    titulo = "Abriu a lista de revendedores";
+    detalhe = e.produto ? `a partir de ${e.produto}` : "pelo botão do início";
+  } else {
+    titulo = "Filtrou a lista de revendedores";
+    detalhe = [e.produto, local, `${num(e.resultado)} ${e.resultado === 1 ? "revendedor" : "revendedores"}`].filter(Boolean).join(" · ");
+  }
+  return (
+    <li className="flex items-start gap-3 px-5 py-3">
+      <span className="mt-0.5 rounded-md bg-line px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink-3">Navegação</span>
+      <div className="min-w-0 flex-1 text-sm">
+        <p className="font-medium">{titulo}</p>
+        <p className="truncate text-[13px] text-ink-3">{detalhe}</p>
+      </div>
+      <time dateTime={e.quando} className="shrink-0 text-xs text-ink-3">
+        {haQuanto(e.quando)}
+      </time>
+    </li>
+  );
+}
+
 function Linha({ e }: { e: EventoRecente }) {
   const local = e.cidade ? `${e.cidade}${e.uf ? `/${e.uf}` : ""}` : null;
   if (e.tipo === "reseller_click") {
@@ -20,6 +51,7 @@ function Linha({ e }: { e: EventoRecente }) {
       </li>
     );
   }
+  if (e.tipo !== "search") return <LinhaNavegacao e={e} local={local} />;
   const foraDoCatalogo = !e.produto;
   const semLoja = !foraDoCatalogo && (e.resultado ?? 0) === 0;
   return (
@@ -60,8 +92,8 @@ export function UltimasBuscas({ eventos }: { eventos: EventoRecente[] }) {
   return (
     <Card>
       <CardHeader
-        titulo="Últimas buscas e contatos"
-        dica="O que acabou de acontecer no site da sua marca. Recarregue a página para atualizar."
+        titulo="Atividade ao vivo"
+        dica="O que acabou de acontecer no site da sua marca: navegação, buscas e contatos. Recarregue a página para atualizar."
         direita={
           <a href="/dashboard" className="shrink-0 rounded-lg border border-line-2 px-3 py-1.5 text-[13px] font-medium text-ink-2 hover:bg-line">
             Atualizar
@@ -69,7 +101,7 @@ export function UltimasBuscas({ eventos }: { eventos: EventoRecente[] }) {
         }
       />
       {eventos.length === 0 ? (
-        <Empty titulo="Nada por aqui ainda">Quando alguém buscar um produto ou clicar em um revendedor, aparece aqui.</Empty>
+        <Empty titulo="Nada por aqui ainda">Quando alguém buscar, escolher um produto ou clicar em um revendedor, aparece aqui.</Empty>
       ) : (
         <ul className="mt-3 divide-y divide-line pb-2">
           {eventos.map((e, i) => (

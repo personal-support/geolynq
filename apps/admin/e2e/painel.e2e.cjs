@@ -2,7 +2,8 @@
  * E2E do painel em Chromium real, contra o servidor Next de produção (next start) e o mini-Supabase de e2e/mock-supabase.cjs
  * (relatórios vindos das funções SQL reais num Postgres local, com RLS).
  *
- * Pré-requisitos (ver supabase/tests/README.md): Postgres local com schema + migrations + 02_fixture + 03_eventos_simulados,
+ * Pré-requisitos (ver supabase/tests/README.md): Postgres local com schema + migrations + 02_fixture + 03_eventos_simulados
+ * + 11_eventos_funil_simulados (psql -v slug=fabrica-teste -v prefix=seed-),
  * e o papel `e2e`. Build com as mesmas variáveis usadas aqui:
  *   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_test npm run build -w @geolynq/admin
  *   npm run e2e -w @geolynq/admin
@@ -55,11 +56,12 @@ async function esperado() {
   const gaps30 = (await db.query("select public.panel_gaps($1::uuid, 30) j", [t])).rows[0].j;
   const recentes = (await db.query("select public.panel_recent($1::uuid, 10) j", [t])).rows[0].j;
   const perf = (await db.query("select public.panel_resellers($1::uuid, 30) j", [t])).rows[0].j;
+  const funil = (await db.query("select public.panel_funnel($1::uuid, 30) j", [t])).rows[0].j;
   const totalEventos = (await db.query("select count(*)::int n from public.widget_events where tenant_id=$1::uuid", [t])).rows[0].n;
   const simulados = (await db.query("select count(*)::int n from public.widget_events where tenant_id=$1::uuid and session_id like 'seed-%'", [t])).rows[0].n;
   await db.query("rollback");
   await db.end();
-  return { ov, ov7, cat, recentes, perf, gaps30, totalEventos, simulados };
+  return { ov, ov7, cat, recentes, perf, gaps30, funil, totalEventos, simulados };
 }
 
 (async () => {
@@ -173,11 +175,22 @@ async function esperado() {
       check("faixa 'Dados de demonstração' aparece com dado simulado", (await faixa.count()) === 1);
       check("faixa informa a contagem real (simulados de total)", new RegExp(`Todos os ${ref.totalEventos} eventos|${ref.simulados} de ${ref.totalEventos} eventos`).test(await faixa.innerText()), await faixa.innerText().then((x) => x.replace(/\s+/g, " ").slice(0, 120)));
       check("sem aviso de base pequena quando há volume", (await pageA.locator('[role="note"]', { hasText: "Base pequena" }).count()) === 0);
-      const ultimas = pageA.locator("section", { has: pageA.locator("h2", { hasText: "Últimas buscas e contatos" }) });
-      check("ao vivo: 'Últimas buscas e contatos' lista os 10 eventos mais recentes do banco", (await ultimas.locator("li").count()) === ref.recentes.length && ref.recentes.length === 10, `${await ultimas.locator("li").count()} de ${ref.recentes.length}`);
+      const ultimas = pageA.locator("section", { has: pageA.locator("h2", { hasText: "Atividade ao vivo" }) });
+      check("ao vivo: 'Atividade ao vivo' lista os 10 eventos mais recentes do banco", (await ultimas.locator("li").count()) === ref.recentes.length && ref.recentes.length === 10, `${await ultimas.locator("li").count()} de ${ref.recentes.length}`);
       const primeiro = ref.recentes[0];
       const txtU = await ultimas.innerText();
-      check("ao vivo: o evento mais recente aparece com o produto ou o termo certo", txtU.includes(primeiro.produto ?? primeiro.termo ?? "~~"), primeiro.produto ?? primeiro.termo);
+      const esperadoPrimeiro = { list_open: "Abriu a lista de revendedores", list_search: "Filtrou a lista de revendedores" }[primeiro.tipo] ?? (primeiro.tipo === "reseller_click" ? primeiro.revendedor : null) ?? primeiro.produto ?? primeiro.termo ?? "~~";
+      check("ao vivo: o evento mais recente aparece com o produto, o termo ou o passo certo", txtU.includes(esperadoPrimeiro), `${primeiro.tipo}: ${esperadoPrimeiro}`);
+      // funil de uso (vem de panel_funnel; conferido contra o banco)
+      const fu = ref.funil;
+      const cartaoFunil = pageA.locator("section", { has: pageA.locator("h2", { hasText: "Como as pessoas usam o localizador" }) });
+      check("funil: cartão aparece com os dois caminhos e os termos digitados", (await cartaoFunil.count()) === 1 && (await cartaoFunil.locator("[data-etapa]").count()) === 7 && (await cartaoFunil.locator("h3", { hasText: "O que as pessoas digitam" }).count()) === 1);
+      const valorEtapa = async (rotulo, n = 0) => Number((await cartaoFunil.locator(`[data-etapa="${rotulo}"]`).nth(n).locator(".font-display").innerText()).replace(/\D/g, ""));
+      check("funil: caminho pelo produto bate com o banco", (await valorEtapa("Escolheram um produto")) === fu.produto.escolheram && (await valorEtapa("Informaram onde estão")) === fu.produto.localizacao && (await valorEtapa("Havia revendedor por perto")) === fu.produto.com_revendedor && (await valorEtapa("Foram até um revendedor", 0)) === fu.produto.clicaram, JSON.stringify(fu.produto));
+      check("funil: caminho pela lista bate com o banco", (await valorEtapa("Abriram a lista")) === fu.lista.abriram && (await valorEtapa("Filtraram")) === fu.lista.filtraram && (await valorEtapa("Foram até um revendedor", 1)) === fu.lista.clicaram, JSON.stringify(fu.lista));
+      check("funil: o termo mais digitado aparece com o total do banco", (await cartaoFunil.innerText()).includes(fu.termos[0].termo) && (await cartaoFunil.innerText()).includes(String(fu.termos[0].buscas)), `${fu.termos[0].termo} = ${fu.termos[0].buscas}`);
+      check("funil: o que não achou produto vem marcado 'fora do catálogo'", fu.termos.some((x) => !x.achou) ? (await cartaoFunil.innerText()).includes("fora do catálogo") : true);
+      check("ao vivo: eventos de navegação aparecem com o rótulo 'Navegação'", ref.recentes.some((e) => ["catalog_search", "product_select", "list_open", "list_search"].includes(e.tipo)) ? (await ultimas.locator("li", { hasText: "Navegação" }).count()) > 0 : true);
       const quem = pageA.locator("section", { has: pageA.locator("h2", { hasText: "Quem gera contato" }) });
       const topPerf = ref.perf.filter((r) => r.contatos > 0)[0];
       const txtQ = await quem.innerText();
