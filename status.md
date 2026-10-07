@@ -166,7 +166,7 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
     `20261009000000_painel_lacunas_completas.sql`, teste `08_*.sql` OK 08; **aplicada na produção**, conferida: total = indicador). Tela Lacunas agora tem filtro por
     estado e produto, **Exportar CSV** (`;`, BOM, fórmulas neutralizadas; exige login) e o "em breve" virou um aviso único. E2E **70/70**.
   - **Ainda por fazer (Pacote 2 e IA):** valor em R$ (premissas editáveis), raio configurável por cliente (hoje 100 km fixo no widget), lista de candidatos a revendedor (B3, hoje "em breve" 22× na tela de Lacunas), "Leitura do período" com IA.
-- **Widget v2 — Etapa 1 "núcleo" (2026-10-07; construído e testado; NÃO publicado):** decisões do usuário: (1) começar com produtos planos e agrupar sabor/tamanho depois;
+- **Widget v2 — Etapa 1 "núcleo" (2026-10-07; construído, testado e PUBLICADO com OK do usuário):** decisões do usuário: (1) começar com produtos planos e agrupar sabor/tamanho depois;
   (2) lista geral de revendedores aceita com ao menos 1 filtro e 10 por página; (3) rastreio ANÔNIMO por desenho (nada guardado no navegador; id de visita só em memória;
   o painel passa a falar em "visitas", não "pessoas"); (4) o visual/estrutura do widget é nosso e igual para todos, e SÓ a GeoLynq define cores/estilo/fonte do cliente (o cliente não
   edita); a página "Onde encontrar" (cabeçalho/rodapé) é do cliente. Fotos: dois caminhos na MESMA coluna `products.image_url` (link do cliente ou nosso armazenamento) — decisão de
@@ -181,7 +181,10 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
     (OK 09; quebrei as regras de propósito e o teste falhou). Conferido na produção: `anon` não lê `tenants`, lista sem filtro = 0, v1 intacto (tenant e busca por raio).
   - **Testes:** 43 unitários, E2E do v1 48/48 (intacto), E2E do v2 53/53 (`npm run e2e:v2 -w @geolynq/widget`; geolocalização exige https), painel E2E 70/70, nginx real (`/v2/` ok, `/v3/` 404).
   - **Site demo (`apps/demo`):** passou a usar o v2; página nova `/onde-encontrar.html` (cabeçalho e rodapé da Pódio + widget); fotos geradas em `/img/<sku>.svg`; roteiro atualizado.
-  - **Para publicar (cada item precisa de OK):** (a) gravar no `demo`: `products.image_url` (12 links para `https://demo.geolynq.personalsupport.tech/img/<sku>.svg`) e `tenants.widget_theme`
+  - **PUBLICADO (2026-10-07, OK do usuário):** (a) gravados no `demo` os 12 `image_url` e o tema (conferido: 12 produtos com foto, 1 cliente com tema); (b) push fast-forward `776694f..a38ef54` na `claude/bold-cray-vbbdyb`
+    (contêiner novo do `geolynq_widget` no ar, "Up about a minute"); (c) painel redeployado (contêiner `healthy`, texto "visitas"). **Não verificado daqui:** os endereços públicos (o proxy da nuvem bloqueia) — o 1º teste real é do usuário em
+    https://demo.geolynq.personalsupport.tech/onde-encontrar.html. Havia a lista do que gravar:
+    (a) gravar no `demo`: `products.image_url` (12 links para `https://demo.geolynq.personalsupport.tech/img/<sku>.svg`) e `tenants.widget_theme`
     (`{"primary":"#1F3FFF","radius":14,"cardText":"#0F1B2D","border":"#E4E2DA","imageRatio":"3/4"}`); (b) push na `claude/bold-cray-vbbdyb` (publica widget v1+v2 e o site demo).
   - **Pendências deste bloco:** coluna de foto na planilha-modelo e no importador n8n; espelhar/otimizar fotos no nosso armazenamento; eventos novos (abrir lista, escolher produto) e funil no painel;
     pop-up de consentimento/LGPD + texto de privacidade/contrato (advogado); trava de domínio; agrupar sabor/tamanho; ViaCEP/Nominatim públicos (dados de CEP saem para terceiros).
