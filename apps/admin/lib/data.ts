@@ -1,6 +1,7 @@
+import { cookies } from "next/headers";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import type { Catalog, ImportBatch, Overview, Tenant } from "@/lib/types";
+import type { Catalog, EventoRecente, ImportBatch, Overview, RevendedorDesempenho, Tenant } from "@/lib/types";
 
 /** Usuário logado (validado no servidor do Supabase) + client. Uma consulta por requisição. */
 export const getSession = cache(async () => {
@@ -17,23 +18,35 @@ export interface Membership {
   email: string | null;
 }
 
+/** Cookie com o cliente (slug) que o usuário está vendo. Só vale se o usuário for mesmo membro dele (o RLS já filtra a lista). */
+export const COOKIE_CLIENTE = "gl_cliente";
+
 /**
- * Cliente (tenant) do usuário. O RLS só devolve linhas do próprio usuário, então não há como pedir o de outro.
- * MVP: um usuário = um cliente (o primeiro vínculo). Seletor de cliente fica para quando houver consultor multi-cliente.
+ * Clientes (tenants) do usuário. O RLS só devolve linhas do próprio usuário, então não há como pedir o de outro.
+ * Quem tem mais de um vínculo (ex.: a equipe da GeoLynq) escolhe qual ver pelo seletor da barra lateral.
  */
-export const getMembership = cache(async (): Promise<Membership | null> => {
+export const getMemberships = cache(async (): Promise<Membership[]> => {
   const { supabase, user } = await getSession();
-  if (!user) return null;
+  if (!user) return [];
   const { data, error } = await supabase
     .from("tenant_users")
     .select("role, tenants(id, name, slug, status, primary_color)")
-    .order("created_at", { ascending: true })
-    .limit(1);
+    .order("created_at", { ascending: true });
   if (error) throw new Error(`Não foi possível carregar o seu cliente: ${error.message}`);
-  const row = data?.[0] as { role: string; tenants: Tenant | Tenant[] | null } | undefined;
-  const tenant = Array.isArray(row?.tenants) ? row?.tenants[0] : row?.tenants;
-  if (!row || !tenant) return null;
-  return { role: row.role, tenant, email: user.email ?? null };
+  const lista: Membership[] = [];
+  for (const row of (data ?? []) as unknown as { role: string; tenants: Tenant | Tenant[] | null }[]) {
+    const tenant = Array.isArray(row.tenants) ? row.tenants[0] : row.tenants;
+    if (tenant) lista.push({ role: row.role, tenant, email: user.email ?? null });
+  }
+  return lista;
+});
+
+/** O cliente em exibição: o escolhido no seletor (cookie) ou, na falta, o primeiro vinculado ao usuário. */
+export const getMembership = cache(async (): Promise<Membership | null> => {
+  const todos = await getMemberships();
+  if (todos.length === 0) return null;
+  const slug = (await cookies()).get(COOKIE_CLIENTE)?.value;
+  return todos.find((m) => m.tenant.slug === slug) ?? todos[0];
 });
 
 const REPORTS_HINT =
@@ -98,4 +111,21 @@ export const getEventosSimulados = cache(async (tenantId: string): Promise<{ sim
   ]);
   if (sim.error || tot.error || sim.count == null || tot.count == null) return null;
   return { simulados: sim.count, total: tot.count };
+});
+
+
+/** Últimos eventos do cliente (buscas e contatos com revendedores), do mais recente para o mais antigo. */
+export const getRecent = cache(async (tenantId: string, limite = 12): Promise<EventoRecente[]> => {
+  const { supabase } = await getSession();
+  const { data, error } = await supabase.rpc("panel_recent", { p_tenant_id: tenantId, p_limit: limite });
+  if (error) throw new Error(error.code === "PGRST202" ? REPORTS_HINT : `Últimas buscas indisponíveis: ${error.message}`);
+  return (data ?? []) as EventoRecente[];
+});
+
+/** Contatos gerados por revendedor no período (inclui quem não gerou nenhum). */
+export const getResellerPerf = cache(async (tenantId: string, dias: number): Promise<RevendedorDesempenho[]> => {
+  const { supabase } = await getSession();
+  const { data, error } = await supabase.rpc("panel_resellers", { p_tenant_id: tenantId, p_days: dias });
+  if (error) throw new Error(error.code === "PGRST202" ? REPORTS_HINT : `Desempenho da rede indisponível: ${error.message}`);
+  return (data ?? []) as RevendedorDesempenho[];
 });

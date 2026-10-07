@@ -3,7 +3,7 @@ import { signOut } from "@/app/login/actions";
 import { RadarMark } from "@/components/radar-mark";
 import { FaixaDemonstracao } from "@/components/avisos";
 import { Sidebar } from "@/components/sidebar";
-import { getEventosSimulados, getMembership, getSession } from "@/lib/data";
+import { getEventosSimulados, getMembership, getMemberships, getSession } from "@/lib/data";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = await getSession();
@@ -30,11 +30,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
     );
   }
 
-  const ev = await getEventosSimulados(m.tenant.id);
+  const [ev, todos] = await Promise.all([getEventosSimulados(m.tenant.id), getMemberships()]);
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <Sidebar cliente={m.tenant.name} status={m.tenant.status} email={m.email} />
+      <Sidebar
+        cliente={m.tenant.name}
+        slug={m.tenant.slug}
+        status={m.tenant.status}
+        email={m.email}
+        clientes={todos.map((x) => ({ slug: x.tenant.slug, nome: x.tenant.name }))}
+      />
       <main className="min-w-0 flex-1 px-4 py-6 sm:px-8 lg:px-11 lg:py-10">
         <div className="mx-auto max-w-[1180px]">
           {ev && ev.simulados > 0 ? <FaixaDemonstracao simulados={ev.simulados} total={ev.total} /> : null}

@@ -52,11 +52,13 @@ async function esperado() {
   const ov = (await db.query("select public.panel_overview($1::uuid, 30) j", [t])).rows[0].j;
   const ov7 = (await db.query("select public.panel_overview($1::uuid, 7) j", [t])).rows[0].j;
   const cat = (await db.query("select public.panel_catalog($1::uuid) j", [t])).rows[0].j;
+  const recentes = (await db.query("select public.panel_recent($1::uuid, 10) j", [t])).rows[0].j;
+  const perf = (await db.query("select public.panel_resellers($1::uuid, 30) j", [t])).rows[0].j;
   const totalEventos = (await db.query("select count(*)::int n from public.widget_events where tenant_id=$1::uuid", [t])).rows[0].n;
   const simulados = (await db.query("select count(*)::int n from public.widget_events where tenant_id=$1::uuid and session_id like 'seed-%'", [t])).rows[0].n;
   await db.query("rollback");
   await db.end();
-  return { ov, ov7, cat, totalEventos, simulados };
+  return { ov, ov7, cat, recentes, perf, totalEventos, simulados };
 }
 
 (async () => {
@@ -170,6 +172,15 @@ async function esperado() {
       check("faixa 'Dados de demonstração' aparece com dado simulado", (await faixa.count()) === 1);
       check("faixa informa a contagem real (simulados de total)", new RegExp(`Todos os ${ref.totalEventos} eventos|${ref.simulados} de ${ref.totalEventos} eventos`).test(await faixa.innerText()), await faixa.innerText().then((x) => x.replace(/\s+/g, " ").slice(0, 120)));
       check("sem aviso de base pequena quando há volume", (await pageA.locator('[role="note"]', { hasText: "Base pequena" }).count()) === 0);
+      const ultimas = pageA.locator("section", { has: pageA.locator("h2", { hasText: "Últimas buscas e contatos" }) });
+      check("ao vivo: 'Últimas buscas e contatos' lista os 10 eventos mais recentes do banco", (await ultimas.locator("li").count()) === ref.recentes.length && ref.recentes.length === 10, `${await ultimas.locator("li").count()} de ${ref.recentes.length}`);
+      const primeiro = ref.recentes[0];
+      const txtU = await ultimas.innerText();
+      check("ao vivo: o evento mais recente aparece com o produto ou o termo certo", txtU.includes(primeiro.produto ?? primeiro.termo ?? "~~"), primeiro.produto ?? primeiro.termo);
+      const quem = pageA.locator("section", { has: pageA.locator("h2", { hasText: "Quem gera contato" }) });
+      const topPerf = ref.perf.filter((r) => r.contatos > 0)[0];
+      const txtQ = await quem.innerText();
+      check("desempenho: o revendedor que mais gera contato vem primeiro, com o nº do banco", txtQ.indexOf(topPerf.nome) >= 0 && txtQ.includes(String(topPerf.contatos)), `${topPerf.nome} = ${topPerf.contatos}`);
       check("sem erros de JS na visão geral", errosA.length === 0, errosA.join(" | "));
       await pageA.screenshot({ path: `${OUT}/02-visao-geral-desktop.png`, fullPage: true });
     }
@@ -209,6 +220,9 @@ async function esperado() {
       await pageA.goto(`${BASE}/dashboard/rede?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E`);
       check("rede: busca com HTML não executa nem quebra", (await pageA.locator("table tbody tr").count()) === 0 && /Nenhum revendedor com esses filtros/.test(await texto(pageA)));
       await pageA.goto(`${BASE}/dashboard/rede`);
+      const somaContatos = await pageA.locator("table tbody tr td:last-child").evaluateAll((tds) => tds.reduce((a, td) => a + (parseInt(td.textContent.replace(/\D/g, ""), 10) || 0), 0));
+      const esperadoContatos = ref.perf.reduce((a, r) => a + r.contatos, 0);
+      check("rede: coluna 'Contatos (30 d)' soma o mesmo que o banco", /Contatos \(30 d\)/i.test(await texto(pageA)) && somaContatos === esperadoContatos && esperadoContatos > 0, `${somaContatos} de ${esperadoContatos}`);
       await pageA.screenshot({ path: `${OUT}/04-rede-desktop.png`, fullPage: true });
     }
 
@@ -236,6 +250,24 @@ async function esperado() {
       await pageA.screenshot({ path: `${OUT}/07-widget-desktop.png`, fullPage: true });
     }
     check("sem erros de JS ao navegar pelas telas (usuário A)", errosA.length === 0, errosA.join(" | "));
+
+    // seletor de cliente: com 1 vínculo não aparece; com 2 aparece e troca; slug de cliente alheio no cookie é ignorado
+    await pageA.goto(`${BASE}/dashboard`);
+    check("seletor de cliente: não aparece para quem tem 1 cliente", (await pageA.locator("aside select[name=cliente]").count()) === 0);
+    await dbSeed.query("insert into public.tenant_users (tenant_id, user_id, role) select id, '00000000-0000-4000-8000-0000000000aa', 'viewer' from public.tenants where slug='demo' on conflict do nothing");
+    await pageA.goto(`${BASE}/dashboard`);
+    const sel = pageA.locator("aside select[name=cliente]");
+    check("seletor de cliente: aparece para quem tem 2 clientes, com os 2", (await sel.count()) === 1 && (await sel.locator("option").count()) === 2);
+    const nomeAtual = () => pageA.locator("aside p[title]").first().innerText();
+    check("seletor de cliente: começa no primeiro vínculo (Fábrica Teste)", /Fábrica Teste/.test(await nomeAtual()));
+    await Promise.all([pageA.waitForLoadState("networkidle").catch(() => {}), sel.selectOption("demo")]);
+    await pageA.waitForTimeout(800);
+    const tDemo = await nomeAtual();
+    check("seletor de cliente: ao escolher, o painel passa a mostrar o outro cliente", /GeoLynq Demo/.test(tDemo) && !/Fábrica Teste/.test(tDemo), tDemo);
+    await pageA.context().addCookies([{ name: "gl_cliente", value: "cliente-que-nao-existe", url: BASE }]);
+    await pageA.goto(`${BASE}/dashboard`);
+    check("seletor de cliente: slug que o usuário não possui no cookie é ignorado (volta ao primeiro vínculo)", /Fábrica Teste/.test(await nomeAtual()));
+    await dbSeed.query("delete from public.tenant_users where user_id='00000000-0000-4000-8000-0000000000aa' and tenant_id=(select id from public.tenants where slug='demo')");
 
     // sair
     await pageA.goto(`${BASE}/dashboard`);
@@ -322,6 +354,7 @@ async function esperado() {
       const c = new Client({ connectionString: process.env.DATABASE_URL || "postgres://e2e:e2e@127.0.0.1:5432/geolynq_test" });
       await c.connect();
       await c.query("delete from public.widget_events where session_id like 'e2e-%'");
+      await c.query("delete from public.tenant_users where user_id='00000000-0000-4000-8000-0000000000aa' and tenant_id=(select id from public.tenants where slug='demo')");
       await c.end();
     } catch {}
     next.kill();

@@ -1,6 +1,6 @@
 import { ErroPainel } from "@/components/erro-painel";
 import { Card, CardHeader, Empty, Kpi, PageHeader, Pill, TD, TH } from "@/components/ui";
-import { carregar, getCatalog, getMembership } from "@/lib/data";
+import { carregar, getCatalog, getMembership, getResellerPerf } from "@/lib/data";
 import { num, pct, TIPO_REVENDEDOR } from "@/lib/format";
 
 export const metadata = { title: "Rede de revendedores" };
@@ -17,8 +17,10 @@ export default async function Rede({ searchParams }: { searchParams: SP }) {
 
   const m = await getMembership();
   if (!m) return null;
-  const r = await carregar(() => getCatalog(m.tenant.id));
+  const [r, perf] = await Promise.all([carregar(() => getCatalog(m.tenant.id)), carregar(() => getResellerPerf(m.tenant.id, 30))]);
   if ("erro" in r) return <ErroPainel erro={r.erro} />;
+  // O desempenho é um complemento: se falhar, a tabela segue sem a coluna de contatos.
+  const contatos = "dados" in perf ? new Map(perf.dados.map((p) => [p.id, p.contatos])) : null;
   const c = r.dados;
   const cp = c.completude;
 
@@ -123,7 +125,7 @@ export default async function Rede({ searchParams }: { searchParams: SP }) {
             </Empty>
           ) : (
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[720px] text-sm">
+              <table className="w-full min-w-[800px] text-sm">
                 <thead>
                   <tr className="border-y border-line">
                     <th className={TH}>Revendedor</th>
@@ -131,6 +133,7 @@ export default async function Rede({ searchParams }: { searchParams: SP }) {
                     <th className={TH}>Local</th>
                     <th className={TH}>Contato</th>
                     <th className={`${TH} text-right`}>Produtos</th>
+                    {contatos ? <th className={`${TH} text-right`}>Contatos (30 d)</th> : null}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -160,6 +163,11 @@ export default async function Rede({ searchParams }: { searchParams: SP }) {
                         <td className={`${TD} text-right font-display text-base font-semibold`}>
                           {x.produtos === 0 ? <span className="text-gap-deep">0</span> : num(x.produtos)}
                         </td>
+                        {contatos ? (
+                          <td className={`${TD} text-right font-display text-base font-semibold`}>
+                            {(contatos.get(x.id) ?? 0) === 0 ? <span className="text-ink-3">0</span> : num(contatos.get(x.id))}
+                          </td>
+                        ) : null}
                       </tr>
                     );
                   })}

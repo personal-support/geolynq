@@ -329,11 +329,13 @@ const presenter = layout({
   <p>Cada busca e cada clique em revendedor ficam registrados. É isso que a Parte 2 mostra.</p>
 
   <h2>Parte 2 — a plataforma (a equipe comercial)</h2>
-  <p>Abra o painel em <b>painel.geolynq.personalsupport.tech</b>, com o acesso do cliente de demonstração (não está nesta página).</p>
+  <p>Abra o painel em <b>painel.geolynq.personalsupport.tech</b> com o seu acesso (não está nesta página) e, no seletor de cliente da barra lateral, escolha <b>GeoLynq Demo</b>: é a mesma marca Pódio do site.</p>
   <ol class="steps">
+    <li><b>Ao vivo:</b> faça uma busca no site (parte 1) e, no painel, role até <b>Últimas buscas e contatos</b> e clique em <b>Atualizar</b>: a sua busca aparece com produto, cidade e quantas lojas há por perto.</li>
     <li><b>Visão geral:</b> a frase do período ("N buscas ficaram sem revendedor por perto"), o mapa de cobertura e as maiores lacunas.</li>
+    <li><b>Quem gera contato:</b> quais revendedores recebem clique (WhatsApp, ligação, rota, site) e quais lojas físicas estão paradas.</li>
     <li><b>Lacunas:</b> produto × cidade sem revendedor a 100 km. É a lista de onde o fabricante perde venda.</li>
-    <li><b>Rede:</b> revendedores, o que cada um vende e quem está fora da busca por distância.</li>
+    <li><b>Rede:</b> revendedores, o que cada um vende, os contatos de cada um e quem está fora da busca por distância.</li>
     <li><b>Catálogo e Importações:</b> como o cliente atualiza os dados (planilha) e o que corrigir quando algo falha.</li>
   </ol>
 

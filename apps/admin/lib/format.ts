@@ -79,3 +79,15 @@ export const STATUS_IMPORTACAO: Record<string, { rotulo: string; tom: "ok" | "av
   partial: { rotulo: "Com pendências", tom: "aviso" },
   failed: { rotulo: "Falhou", tom: "ruim" },
 };
+
+/**
+ * Categoria como o cliente a escreveu na planilha. Se vier em "código" (minúsculo, sem espaço, com - ou _), deixa legível:
+ * "pre-treino" → "Pre treino". Não dá para recuperar acentos; o ideal é a planilha já trazer "Pré-treino".
+ */
+export function rotuloCategoria(v: string | null | undefined): string {
+  if (!v) return "—";
+  const t = v.trim();
+  if (/[A-ZÀ-Ý\s]/.test(t) || !/^[a-z0-9_-]+$/.test(t)) return t;
+  const limpo = t.replace(/[-_]+/g, " ");
+  return limpo.charAt(0).toUpperCase() + limpo.slice(1);
+}

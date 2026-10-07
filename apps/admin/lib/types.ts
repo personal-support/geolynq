@@ -124,3 +124,30 @@ export interface ImportBatch {
   created_at: string;
   completed_at: string | null;
 }
+
+export interface EventoRecente {
+  quando: string;
+  tipo: "search" | "reseller_click";
+  termo: string | null;
+  produto: string | null;
+  cidade: string | null;
+  uf: string | null;
+  resultado: number | null;
+  online: number | null;
+  acao: "whatsapp" | "call" | "site" | "directions" | null;
+  revendedor: string | null;
+}
+
+export interface RevendedorDesempenho {
+  id: string;
+  nome: string;
+  tipo: string;
+  cidade: string | null;
+  uf: string | null;
+  contatos: number;
+  whatsapp: number;
+  ligar: number;
+  rota: number;
+  site: number;
+  ultimo_contato: string | null;
+}

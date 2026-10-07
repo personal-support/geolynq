@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/app/login/actions";
 import { RadarMark } from "@/components/radar-mark";
+import { SeletorCliente, type OpcaoCliente } from "@/components/seletor-cliente";
 import { Pill } from "@/components/ui";
 import { STATUS_CLIENTE } from "@/lib/format";
 
@@ -33,7 +34,19 @@ function Icone({ nome }: { nome: string }) {
   );
 }
 
-export function Sidebar({ cliente, status, email }: { cliente: string; status: string; email: string | null }) {
+export function Sidebar({
+  cliente,
+  slug,
+  status,
+  email,
+  clientes,
+}: {
+  cliente: string;
+  slug: string;
+  status: string;
+  email: string | null;
+  clientes: OpcaoCliente[];
+}) {
   const pathname = usePathname();
   const ativo = (href: string, exato?: boolean) => (exato ? pathname === href : pathname === href || pathname.startsWith(href + "/"));
   const st = STATUS_CLIENTE[status] ?? { rotulo: status, tom: "aviso" as const };
@@ -58,6 +71,11 @@ export function Sidebar({ cliente, status, email }: { cliente: string; status: s
           <div className="mt-2">
             <Pill tom={st.tom}>{st.rotulo}</Pill>
           </div>
+          {clientes.length > 1 ? (
+            <div className="mt-3">
+              <SeletorCliente clientes={clientes} atual={slug} />
+            </div>
+          ) : null}
         </div>
 
         <nav className="mt-6 flex flex-1 flex-col gap-0.5" aria-label="Seções do painel">
@@ -106,6 +124,11 @@ export function Sidebar({ cliente, status, email }: { cliente: string; status: s
             </button>
           </form>
         </div>
+        {clientes.length > 1 ? (
+          <div className="px-4 pb-2.5">
+            <SeletorCliente clientes={clientes} atual={slug} escuro={false} />
+          </div>
+        ) : null}
         <nav className="flex gap-1 overflow-x-auto px-3 pb-2.5" aria-label="Seções do painel">
           {ITENS.map((i) => (
             <Link

@@ -1,7 +1,7 @@
 import { ErroPainel } from "@/components/erro-painel";
 import { Card, CardHeader, Empty, Kpi, PageHeader, Pill, TD, TH } from "@/components/ui";
 import { carregar, getCatalog, getMembership } from "@/lib/data";
-import { num, TIPO_REVENDEDOR } from "@/lib/format";
+import { num, TIPO_REVENDEDOR, rotuloCategoria } from "@/lib/format";
 
 export const metadata = { title: "Catálogo" };
 
@@ -61,7 +61,7 @@ export default async function Catalogo() {
                       <p className="font-semibold">{p.name}</p>
                       <p className="font-mono text-[11px] text-ink-3">{p.sku}</p>
                     </td>
-                    <td className={`${TD} text-ink-2`}>{p.category ?? "—"}</td>
+                    <td className={`${TD} text-ink-2`}>{rotuloCategoria(p.category)}</td>
                     <td className={`${TD} text-right font-display text-base font-semibold`}>{num(p.revendedores)}</td>
                     <td className={`${TD} text-right`}>{num(p.fisicos)}</td>
                     <td className={TD}>

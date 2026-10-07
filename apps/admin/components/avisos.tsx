@@ -6,19 +6,17 @@ import { num } from "@/lib/format";
 export function FaixaDemonstracao({ simulados, total }: { simulados: number; total: number }) {
   const tudo = simulados >= total;
   return (
-    <div role="note" className="mb-6 flex gap-3 rounded-2xl border border-warn/30 bg-warn-soft px-4 py-3.5 text-warn sm:px-5">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="mt-0.5 shrink-0">
+    <div role="note" className="mb-5 flex items-start gap-2.5 rounded-xl border border-warn/30 bg-warn-soft px-3.5 py-2.5 text-warn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="mt-[3px] shrink-0">
         <path d="M12 9v4m0 4h.01M10.3 3.9L2.4 18a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" />
       </svg>
-      <div className="text-[14px] leading-snug">
-        <p className="font-semibold">Dados de demonstração</p>
-        <p className="mt-0.5 text-warn/90">
-          {tudo
-            ? `Todos os ${num(total)} eventos deste painel foram simulados para testar o sistema.`
-            : `${num(simulados)} de ${num(total)} eventos deste painel foram simulados; os números misturam dados simulados e reais.`}{" "}
-          Não são buscas de consumidores reais e não representam o resultado de nenhum cliente.
-        </p>
-      </div>
+      <p className="text-[13px] leading-snug">
+        <span className="font-semibold">Dados de demonstração.</span>{" "}
+        {tudo
+          ? `Todos os ${num(total)} eventos deste painel foram simulados para testar o sistema.`
+          : `${num(simulados)} de ${num(total)} eventos deste painel foram simulados; os números misturam dados simulados e reais.`}{" "}
+        Não são buscas de consumidores reais e não representam o resultado de nenhum cliente.
+      </p>
     </div>
   );
 }

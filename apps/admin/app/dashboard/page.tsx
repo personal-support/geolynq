@@ -5,7 +5,8 @@ import { CoverageMap } from "@/components/coverage-map";
 import { ErroPainel } from "@/components/erro-painel";
 import { PeriodTabs } from "@/components/period-tabs";
 import { Card, CardHeader, Delta, Empty, Kpi, PageHeader } from "@/components/ui";
-import { carregar, getCatalog, getMembership, getOverview, parseDias } from "@/lib/data";
+import { UltimasBuscas, QuemGeraContato } from "@/components/ao-vivo";
+import { carregar, getCatalog, getMembership, getOverview, getRecent, getResellerPerf, parseDias } from "@/lib/data";
 import { avisoDeBase } from "@/lib/avisos";
 import { ACAO_CLIQUE, km, num, pct, variacao } from "@/lib/format";
 
@@ -18,7 +19,12 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
   const m = await getMembership();
   if (!m) return null;
 
-  const [ov, cat] = await Promise.all([carregar(() => getOverview(m.tenant.id, dias)), carregar(() => getCatalog(m.tenant.id))]);
+  const [ov, cat, rec, perf] = await Promise.all([
+    carregar(() => getOverview(m.tenant.id, dias)),
+    carregar(() => getCatalog(m.tenant.id)),
+    carregar(() => getRecent(m.tenant.id, 10)),
+    carregar(() => getResellerPerf(m.tenant.id, dias)),
+  ]);
   if ("erro" in ov) return <ErroPainel erro={ov.erro} />;
   if ("erro" in cat) return <ErroPainel erro={cat.erro} />;
   const o = ov.dados;
@@ -179,6 +185,12 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
             </ol>
           )}
         </Card>
+      </div>
+
+      {/* Ao vivo: o que acabou de acontecer no site e quem da rede gera contato */}
+      <div className="mb-6 grid gap-6 xl:grid-cols-[1.6fr_1fr]" id="ao-vivo">
+        {"erro" in rec ? <ErroPainel erro={rec.erro} /> : <UltimasBuscas eventos={rec.dados} />}
+        {"erro" in perf ? <ErroPainel erro={perf.erro} /> : <QuemGeraContato rede={perf.dados} dias={dias} />}
       </div>
 
       <div className="mb-6 grid gap-6 xl:grid-cols-[1.6fr_1fr]">

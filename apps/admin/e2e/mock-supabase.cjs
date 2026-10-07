@@ -107,10 +107,18 @@ function start(port = 54321) {
           const r = await comoUsuario(claims.sub, (db) => db.query("select public.panel_catalog($1::uuid) as j", [body.p_tenant_id]));
           return send(200, r.rows[0].j);
         }
+        if (rota === "rpc/panel_recent") {
+          const r = await comoUsuario(claims.sub, (db) => db.query("select public.panel_recent($1::uuid, $2::int) as j", [body.p_tenant_id, body.p_limit]));
+          return send(200, r.rows[0].j);
+        }
+        if (rota === "rpc/panel_resellers") {
+          const r = await comoUsuario(claims.sub, (db) => db.query("select public.panel_resellers($1::uuid, $2::int) as j", [body.p_tenant_id, body.p_days]));
+          return send(200, r.rows[0].j);
+        }
         if (rota === "tenant_users") {
           const r = await comoUsuario(claims.sub, (db) =>
             db.query(`select tu.role, (select to_jsonb(x) from (select t.id, t.name, t.slug, t.status, t.primary_color from public.tenants t where t.id = tu.tenant_id) x) as tenants
-                        from public.tenant_users tu order by tu.created_at asc limit 1`),
+                        from public.tenant_users tu order by tu.created_at asc`),
           );
           return send(200, r.rows);
         }

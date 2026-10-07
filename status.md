@@ -147,6 +147,22 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   390 px) com o widget real e dados simulados: sem rolagem lateral em nenhuma das 16 páginas. Não conferido: fontes do Google e o widget lendo o
   banco real (o sandbox não alcança). **Categorias do tenant `demo` corrigidas no banco (OK do usuário):** de `proteina`/`aminoacido`/`energia`/`vitamina`/`saude` para
   "Proteínas" (5), "Aminoácidos" (2), "Energia e performance" (2), "Vitaminas" (1), "Saúde e bem-estar" (2); o widget mostra esse texto na lista de busca.
+- **Análise da plataforma + Pacote 1 (2026-10-07, OK do usuário):** análise crítica feita (painel = bom relatório de diagnóstico, ainda não ferramenta de
+  decisão comercial). **Não existe análise de IA no painel** (a manchete é texto-modelo por regras); proposta aceita para depois: cartão "Leitura do período"
+  gerado pela API da Anthropic (números sempre do SQL, IA só narra; conferir que todo número citado está nos dados; guardar por período; chave só como variável
+  no EasyPanel, nunca no chat). **Feito no Pacote 1:**
+  - Migration `20261008000000_painel_ao_vivo_e_desempenho.sql` (`panel_recent`, `panel_resellers`; SECURITY INVOKER; anon sem EXECUTE). Testes
+    `supabase/tests/07_*.sql` (OK 07). **Aplicada na produção** e conferida lá como o usuário do painel.
+  - Painel: cartão "Últimas buscas e contatos" (+ "Atualizar"), cartão "Quem gera contato" (ranking e lojas físicas paradas), coluna "Contatos (30 d)" na Rede,
+    **seletor de cliente** (cookie `gl_cliente`, só aceita cliente do qual o usuário é membro), categoria legível no Catálogo, faixa de demonstração compacta.
+    E2E **61/61** (`next start` e standalone).
+  - Dados: o cliente `demo` (marca Pódio, a mesma do site) recebeu **600 buscas + 215 contatos simulados** (`supabase/tests/06_eventos_simulados_podio.sql`;
+    cobertura calculada com PostGIS a partir da rede real do `demo`; sessões `seed-pod-…`; apagar: `delete from public.widget_events where session_id like 'seed-pod-%';`).
+    Rede do `demo`: duplicata "Farmácia Saúde Total" **inativada** (não apagada) e telefone `13999990000` trocado por fictício plausível. O e-mail do usuário do painel
+    foi vinculado como `owner` ao `demo` (agora com 2 clientes: `fabrica-teste` e `demo`).
+  - Roteiro (`/apresentacao.html`) atualizado no repositório; só vai ao ar no próximo push na `bold-cray` (precisa de OK).
+  - **Ainda por fazer (Pacote 2 e IA):** valor em R$ (premissas editáveis), raio configurável por cliente (hoje 100 km fixo no widget), exportar CSV, filtro por região,
+    lista de candidatos a revendedor (B3, hoje "em breve" 22× na tela de Lacunas), "Leitura do período" com IA.
 - **Falta:** a conferência visual completa pelo usuário (mapa com os blocos reais do OSM, pré-visualização do widget só aparece com o
   cliente `active`). Depois do merge na `main`, trocar a branch do serviço `geolynq_admin` para `main`.
 - **Para publicar (cada item precisa do OK/ação do usuário):** (1) aplicar a migration no `geolynq-prod`; (2) criar o usuário
