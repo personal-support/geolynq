@@ -1,3 +1,9 @@
+/*
+ * GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+ * Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+ * total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+ * Unauthorized copying, replication, redistribution or commercial use is prohibited.
+ */
 /**
  * E2E do painel em Chromium real, contra o servidor Next de produção (next start) e o mini-Supabase de e2e/mock-supabase.cjs
  * (relatórios vindos das funções SQL reais num Postgres local, com RLS).

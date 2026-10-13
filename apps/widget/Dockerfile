@@ -1,3 +1,7 @@
+# GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+# Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+# total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+# Unauthorized copying, replication, redistribution or commercial use is prohibited.
 # Fases 4.5 e 4.1 — empacota o widget (apps/widget) e o site de amostra (apps/demo) como
 # arquivos estáticos servidos pelo Nginx, um site por nome de host (ver nginx.conf).
 # Build context = RAIZ do repositório (precisa do package-lock.json e dos workspaces):

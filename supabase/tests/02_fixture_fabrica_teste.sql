@@ -1,3 +1,7 @@
+-- GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+-- Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+-- total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+-- Unauthorized copying, replication, redistribution or commercial use is prohibited.
 insert into public.tenants (name, slug, status) values ('Fábrica Teste (hipotético)', 'fabrica-teste', 'trial'), ('GeoLynq Demo', 'demo', 'active');
 insert into public.products (tenant_id, sku, name, category, claims, allergens) values ((select id from public.tenants where slug='fabrica-teste'), 'TST-001', 'Whey Protein Teste 900g', 'proteina', '{}', '{}');
 insert into public.products (tenant_id, sku, name, category, claims, allergens) values ((select id from public.tenants where slug='fabrica-teste'), 'TST-002', 'Creatina Teste 300g', 'aminoacidos', '{}', '{}');

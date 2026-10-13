@@ -1,3 +1,9 @@
+<!--
+  GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+  Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+  total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+  Unauthorized copying, replication, redistribution or commercial use is prohibited.
+-->
 # Status — GeoLynq
 
 ## Última atualização
@@ -48,6 +54,22 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
 - **Pendências para publicar:** (1) ~~aplicar a migration~~ (feito); (2) ~~criar o serviço no EasyPanel + domínio~~ (feito; falta conferir no navegador);
   (3) aviso de novo contato por n8n (não existe; a migration já cria `notified_at`); (4) revisão jurídica de `privacidade.html`;
   (5) Danilo revisar o texto; (6) Search Console e Google Business.
+
+## Aviso de autoria e direitos reservados (2026-10-13) — NO REPOSITÓRIO (commit na `claude/keen-johnson-c0x5hs`); ver "Publicação" abaixo
+- Pedido do usuário: todo arquivo deve mostrar que **Jucimar Lopes (Personal Support)** desenvolveu o sistema e que cópia, réplica ou comercialização sem autorização são proibidas — **sem
+  mudar nada do funcionamento**. Feito **só com comentários**: `LICENSE` (direitos reservados, exceção para a DCM condicionada a acordo escrito, componentes de terceiros fora do aviso),
+  `README.md` na raiz, cabeçalho de 4 linhas em 135 arquivos (`/* */` em TS/TSX/JS/CSS, `#` em Dockerfile/nginx/YAML/.gitignore/.env.example/robots.txt, `--` em SQL, `<!-- -->` em HTML/XML/Markdown;
+  `llms.txt` leva o aviso no fim porque o formato exige o título na 1ª linha), `author`/`license: UNLICENSED` nos 4 `package.json`, comentário no modelo de página do demo (`build.mjs`) e uma
+  linha de aviso (só ASCII) no topo de `v1/embed.js` e `v2/embed.js`, inserida por plugin no `vite.config*.ts` **depois** da minificação.
+- **Ficaram sem aviso** (não aceitam comentário ou editar quebraria algo): JSON de dados (`brand.json`, `products.json`, `tsconfig.json`, `package-lock.json`), imagens, fontes, `.xlsx` e `.tsv`
+  (as planilhas-modelo são lidas pelo n8n). Cobertos pelo `LICENSE`. A UI (landing, painel, widget) **não** ganhou texto visível; a landing continua com a identidade da DCM.
+- **Prova de que nada mudou:** cada arquivo alterado = original + aviso, conferido byte a byte contra o git (132 arquivos; os outros 7 foram revistos no diff); widget: tipos OK, 47 testes OK,
+  código dos dois bundles idêntico ao anterior (só ganharam a 1ª linha); painel: tsc, eslint e build OK, 42 de 46 arquivos do build com hash idêntico (os 4 restantes mudam a cada build do Next,
+  provado ao construir duas vezes o mesmo código) e 25 testes de IA OK; demo: 33 arquivos, 17 HTML só ganharam o comentário, 15 idênticos, `styles.css` = antes + comentário;
+  `nginx -t` OK nos dois `nginx.conf`; landing servida por nginx real: rotas, tipos, cabeçalhos de segurança e os 6 cenários do formulário iguais, sem erro no console (375 e 1440 px).
+  **Não rodado:** E2E do widget e do painel (precisam de Postgres/PostGIS local), build dos Dockerfiles (sem Docker no sandbox).
+- **Regra daqui em diante:** arquivo novo leva o mesmo cabeçalho (texto em `CLAUDE.md`). Notar: o repositório no GitHub é **público** — o aviso não impede cópia; para isso, repositório privado
+  (cuidado: o clone HTTPS sem chave da landing no EasyPanel deixaria de funcionar; precisaria de chave de deploy) e/ou registro do programa no INPI.
 
 ## Cliente de teste `fabrica-teste` (criado em 2026-10-06, com OK do usuário)
 - Cadastrado pelo workflow n8n "Cadastro de Cliente por CNPJ" (execução nº 103, `gravar=true`, sucesso na 1ª

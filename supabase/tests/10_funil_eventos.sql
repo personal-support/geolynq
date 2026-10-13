@@ -1,3 +1,7 @@
+-- GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+-- Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+-- total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+-- Unauthorized copying, replication, redistribution or commercial use is prohibited.
 -- Testa a migration 20261011000000 (eventos de funil + panel_funnel). Cliente próprio, sem outros eventos: os números são exatos.
 -- Rodar DEPOIS de 02 (usa os usuários aa/bb). Faz rollback e imprime "OK 10".
 \set ON_ERROR_STOP on

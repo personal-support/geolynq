@@ -1,3 +1,7 @@
+-- GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+-- Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+-- total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+-- Unauthorized copying, replication, redistribution or commercial use is prohibited.
 -- ============================================================
 -- Landing page — endurece a tabela `leads` (formulário público de contato)
 -- APLICADA EM PRODUÇÃO em 2026-10-13 (apply_migration "leads_landing"). Não reaplicar: os ADD CONSTRAINT abaixo não são idempotentes.

@@ -1,3 +1,7 @@
+-- GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+-- Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+-- total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+-- Unauthorized copying, replication, redistribution or commercial use is prohibited.
 -- Testa a migration 20261010000000 (widget v2: tema, grade de produtos, lista de revendedores). Rodar DEPOIS das migrations.
 -- Tudo como `anon` (o papel do visitante do site). Cria cliente próprio e faz rollback. Imprime "OK 09".
 \set ON_ERROR_STOP on

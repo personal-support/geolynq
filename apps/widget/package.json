@@ -1,5 +1,7 @@
 {
   "name": "@geolynq/widget",
+  "author": "Jucimar Lopes (Personal Support)",
+  "license": "UNLICENSED",
   "version": "0.1.0",
   "private": true,
   "type": "module",

@@ -1,3 +1,9 @@
+/*
+ * GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+ * Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+ * total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+ * Unauthorized copying, replication, redistribution or commercial use is prohibited.
+ */
 /**
  * Mini-Supabase para o E2E do painel. NÃO é um mock "de mentira": as respostas dos relatórios vêm das funções SQL
  * reais (panel_overview/panel_catalog), executadas num Postgres local com o esquema e as migrations do projeto,

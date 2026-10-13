@@ -1,3 +1,7 @@
+-- GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+-- Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+-- total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+-- Unauthorized copying, replication, redistribution or commercial use is prohibited.
 -- ===== EVENTOS SIMULADOS (tenant demo = marca fictícia "Pódio") — session_id começa com 'seed-pod-' (para apagar depois) =====
 -- Diferente do 03_: a cobertura (nº de revendedores no raio, distância ao mais próximo) é CALCULADA a partir da rede real do tenant
 -- (PostGIS, raio de 100 km, só revendedor físico ativo), então o painel, o mapa e a página de Rede contam a mesma história.

@@ -1,3 +1,7 @@
+-- GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+-- Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+-- total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+-- Unauthorized copying, replication, redistribution or commercial use is prohibited.
 -- ===== EVENTOS DE FUNIL SIMULADOS — complementa as buscas simuladas (03_ / 06_) com a navegação que vem antes e depois =====
 -- Uso (psql):  psql -v slug=demo -v prefix=seed-pod- -f 11_eventos_funil_simulados.sql        (marca fictícia Pódio)
 --              psql -v slug=fabrica-teste -v prefix=seed- -f 11_eventos_funil_simulados.sql    (cliente de teste local)

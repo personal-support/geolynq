@@ -1,3 +1,9 @@
+/*
+ * GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+ * Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+ * total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+ * Unauthorized copying, replication, redistribution or commercial use is prohibited.
+ */
 // Imprime o UPDATE do tema do widget do cliente `demo` a partir do brand.json (para colar no SQL Editor / conector).
 //   node apps/demo/brand-sql.mjs
 import { readFileSync } from "node:fs";

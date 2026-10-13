@@ -1,3 +1,9 @@
+/*
+ * GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+ * Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+ * total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+ * Unauthorized copying, replication, redistribution or commercial use is prohibited.
+ */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GeoLynqApiV2, anonymousVisitId, type ProductCard } from "./api2";
 import { filterProducts, initials, normalize, termForTelemetry } from "./catalog";

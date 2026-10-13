@@ -1,3 +1,9 @@
+/*
+ * GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+ * Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+ * total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+ * Unauthorized copying, replication, redistribution or commercial use is prohibited.
+ */
 const SESSION_KEY = "geolynq_sid";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const FALLBACK_COLOR = "#0f766e";

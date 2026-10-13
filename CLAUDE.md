@@ -1,3 +1,9 @@
+<!--
+  GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+  Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+  total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+  Unauthorized copying, replication, redistribution or commercial use is prohibited.
+-->
 # GeoLynq — instruções para o Claude
 
 **Ao começar qualquer sessão: leia `status.md` primeiro.** É o checkpoint do projeto (onde paramos,
@@ -27,6 +33,14 @@ n8n para importação de catálogo, EasyPanel/Hostinger para hospedagem. Bluepri
 - **Peça OK antes** de gravar no banco de produção ou de abrir PR. Não crie PR sem pedido explícito.
 - **Nunca** peça nem cole segredos (service_role, URL/token do gatilho de deploy). A chave
   `sb_publishable_…` é pública e pode aparecer.
+
+## Autoria e direitos (decisão do usuário, 2026-10-13)
+- O desenvolvedor é **Jucimar Lopes (Personal Support)**; cópia, réplica e comercialização são proibidas sem autorização escrita (ver `LICENSE`). Quem comercializa e emite nota é a DCM
+  Marketing Digital — nos textos públicos de venda aparece a DCM, não a Personal Support. **Nunca** colocar CPF no repositório (é público).
+- **Todo arquivo novo** que aceite comentário leva este cabeçalho (primeira coisa do arquivo; em HTML/XML, logo depois do `<!doctype>`/`<?xml?>`; nunca antes de `#!`):
+  `GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.` / `Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,` /
+  `total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.` / `Unauthorized copying, replication, redistribution or commercial use is prohibited.`
+  (cópia pronta: o topo deste arquivo). Não vai em JSON, imagens, fontes, `.xlsx`/`.tsv` (quebraria leitura). O aviso **não pode alterar comportamento**: só comentário.
 
 ## Regras técnicas
 - Desenvolva e dê push só na branch `claude/bold-cray-vbbdyb`. Push na branch **publica o widget
