@@ -658,7 +658,18 @@ do banco agora é schema + migration acima.
   (3) push `e089984` em `claude/bold-cray-vbbdyb` (widget); (4) `deployAppService` do `geolynq_admin` (a chamada estoura 60 s, mas o build segue). Deploys NÃO verificados ainda.
 - Cuidado: `listProjectsAndServices` do EasyPanel devolve as variáveis de ambiente (segredos) de TODOS os projetos da conta; use `getDockerContainers`.
 
-## Leitura do período por IA (2026-10-07) — PRONTO NO CÓDIGO; NADA APLICADO NA PRODUÇÃO; falta a chave
+## Leitura do período por IA — FUNCIONAL EM PRODUÇÃO (conferido 2026-10-12/13 com dados de teste; sem cliente real ainda)
+- **2026-10-12 (noite): funcionando em `fabrica-teste` e `demo`.** Conferido no banco (SELECT): 228×159 buscas (+43%), 66×41 sem revendedor (+61%), 65×47 cliques (+38%),
+  Whey 84/13, Barra 17 de 23, Hipercalórico 18 de 18 — tudo bate com o texto da IA. Leitura gravada: modelo `claude-sonnet-5-5`, ~1.9 mil tokens de entrada e ~1.6 mil de saída.
+- Problemas resolvidos: (1) chave sem workspace (erro 400 "not scoped to a workspace", aparecia como IA-MODELO) → nova chave com workspace no EasyPanel;
+  (2) leitura recusada como "números não conferem" → o limite de saída (1500 tokens) cortava a resposta (a gravada usou 1625); agora `max_tokens` 3000, limites de texto mais folgados
+  (resumo 900, ação 260…), JSON aceito mesmo com frase em volta, 100 km aceito na conferência; (3) botão sem aviso → "Gerando leitura…".
+- Diagnóstico: o painel mostra na tela o "Detalhe técnico" quando descarta (números reprovados ou motivo do formato) e grava `[ia] …` no log. O EasyPanel do usuário NÃO devolve logs
+  (`queryServiceLogs` dá 400; coleta de logs provavelmente desligada).
+- Pendências: IA escreve "36.7%" com ponto (pt-BR pede vírgula); conferir alegações do funil/WhatsApp; rotacionar a chave da Anthropic que apareceu no chat (uma por vez, atualizando o EasyPanel);
+  citar a IA como operador no texto de privacidade. Commits na `claude/keen-johnson-c0x5hs` (ad96087, 8457265, 504323c); `geolynq_admin` reimplantado por `deployAppService`.
+
+### Histórico (2026-10-07) — antes de ligar
 - Cartão "Leitura do período" na Visão geral: resumo, destaques e ações, gerados sob demanda (botão), guardados em `panel_ai_readings` por cliente e período.
   Números vêm do SQL (`montarDados`); a IA só narra; TODO número escrito é conferido contra os dados (`numerosNaoConferem`); se não conferir, tenta 1 vez
   de novo e depois DESCARTA (nunca mostra número não verificado). Limitação: confere que o número existe nos dados, não que foi atribuído ao item certo.
