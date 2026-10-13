@@ -17,7 +17,7 @@ function Botao({ dias, rotulo }: { dias: number; rotulo: string }) {
 }
 
 /** Leitura do período por IA. Os números vêm do banco e são conferidos antes de aparecer (lib/ia.ts). */
-export function LeituraDoPeriodo({ leitura, dias, erro }: { leitura: LeituraGuardada | null; dias: number; erro: string | null }) {
+export function LeituraDoPeriodo({ leitura, dias, erro, detalhe }: { leitura: LeituraGuardada | null; dias: number; erro: string | null; detalhe?: string | null }) {
   const msg = erro && erro in MENSAGEM_ERRO ? MENSAGEM_ERRO[erro as ErroIA] : null;
   const c = leitura?.conteudo;
   return (
@@ -32,6 +32,7 @@ export function LeituraDoPeriodo({ leitura, dias, erro }: { leitura: LeituraGuar
         {msg ? (
           <p role="alert" className="mb-4 rounded-xl border border-warn-soft bg-warn-soft px-4 py-3 text-sm text-warn">
             {msg}
+            {erro === "nao_confiavel" && detalhe ? <span className="mt-1 block text-xs">Detalhe técnico: {detalhe === "formato" ? "resposta fora do formato combinado" : `números reprovados: ${detalhe}`}</span> : null}
           </p>
         ) : null}
         {!c ? (

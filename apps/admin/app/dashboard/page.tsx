@@ -23,6 +23,7 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
 
   const iaAtiva = Boolean(process.env.ANTHROPIC_API_KEY);
   const erroIA = (await searchParams).ia;
+  const detIA = (await searchParams).det;
   const [ov, cat, rec, perf, fun, leitura] = await Promise.all([
     carregar(() => getOverview(m.tenant.id, dias)),
     carregar(() => getCatalog(m.tenant.id)),
@@ -128,7 +129,7 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
       </Card>
 
       {iaAtiva && leitura && !("erro" in leitura) ? (
-        <LeituraDoPeriodo leitura={leitura.dados} dias={dias} erro={typeof erroIA === "string" ? erroIA : null} />
+        <LeituraDoPeriodo leitura={leitura.dados} dias={dias} erro={typeof erroIA === "string" ? erroIA : null} detalhe={typeof detIA === "string" && /^[\d.,% a-zç]{1,60}$/i.test(detIA) ? detIA : null} />
       ) : null}
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">

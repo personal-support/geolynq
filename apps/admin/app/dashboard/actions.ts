@@ -22,7 +22,8 @@ export async function trocarCliente(formData: FormData) {
  */
 export async function gerarLeituraIA(formData: FormData) {
   const dias = parseDias(String(formData.get("dias") ?? ""));
-  const volta = (erro?: string) => redirect(`/dashboard?dias=${dias}${erro ? `&ia=${erro}` : ""}#leitura`);
+  const volta = (erro?: string, det?: string) =>
+    redirect(`/dashboard?dias=${dias}${erro ? `&ia=${erro}` : ""}${det ? `&det=${encodeURIComponent(det.slice(0, 60))}` : ""}#leitura`);
   const m = await getMembership();
   if (!m) {
     console.error("[ia] sem vínculo do usuário com o cliente em exibição");
@@ -50,7 +51,7 @@ export async function gerarLeituraIA(formData: FormData) {
   try {
     resultado = await gerarLeitura(montarDados(m.tenant.name, dias, ov.dados, fun.dados, perf.dados));
   } catch (e) {
-    if (e instanceof LeituraErro) return volta(e.codigo);
+    if (e instanceof LeituraErro) return volta(e.codigo, e.detalhe);
     console.error(`[ia] erro inesperado: ${e instanceof Error ? `${e.name}: ${e.message}`.slice(0, 200) : "desconhecido"}`);
     return volta("inesperado");
   }

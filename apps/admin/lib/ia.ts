@@ -34,9 +34,12 @@ export type ErroIA =
 
 export class LeituraErro extends Error {
   codigo: ErroIA;
-  constructor(codigo: ErroIA, mensagem: string) {
+  /** Só números/“formato”, nunca texto livre: aparece na tela para diagnosticar sem depender de log. */
+  detalhe?: string;
+  constructor(codigo: ErroIA, mensagem: string, detalhe?: string) {
     super(mensagem);
     this.codigo = codigo;
+    this.detalhe = detalhe;
   }
 }
 
@@ -246,6 +249,7 @@ export async function gerarLeitura(dados: Dados): Promise<{ leitura: Leitura; mo
   let entrada = 0;
   let saida = 0;
   let mensagens: { role: "user" | "assistant"; content: string }[] = [pedido];
+  let motivo = "formato";
   for (let tentativa = 0; tentativa < 2; tentativa++) {
     const r = await chamar(mensagens);
     entrada += r.entrada;
@@ -254,6 +258,7 @@ export async function gerarLeitura(dados: Dados): Promise<{ leitura: Leitura; mo
     const ruins = leitura ? numerosNaoConferem(textosDaLeitura(leitura), dados) : [];
     if (!leitura) console.error(`[ia] tentativa ${tentativa + 1}: resposta fora do formato combinado (JSON inválido ou tamanho acima do limite)`);
     else if (ruins.length > 0) console.error(`[ia] tentativa ${tentativa + 1}: números que não conferem: ${ruins.join(", ")}`);
+    motivo = leitura ? ruins.slice(0, 8).join(" ") : "formato";
     if (leitura && ruins.length === 0) return { leitura, modelo: process.env.ANTHROPIC_MODEL ?? "", entrada, saida };
     mensagens = [
       pedido,
@@ -266,5 +271,5 @@ export async function gerarLeitura(dados: Dados): Promise<{ leitura: Leitura; mo
       },
     ];
   }
-  throw new LeituraErro("nao_confiavel", MENSAGEM_ERRO.nao_confiavel);
+  throw new LeituraErro("nao_confiavel", MENSAGEM_ERRO.nao_confiavel, motivo);
 }
