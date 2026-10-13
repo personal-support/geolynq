@@ -55,7 +55,7 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   (3) aviso de novo contato por n8n (não existe; a migration já cria `notified_at`); (4) revisão jurídica de `privacidade.html`;
   (5) Danilo revisar o texto; (6) Search Console e Google Business.
 
-## Aviso de autoria e direitos reservados (2026-10-13) — NO REPOSITÓRIO (commit na `claude/keen-johnson-c0x5hs`); ver "Publicação" abaixo
+## Aviso de autoria e direitos reservados (2026-10-13) — NO REPOSITÓRIO E NA LANDING NO AR; widget/painel/demo ainda não
 - Pedido do usuário: todo arquivo deve mostrar que **Jucimar Lopes (Personal Support)** desenvolveu o sistema e que cópia, réplica ou comercialização sem autorização são proibidas — **sem
   mudar nada do funcionamento**. Feito **só com comentários**: `LICENSE` (direitos reservados, exceção para a DCM condicionada a acordo escrito, componentes de terceiros fora do aviso),
   `README.md` na raiz, cabeçalho de 4 linhas em 135 arquivos (`/* */` em TS/TSX/JS/CSS, `#` em Dockerfile/nginx/YAML/.gitignore/.env.example/robots.txt, `--` em SQL, `<!-- -->` em HTML/XML/Markdown;
@@ -68,6 +68,8 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   provado ao construir duas vezes o mesmo código) e 25 testes de IA OK; demo: 33 arquivos, 17 HTML só ganharam o comentário, 15 idênticos, `styles.css` = antes + comentário;
   `nginx -t` OK nos dois `nginx.conf`; landing servida por nginx real: rotas, tipos, cabeçalhos de segurança e os 6 cenários do formulário iguais, sem erro no console (375 e 1440 px).
   **Não rodado:** E2E do widget e do painel (precisam de Postgres/PostGIS local), build dos Dockerfiles (sem Docker no sandbox).
+- **Publicação:** commit `11294b9` na `claude/keen-johnson-c0x5hs`; `geolynq_landing` republicada em 2026-10-13 (container `Up, healthy`, conferido via EasyPanel; site pelo domínio não conferido daqui). O **widget no ar NÃO foi tocado**
+  (o serviço `geolynq_widget` publica da `claude/bold-cray-vbbdyb`): o banner nos bundles só chega ao ar quando essa branch receber estes commits. Painel e demo não estão no ar com esta mudança.
 - **Regra daqui em diante:** arquivo novo leva o mesmo cabeçalho (texto em `CLAUDE.md`). Notar: o repositório no GitHub é **público** — o aviso não impede cópia; para isso, repositório privado
   (cuidado: o clone HTTPS sem chave da landing no EasyPanel deixaria de funcionar; precisaria de chave de deploy) e/ou registro do programa no INPI.
 
