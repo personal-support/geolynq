@@ -29,6 +29,11 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
 - Testado: HTML/JS sem erro no console; nginx real (versão 1.24 local; no Docker será 1.27) com rotas, cache e CSP; formulário com endpoint simulado
   (envio, e-mail inválido, sem aceite, robô, 2 envios seguidos, erro do servidor). **Não testado:** envio real ao Supabase (o sandbox não alcança), Lighthouse,
   Rich Results Test e a prévia real no WhatsApp (só depois de publicar).
+- **Quem é quem (decisão do usuário, 2026-10-13):** quem **comercializa** o GeoLynq e emite nota fiscal é a **DCM Marketing Digital** (MEI de Danilo Carlos Machado, CNPJ 52.721.470/0001-48,
+  Praia Grande/SP). O desenvolvedor é Jucimar Alves Lopes (pessoa física). Nos textos públicos (landing, privacidade, `llms.txt`, dados estruturados) onde constava "Personal Support" agora consta
+  "DCM Marketing Digital". O **painel** e o **demo** não traziam o nome da Personal Support em nenhum texto visível (nada a trocar). Os endereços `personalsupport.tech` e o projeto `personalsupport_saas`
+  do EasyPanel **não mudaram**. Contato público ainda é `personalsupport@hotmail.com` (formulário e privacidade) — trocar quando o usuário definir o e-mail da DCM. Contrato com a New Millen: pendente
+  (a parte contratante será a DCM). **Nunca** colocar CPF no repositório (é público).
 - **Publicação (2026-10-13):** serviço `geolynq_landing` (projeto `personalsupport_saas`), origem Git por HTTPS (`https://github.com/personal-support/geolynq.git`, branch
   `claude/keen-johnson-c0x5hs`, contexto `/apps/landing`, Dockerfile `Dockerfile`), domínio `geolynq.personalsupport.tech` com HTTPS, porta 80, 128 MB. Container `running (healthy)`
   conferido via EasyPanel. **Não verificado daqui:** abrir o site pelo domínio (o sandbox não alcança), certificado HTTPS e a prévia no WhatsApp. Deploy **manual** (autoDeploy

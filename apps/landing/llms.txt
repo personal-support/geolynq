@@ -2,7 +2,7 @@
 
 > GeoLynq é um localizador de revendedores com geolocalização para sites de marcas e indústrias. O consumidor escolhe o produto, informa onde está e vê as lojas mais próximas que o vendem. A marca recebe um painel que mostra onde há procura e ainda não há revendedor.
 
-Produto da Personal Support Consultoria e Tecnologia Estratégica (Baixada Santista, SP, Brasil). Público: indústrias e marcas com rede de revendedores. Investimento sob consulta. Implantação conduzida pela equipe.
+Produto da DCM Marketing Digital (CNPJ 52.721.470/0001-48, Praia Grande, SP, Brasil). Público: indústrias e marcas com rede de revendedores. Investimento sob consulta. Implantação conduzida pela equipe.
 
 ## O que faz
 - Widget "Onde encontrar" que entra no site da marca com uma linha de código.
