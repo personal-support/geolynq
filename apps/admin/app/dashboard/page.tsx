@@ -8,7 +8,7 @@ import { Card, CardHeader, Delta, Empty, Kpi, PageHeader } from "@/components/ui
 import { UltimasBuscas, QuemGeraContato } from "@/components/ao-vivo";
 import { FunilDeUso } from "@/components/funil";
 import { LeituraDoPeriodo } from "@/components/leitura";
-import { carregar, getCatalog, getFunnel, getMembership, getUltimaLeitura, getOverview, getRecent, getResellerPerf, parseDias } from "@/lib/data";
+import { carregar, getCatalog, getEventosSimulados, getFunnel, getMembership, getUltimaLeitura, getOverview, getRecent, getResellerPerf, parseDias } from "@/lib/data";
 import { avisoDeBase } from "@/lib/avisos";
 import { ACAO_CLIQUE, km, num, pct, variacao } from "@/lib/format";
 
@@ -129,7 +129,7 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
       </Card>
 
       {iaAtiva && leitura && !("erro" in leitura) ? (
-        <LeituraDoPeriodo leitura={leitura.dados} dias={dias} erro={typeof erroIA === "string" ? erroIA : null} detalhe={typeof detIA === "string" && /^[\d.,% a-zç]{1,60}$/i.test(detIA) ? detIA : null} />
+        <LeituraDoPeriodo leitura={leitura.dados} dias={dias} simulados={await getEventosSimulados(m.tenant.id)} erro={typeof erroIA === "string" ? erroIA : null} detalhe={typeof detIA === "string" && /^[\d.,% a-zç]{1,60}$/i.test(detIA) ? detIA : null} />
       ) : null}
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
@@ -262,7 +262,13 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
           <CardHeader titulo="O que as pessoas fazem depois da busca" dica="Ação escolhida ao clicar em um revendedor." />
           <div className="mt-3 pb-2">
             <BarList
-              itens={o.acoes.map((a) => ({ rotulo: ACAO_CLIQUE[a.acao] ?? a.acao, valor: a.cliques }))}
+              itens={[
+                ...o.acoes.map((a) => ({ rotulo: ACAO_CLIQUE[a.acao] ?? a.acao, valor: a.cliques })),
+                // cliques antigos podem não ter o tipo de ação gravado; sem esta linha a soma não fecha com o total de cliques
+                ...(o.kpis.cliques > o.acoes.reduce((t, a) => t + a.cliques, 0)
+                  ? [{ rotulo: "Sem ação registrada", valor: o.kpis.cliques - o.acoes.reduce((t, a) => t + a.cliques, 0) }]
+                  : []),
+              ]}
               vazio="Ainda não há cliques em revendedores no período."
               neutro
             />

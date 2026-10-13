@@ -1,6 +1,6 @@
 // Testes da lógica pura da "Leitura do período" (lib/ia.ts). Rodar: node --experimental-strip-types apps/admin/e2e/ia.test.mts
 import assert from "node:assert/strict";
-import { motivoFormato, lerNumeroBR, lerResposta, montarDados, numerosNaoConferem, gerarLeitura, LeituraErro } from "../lib/ia.ts";
+import { virgulaBR, motivoFormato, lerNumeroBR, lerResposta, montarDados, numerosNaoConferem, gerarLeitura, LeituraErro } from "../lib/ia.ts";
 
 let n = 0;
 const ok = (nome: string, fn: () => void | Promise<void>) =>
@@ -44,6 +44,9 @@ await ok("números que existem nos dados passam (inclusive formatados em pt-BR e
 });
 await ok("o raio fixo de 100 km (só aparece no nome do campo) é aceito", () => {
   assert.deepEqual(numerosNaoConferem(["Há buscas sem nenhum revendedor num raio de 100 km."], dados), []);
+});
+await ok("virgulaBR: decimal ganha vírgula, milhar e inteiros ficam", () => {
+  assert.equal(virgulaBR("só 36.7% das buscas, 14.7 km, 1.234 buscas, 228 buscas"), "só 36,7% das buscas, 14,7 km, 1.234 buscas, 228 buscas");
 });
 await ok("número inventado é apontado", () => {
   assert.deepEqual(numerosNaoConferem(["As buscas cresceram 57%, de 1.000 para 1.234."], dados), ["57"]);

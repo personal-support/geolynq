@@ -2,6 +2,7 @@ import { gerarLeituraIA } from "@/app/dashboard/actions";
 import { BotaoGerar } from "@/components/botao-gerar";
 import { Card, CardHeader, Empty } from "@/components/ui";
 import type { LeituraGuardada } from "@/lib/data";
+import { num } from "@/lib/format";
 import { MENSAGEM_ERRO, type ErroIA } from "@/lib/ia";
 
 const quando = (iso: string) =>
@@ -17,7 +18,7 @@ function Botao({ dias, rotulo }: { dias: number; rotulo: string }) {
 }
 
 /** Leitura do período por IA. Os números vêm do banco e são conferidos antes de aparecer (lib/ia.ts). */
-export function LeituraDoPeriodo({ leitura, dias, erro, detalhe }: { leitura: LeituraGuardada | null; dias: number; erro: string | null; detalhe?: string | null }) {
+export function LeituraDoPeriodo({ leitura, dias, erro, detalhe, simulados }: { leitura: LeituraGuardada | null; dias: number; erro: string | null; detalhe?: string | null; simulados?: { simulados: number; total: number } | null }) {
   const msg = erro && erro in MENSAGEM_ERRO ? MENSAGEM_ERRO[erro as ErroIA] : null;
   const c = leitura?.conteudo;
   return (
@@ -29,6 +30,11 @@ export function LeituraDoPeriodo({ leitura, dias, erro, detalhe }: { leitura: Le
         direita={leitura ? <Botao dias={dias} rotulo="Gerar nova leitura" /> : undefined}
       />
       <div className="px-5 pb-6 pt-4">
+        {simulados && simulados.simulados > 0 ? (
+          <p className="mb-4 rounded-xl border border-line bg-paper px-4 py-2.5 text-xs text-ink-2">
+            Esta leitura usa os números deste painel, que incluem dados de demonstração ({num(simulados.simulados)} de {num(simulados.total)} eventos simulados). Não representa o resultado de nenhum cliente real.
+          </p>
+        ) : null}
         {msg ? (
           <p role="alert" className="mb-4 rounded-xl border border-warn-soft bg-warn-soft px-4 py-3 text-sm text-warn">
             {msg}
