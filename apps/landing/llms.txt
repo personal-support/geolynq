@@ -1,0 +1,19 @@
+# GeoLynq
+
+> GeoLynq é um localizador de revendedores com geolocalização para sites de marcas e indústrias. O consumidor escolhe o produto, informa onde está e vê as lojas mais próximas que o vendem. A marca recebe um painel que mostra onde há procura e ainda não há revendedor.
+
+Produto da Personal Support Consultoria e Tecnologia Estratégica (Baixada Santista, SP, Brasil). Público: indústrias e marcas com rede de revendedores. Investimento sob consulta. Implantação conduzida pela equipe.
+
+## O que faz
+- Widget "Onde encontrar" que entra no site da marca com uma linha de código.
+- Mostra os revendedores mais próximos num raio de 100 km, com WhatsApp, ligação, rota e site; sem loja por perto, indica a venda online.
+- Painel da marca: lacunas de cobertura por produto e cidade, mapa de cobertura, funil de uso, desempenho dos revendedores e leitura do período escrita por IA (cada número citado é conferido contra os dados).
+- Medição anônima de buscas e cliques, sem identificar o consumidor e sem cadastro do consumidor.
+
+## Páginas
+- [Página inicial](https://geolynq.personalsupport.tech/): apresentação, como funciona, painel, implantação e dúvidas frequentes.
+- [Demonstração do "Onde encontrar"](https://demo.geolynq.personalsupport.tech/onde-encontrar.html): site de amostra com marca fictícia.
+- [Privacidade](https://geolynq.personalsupport.tech/privacidade.html)
+
+## Contato
+Formulário em https://geolynq.personalsupport.tech/#contato

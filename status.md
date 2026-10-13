@@ -22,6 +22,20 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
 5. [ ] **n8n fora da AWS** (prazo 10–13/11/2026) → VPS Hostinger/EasyPanel.
 6. [ ] **Limpar o `demo`** (revendedor duplicado e telefone `13999990000`) antes de mostrar a qualquer cliente.
 
+## Landing page do GeoLynq (2026-10-13) — CONSTRUÍDA E TESTADA LOCALMENTE, **NÃO PUBLICADA**
+- Pasta `apps/landing/` (ver o README dela). Hero com imagem gerada, responsiva (testada em 375, 768 e 1440 px, sem rolagem lateral),
+  SEO técnico, dados estruturados (FAQPage etc.), `llms.txt` e `robots.txt` liberando robôs de IA, prévia de WhatsApp (Open Graph, imagem de 64 KB)
+  e botão "Compartilhar no WhatsApp". Preço: "sob consulta". Texto provisório (o comercial é do Danilo).
+- Testado: HTML/JS sem erro no console; nginx real (versão 1.24 local; no Docker será 1.27) com rotas, cache e CSP; formulário com endpoint simulado
+  (envio, e-mail inválido, sem aceite, robô, 2 envios seguidos, erro do servidor). **Não testado:** envio real ao Supabase (o sandbox não alcança), Lighthouse,
+  Rich Results Test e a prévia real no WhatsApp (só depois de publicar).
+- **Achado no banco (somente leitura):** `leads` tem RLS e 0 linhas, mas `anon`/`authenticated` têm todos os privilégios (inclusive TRUNCATE) e o INSERT
+  público aceita `status` e textos sem limite. Correção pronta em `supabase/migrations/20261013000000_leads_landing.sql` (testada em Postgres local, idempotente) —
+  **falta aplicar em produção (precisa de OK; rodar no SQL Editor, tem `DO $$`/`DROP POLICY`).**
+- **Pendências para publicar:** (1) aplicar a migration; (2) criar o serviço no EasyPanel + domínio `geolynq.personalsupport.tech` (OK do usuário);
+  (3) aviso de novo contato por n8n (não existe; a migration já cria `notified_at`); (4) revisão jurídica de `privacidade.html`;
+  (5) Danilo revisar o texto; (6) Search Console e Google Business.
+
 ## Cliente de teste `fabrica-teste` (criado em 2026-10-06, com OK do usuário)
 - Cadastrado pelo workflow n8n "Cadastro de Cliente por CNPJ" (execução nº 103, `gravar=true`, sucesso na 1ª
   tentativa): `tenant_id` `88a5496b-7837-4aee-a817-4cfbe7a1a011`, slug `fabrica-teste`, status **trial**,
