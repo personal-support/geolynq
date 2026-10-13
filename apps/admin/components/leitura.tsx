@@ -32,7 +32,7 @@ export function LeituraDoPeriodo({ leitura, dias, erro, detalhe }: { leitura: Le
         {msg ? (
           <p role="alert" className="mb-4 rounded-xl border border-warn-soft bg-warn-soft px-4 py-3 text-sm text-warn">
             {msg}
-            {erro === "nao_confiavel" && detalhe ? <span className="mt-1 block text-xs">Detalhe técnico: {detalhe === "formato" ? "resposta fora do formato combinado" : `números reprovados: ${detalhe}`}</span> : null}
+            {erro === "nao_confiavel" && detalhe ? <span className="mt-1 block text-xs">Detalhe técnico: {detalhe.startsWith("formato") ? `resposta fora do formato combinado (${detalhe.replace("formato", "").trim() || "?"})` : `números reprovados: ${detalhe}`}</span> : null}
           </p>
         ) : null}
         {!c ? (

@@ -166,17 +166,41 @@ REGRAS (todas obrigatórias):
 {"resumo": "duas ou três frases", "destaques": [{"titulo": "até 6 palavras", "texto": "uma ou duas frases"}], "acoes": [{"acao": "uma frase no imperativo", "motivo": "uma frase com o dado que justifica"}]}
 - No máximo 4 destaques e 4 ações.`;
 
-const LIMITES = { resumo: 600, titulo: 80, texto: 320, acao: 160, motivo: 280 };
+const LIMITES = { resumo: 900, titulo: 100, texto: 480, acao: 260, motivo: 420 };
+
+/** Aceita JSON puro, com cerca de código ou com uma frase antes/depois (pega do primeiro "{" ao último "}"). undefined = não achou JSON. */
+function extrairJson(bruto: string): unknown {
+  const limpo = bruto.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  for (const t of [limpo, limpo.slice(limpo.indexOf("{"), limpo.lastIndexOf("}") + 1)]) {
+    try {
+      return JSON.parse(t);
+    } catch {
+      /* tenta a próxima forma */
+    }
+  }
+  return undefined;
+}
+
+/** Diz, em uma palavra, por que a resposta foi recusada (só estrutura, nunca o texto): aparece na tela para diagnóstico. */
+export function motivoFormato(bruto: string, parou?: string): string {
+  const j = extrairJson(bruto);
+  if (j === undefined) return parou === "max_tokens" ? "cortada-no-limite" : "sem-json";
+  if (!j || typeof j !== "object") return "json-vazio";
+  const o = j as Record<string, unknown>;
+  const grande = (v: unknown, max: number) => typeof v === "string" && v.length > max;
+  if (typeof o.resumo !== "string" || !Array.isArray(o.destaques) || !Array.isArray(o.acoes)) return "campos-faltando";
+  if (o.acoes.length === 0) return "sem-acoes";
+  if (o.destaques.length > 4 || o.acoes.length > 4) return "itens-demais";
+  if (grande(o.resumo, LIMITES.resumo)) return "resumo-longo";
+  for (const d of o.destaques as Record<string, unknown>[]) if (grande(d?.titulo, LIMITES.titulo) || grande(d?.texto, LIMITES.texto)) return "destaque-longo";
+  for (const a of o.acoes as Record<string, unknown>[]) if (grande(a?.acao, LIMITES.acao) || grande(a?.motivo, LIMITES.motivo)) return "acao-longa";
+  return "campo-vazio";
+}
 
 /** Lê o JSON da resposta do modelo e confere formato e tamanhos. Devolve null se algo estiver fora do combinado. */
 export function lerResposta(bruto: string): Leitura | null {
-  const limpo = bruto.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-  let j: unknown;
-  try {
-    j = JSON.parse(limpo);
-  } catch {
-    return null;
-  }
+  const j = extrairJson(bruto);
+  if (j === undefined) return null;
   if (!j || typeof j !== "object") return null;
   const o = j as Record<string, unknown>;
   const str = (v: unknown, max: number): string | null => (typeof v === "string" && v.trim().length > 0 && v.length <= max ? v.trim() : null);
@@ -207,9 +231,10 @@ export function textosDaLeitura(l: Leitura): string[] {
 interface Resposta {
   content?: { type: string; text?: string }[];
   usage?: { input_tokens?: number; output_tokens?: number };
+  stop_reason?: string;
 }
 
-async function chamar(mensagens: { role: "user" | "assistant"; content: string }[]): Promise<{ texto: string; entrada: number; saida: number }> {
+async function chamar(mensagens: { role: "user" | "assistant"; content: string }[]): Promise<{ texto: string; entrada: number; saida: number; parou?: string }> {
   const chave = process.env.ANTHROPIC_API_KEY;
   const modelo = process.env.ANTHROPIC_MODEL;
   if (!chave) throw new LeituraErro("sem_chave", MENSAGEM_ERRO.sem_chave);
@@ -220,7 +245,7 @@ async function chamar(mensagens: { role: "user" | "assistant"; content: string }
     r = await fetch(`${base}/v1/messages`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": chave, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model: modelo, max_tokens: 1500, system: SISTEMA, messages: mensagens }),
+      body: JSON.stringify({ model: modelo, max_tokens: 3000, system: SISTEMA, messages: mensagens }),
       signal: AbortSignal.timeout(45_000),
     });
   } catch (e) {
@@ -237,10 +262,10 @@ async function chamar(mensagens: { role: "user" | "assistant"; content: string }
   const j = (await r.json().catch(() => null)) as Resposta | null;
   const texto = j?.content?.find((c) => c.type === "text")?.text;
   if (!texto) {
-    console.error(`[ia] resposta sem texto: stop_reason=${(j as { stop_reason?: string } | null)?.stop_reason ?? "?"} blocos=${(j?.content ?? []).map((c) => c.type).join(",") || "nenhum"}`);
+    console.error(`[ia] resposta sem texto: stop_reason=${j?.stop_reason ?? "?"} blocos=${(j?.content ?? []).map((c) => c.type).join(",") || "nenhum"}`);
     throw new LeituraErro("sem_texto", MENSAGEM_ERRO.sem_texto);
   }
-  return { texto, entrada: j?.usage?.input_tokens ?? 0, saida: j?.usage?.output_tokens ?? 0 };
+  return { texto, entrada: j?.usage?.input_tokens ?? 0, saida: j?.usage?.output_tokens ?? 0, parou: j?.stop_reason };
 }
 
 /** Gera a leitura. Tenta de novo UMA vez se vier JSON inválido ou número que não confere; depois desiste (nunca mostra número não verificado). */
@@ -258,7 +283,7 @@ export async function gerarLeitura(dados: Dados): Promise<{ leitura: Leitura; mo
     const ruins = leitura ? numerosNaoConferem(textosDaLeitura(leitura), dados) : [];
     if (!leitura) console.error(`[ia] tentativa ${tentativa + 1}: resposta fora do formato combinado (JSON inválido ou tamanho acima do limite)`);
     else if (ruins.length > 0) console.error(`[ia] tentativa ${tentativa + 1}: números que não conferem: ${ruins.join(", ")}`);
-    motivo = leitura ? ruins.slice(0, 8).join(" ") : "formato";
+    motivo = leitura ? ruins.slice(0, 8).join(" ") : `formato ${motivoFormato(r.texto, r.parou)}`;
     if (leitura && ruins.length === 0) return { leitura, modelo: process.env.ANTHROPIC_MODEL ?? "", entrada, saida };
     mensagens = [
       pedido,

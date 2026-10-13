@@ -1,6 +1,6 @@
 // Testes da lógica pura da "Leitura do período" (lib/ia.ts). Rodar: node --experimental-strip-types apps/admin/e2e/ia.test.mts
 import assert from "node:assert/strict";
-import { lerNumeroBR, lerResposta, montarDados, numerosNaoConferem, gerarLeitura, LeituraErro } from "../lib/ia.ts";
+import { motivoFormato, lerNumeroBR, lerResposta, montarDados, numerosNaoConferem, gerarLeitura, LeituraErro } from "../lib/ia.ts";
 
 let n = 0;
 const ok = (nome: string, fn: () => void | Promise<void>) =>
@@ -56,10 +56,17 @@ await ok("lerResposta: aceita JSON (inclusive com cerca de código) dentro dos l
   assert.ok(lerResposta(j));
   assert.ok(lerResposta("```json\n" + j + "\n```"));
 });
+await ok("lerResposta: aceita JSON com frase antes/depois; motivoFormato aponta a causa", () => {
+  const j = JSON.stringify({ resumo: "Resumo.", destaques: [], acoes: [{ acao: "Faça.", motivo: "Porque." }] });
+  assert.ok(lerResposta("Segue a leitura:\n" + j + "\nEspero ter ajudado."));
+  assert.equal(motivoFormato("sem json aqui"), "sem-json");
+  assert.equal(motivoFormato('{"resumo":"x"', "max_tokens"), "cortada-no-limite");
+  assert.equal(motivoFormato(JSON.stringify({ resumo: "x", destaques: [], acoes: [{ acao: "a".repeat(300), motivo: "b" }] })), "acao-longa");
+});
 await ok("lerResposta: rejeita formato errado, excesso e texto grande demais", () => {
   assert.equal(lerResposta("não é json"), null);
   assert.equal(lerResposta(JSON.stringify({ resumo: "x", destaques: [], acoes: [] })), null); // sem ações
-  assert.equal(lerResposta(JSON.stringify({ resumo: "x".repeat(601), destaques: [], acoes: [{ acao: "a", motivo: "b" }] })), null);
+  assert.equal(lerResposta(JSON.stringify({ resumo: "x".repeat(901), destaques: [], acoes: [{ acao: "a", motivo: "b" }] })), null);
   const cinco = Array.from({ length: 5 }, () => ({ acao: "a", motivo: "b" }));
   assert.equal(lerResposta(JSON.stringify({ resumo: "x", destaques: [], acoes: cinco })), null);
 });
