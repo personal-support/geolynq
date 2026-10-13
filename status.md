@@ -22,13 +22,17 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
 5. [ ] **n8n fora da AWS** (prazo 10–13/11/2026) → VPS Hostinger/EasyPanel.
 6. [ ] **Limpar o `demo`** (revendedor duplicado e telefone `13999990000`) antes de mostrar a qualquer cliente.
 
-## Landing page do GeoLynq (2026-10-13) — CONSTRUÍDA E TESTADA LOCALMENTE, **NÃO PUBLICADA**
+## Landing page do GeoLynq (2026-10-13) — **PUBLICADA NO EASYPANEL (container saudável); acesso público e HTTPS ainda NÃO conferidos por mim**
 - Pasta `apps/landing/` (ver o README dela). Hero com imagem gerada, responsiva (testada em 375, 768 e 1440 px, sem rolagem lateral),
   SEO técnico, dados estruturados (FAQPage etc.), `llms.txt` e `robots.txt` liberando robôs de IA, prévia de WhatsApp (Open Graph, imagem de 64 KB)
   e botão "Compartilhar no WhatsApp". Preço: "sob consulta". Texto provisório (o comercial é do Danilo).
 - Testado: HTML/JS sem erro no console; nginx real (versão 1.24 local; no Docker será 1.27) com rotas, cache e CSP; formulário com endpoint simulado
   (envio, e-mail inválido, sem aceite, robô, 2 envios seguidos, erro do servidor). **Não testado:** envio real ao Supabase (o sandbox não alcança), Lighthouse,
   Rich Results Test e a prévia real no WhatsApp (só depois de publicar).
+- **Publicação (2026-10-13):** serviço `geolynq_landing` (projeto `personalsupport_saas`), origem Git por HTTPS (`https://github.com/personal-support/geolynq.git`, branch
+  `claude/keen-johnson-c0x5hs`, contexto `/apps/landing`, Dockerfile `Dockerfile`), domínio `geolynq.personalsupport.tech` com HTTPS, porta 80, 128 MB. Container `running (healthy)`
+  conferido via EasyPanel. **Não verificado daqui:** abrir o site pelo domínio (o sandbox não alcança), certificado HTTPS e a prévia no WhatsApp. Deploy **manual** (autoDeploy
+  desligado): depois de empurrar mudanças em `apps/landing`, rodar `deployAppService` (destrutivo) em `geolynq_landing`. O repositório é **público** (por isso o clone HTTPS dispensa chave).
 - **Achado no banco (somente leitura):** `leads` tem RLS e 0 linhas, mas `anon`/`authenticated` têm todos os privilégios (inclusive TRUNCATE) e o INSERT
   público aceita `status` e textos sem limite. Correção pronta em `supabase/migrations/20261013000000_leads_landing.sql` (testada em Postgres local, idempotente) —
   **APLICADA EM PRODUÇÃO em 2026-10-13** (conferido no catálogo: anon sem SELECT/UPDATE/DELETE/TRUNCATE; só INSERT em nome, empresa, e-mail, telefone e mensagem; constraints e `notified_at` criados; `leads` continua com 0 linhas). O arquivo do repositório é a versão aplicada (sem `DO $$`/`DROP`, não reaplicar). **Não testado:** um INSERT real como `anon` pela API (o sandbox não alcança o Supabase).
@@ -36,7 +40,7 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   fonte em `docs/n8n-geolynq-aviso-contato.workflow.ts`): a cada 5 min lê `leads` sem `notified_at`, manda 1 e-mail (Resend) para personalsupport@hotmail.com e
   danilo.coletivaweb@gmail.com e só depois marca `notified_at`. O código que monta o e-mail foi testado à parte (escapa HTML, junta vários contatos). **Falta:** (migration já aplicada) criar no n8n a credencial "Bearer Auth" com a chave do Resend e ligá-la ao nó "Enviar e-mail", confirmar o remetente
   `avisos@personalsupport.tech` no Resend, rodar 1 teste com contato fictício e então ativar. **WhatsApp: não implantado** (não há Evolution API na VPS do EasyPanel nem credencial no n8n; definir onde ela roda).
-- **Pendências para publicar:** (1) ~~aplicar a migration~~ (feito); (2) criar o serviço no EasyPanel + domínio `geolynq.personalsupport.tech` (OK do usuário);
+- **Pendências para publicar:** (1) ~~aplicar a migration~~ (feito); (2) ~~criar o serviço no EasyPanel + domínio~~ (feito; falta conferir no navegador);
   (3) aviso de novo contato por n8n (não existe; a migration já cria `notified_at`); (4) revisão jurídica de `privacidade.html`;
   (5) Danilo revisar o texto; (6) Search Console e Google Business.
 

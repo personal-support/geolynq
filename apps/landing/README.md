@@ -1,6 +1,6 @@
 # GeoLynq — landing page
 
-Site estático (HTML + CSS + JS, sem build), servido por Nginx. **Status: construída e testada localmente; ainda NÃO publicada.**
+Site estático (HTML + CSS + JS, sem build), servido por Nginx. **Status: publicada no EasyPanel em 2026-10-13 (serviço `geolynq_landing`, deploy manual). Acesso público e prévia do WhatsApp ainda a conferir.**
 
 - Endereço previsto: `https://geolynq.personalsupport.tech/` (a raiz; o DNS `A geolynq` já existe).
 - Serviço próprio no EasyPanel (projeto `personalsupport_saas`), separado do widget. Origem GitHub, caminho de build `apps/landing`, Dockerfile `Dockerfile`, porta 80.
