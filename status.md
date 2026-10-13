@@ -31,13 +31,12 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   Rich Results Test e a prévia real no WhatsApp (só depois de publicar).
 - **Achado no banco (somente leitura):** `leads` tem RLS e 0 linhas, mas `anon`/`authenticated` têm todos os privilégios (inclusive TRUNCATE) e o INSERT
   público aceita `status` e textos sem limite. Correção pronta em `supabase/migrations/20261013000000_leads_landing.sql` (testada em Postgres local, idempotente) —
-  **falta aplicar em produção (precisa de OK; rodar no SQL Editor, tem `DO $$`/`DROP POLICY`).**
+  **APLICADA EM PRODUÇÃO em 2026-10-13** (conferido no catálogo: anon sem SELECT/UPDATE/DELETE/TRUNCATE; só INSERT em nome, empresa, e-mail, telefone e mensagem; constraints e `notified_at` criados; `leads` continua com 0 linhas). O arquivo do repositório é a versão aplicada (sem `DO $$`/`DROP`, não reaplicar). **Não testado:** um INSERT real como `anon` pela API (o sandbox não alcança o Supabase).
 - **Aviso de novo contato (n8n) — CRIADO, INATIVO, NÃO TESTADO DE PONTA A PONTA (2026-10-13).** Workflow `nDNHVHxurPRqu2h5` ("GeoLynq — Aviso de novo contato (landing)",
   fonte em `docs/n8n-geolynq-aviso-contato.workflow.ts`): a cada 5 min lê `leads` sem `notified_at`, manda 1 e-mail (Resend) para personalsupport@hotmail.com e
-  danilo.coletivaweb@gmail.com e só depois marca `notified_at`. O código que monta o e-mail foi testado à parte (escapa HTML, junta vários contatos). **Falta:** aplicar a
-  migration (cria `notified_at`), criar no n8n a credencial "Bearer Auth" com a chave do Resend e ligá-la ao nó "Enviar e-mail", confirmar o remetente
+  danilo.coletivaweb@gmail.com e só depois marca `notified_at`. O código que monta o e-mail foi testado à parte (escapa HTML, junta vários contatos). **Falta:** (migration já aplicada) criar no n8n a credencial "Bearer Auth" com a chave do Resend e ligá-la ao nó "Enviar e-mail", confirmar o remetente
   `avisos@personalsupport.tech` no Resend, rodar 1 teste com contato fictício e então ativar. **WhatsApp: não implantado** (não há Evolution API na VPS do EasyPanel nem credencial no n8n; definir onde ela roda).
-- **Pendências para publicar:** (1) aplicar a migration; (2) criar o serviço no EasyPanel + domínio `geolynq.personalsupport.tech` (OK do usuário);
+- **Pendências para publicar:** (1) ~~aplicar a migration~~ (feito); (2) criar o serviço no EasyPanel + domínio `geolynq.personalsupport.tech` (OK do usuário);
   (3) aviso de novo contato por n8n (não existe; a migration já cria `notified_at`); (4) revisão jurídica de `privacidade.html`;
   (5) Danilo revisar o texto; (6) Search Console e Google Business.
 

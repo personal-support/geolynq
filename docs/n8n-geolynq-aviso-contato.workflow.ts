@@ -1,7 +1,7 @@
 // GeoLynq — Aviso de novo contato (landing). Workflow n8n id nDNHVHxurPRqu2h5 (criado INATIVO em 2026-10-13).
 // A cada 5 min lê public.leads com notified_at nulo, manda 1 e-mail (Resend) com todos os novos contatos
 // e só então marca notified_at. Se o e-mail falhar, nada é marcado e o próximo ciclo tenta de novo.
-// Antes de ativar: (1) aplicar supabase/migrations/20261013000000_leads_landing.sql (cria notified_at);
+// Antes de ativar: (1) migration 20261013000000_leads_landing.sql — já aplicada em 2026-10-13 (criou notified_at);
 // (2) no n8n, criar a credencial "Bearer Auth" 'Resend GeoLynq' com a chave do Resend e ligá-la ao nó de e-mail;
 // (3) conferir que o remetente avisos@personalsupport.tech está verificado no Resend.
 import { workflow, node, trigger, newCredential, expr } from '@n8n/workflow-sdk';

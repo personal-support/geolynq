@@ -18,7 +18,7 @@ Site estático (HTML + CSS + JS, sem build), servido por Nginx. **Status: constr
 
 ## Formulário de contato
 Grava em `public.leads` (Supabase) pela API REST com a chave `sb_publishable_…` (pública). Defesas: campo-isca, tempo mínimo de 3 s, 1 envio/min por navegador, RLS só de INSERT.
-**Antes de publicar, aplicar `supabase/migrations/20261013000000_leads_landing.sql`** (tira privilégios demais do público e limita tamanhos). Não há aviso automático de novo contato ainda (ver `status.md`).
+A migration `supabase/migrations/20261013000000_leads_landing.sql` **já foi aplicada em produção** (2026-10-13): tirou privilégios demais do público e limitou tamanhos. Não há aviso automático de novo contato ainda (ver `status.md`).
 
 ## Testar localmente
 Qualquer servidor estático na pasta serve (ex.: `python3 -m http.server`). Para testar com o `nginx.conf` real: `nginx -t` e apontar `root` para esta pasta.
