@@ -70,6 +70,8 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   **Não rodado:** E2E do widget e do painel (precisam de Postgres/PostGIS local), build dos Dockerfiles (sem Docker no sandbox).
 - **Publicação:** commit `11294b9` na `claude/keen-johnson-c0x5hs`; `geolynq_landing` republicada em 2026-10-13 (container `Up, healthy`, conferido via EasyPanel; site pelo domínio não conferido daqui). O **widget no ar NÃO foi tocado**
   (o serviço `geolynq_widget` publica da `claude/bold-cray-vbbdyb`): o banner nos bundles só chega ao ar quando essa branch receber estes commits. Painel e demo não estão no ar com esta mudança.
+- **Imagem de compartilhamento (WhatsApp) refeita em 2026-10-13:** a antiga (`og.jpg`) era só o mapa e tinha uma faixa preta à esquerda. A nova, `assets/og-v2.jpg` (1200x630, 92 KB), leva marca, título e endereço.
+  Prévia no WhatsApp já mostrava título, descrição e domínio (conferido pelo usuário em captura). Nome novo de propósito: o WhatsApp guarda a prévia em cache por link.
 - **Regra daqui em diante:** arquivo novo leva o mesmo cabeçalho (texto em `CLAUDE.md`). Notar: o repositório no GitHub é **público** — o aviso não impede cópia; para isso, repositório privado
   (cuidado: o clone HTTPS sem chave da landing no EasyPanel deixaria de funcionar; precisaria de chave de deploy) e/ou registro do programa no INPI.
 

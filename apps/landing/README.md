@@ -30,6 +30,6 @@ A migration `supabase/migrations/20261013000000_leads_landing.sql` **já foi apl
 Qualquer servidor estático na pasta serve (ex.: `python3 -m http.server`). Para testar com o `nginx.conf` real: `nginx -t` e apontar `root` para esta pasta.
 
 ## Antes de divulgar
-- Trocar `og.jpg`/textos só se o comercial pedir; o WhatsApp guarda a prévia em cache (usar o depurador do Facebook para renovar).
+- Trocar `og-v2.jpg`/textos só se o comercial pedir; o WhatsApp guarda a prévia em cache por link: ao trocar a imagem, mude o nome do arquivo (og-v3.jpg…) e teste com o link com `?v=2` no fim.
 - Search Console: verificar o domínio e enviar o `sitemap.xml`.
 - Revisar `privacidade.html` com o jurídico e então remover o `noindex`.
