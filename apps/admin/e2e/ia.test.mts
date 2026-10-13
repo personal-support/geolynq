@@ -42,6 +42,9 @@ await ok("lerNumeroBR: milhar com ponto, decimal com vírgula", () => {
 await ok("números que existem nos dados passam (inclusive formatados em pt-BR e arredondados)", () => {
   assert.deepEqual(numerosNaoConferem(["Foram 1.234 buscas, 23% a mais; a distância média é 12,4 km e 38% foram até um revendedor."], dados), []);
 });
+await ok("o raio fixo de 100 km (só aparece no nome do campo) é aceito", () => {
+  assert.deepEqual(numerosNaoConferem(["Há buscas sem nenhum revendedor num raio de 100 km."], dados), []);
+});
 await ok("número inventado é apontado", () => {
   assert.deepEqual(numerosNaoConferem(["As buscas cresceram 57%, de 1.000 para 1.234."], dados), ["57"]);
 });

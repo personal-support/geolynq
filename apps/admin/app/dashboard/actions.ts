@@ -24,7 +24,10 @@ export async function gerarLeituraIA(formData: FormData) {
   const dias = parseDias(String(formData.get("dias") ?? ""));
   const volta = (erro?: string) => redirect(`/dashboard?dias=${dias}${erro ? `&ia=${erro}` : ""}#leitura`);
   const m = await getMembership();
-  if (!m) return volta("falha");
+  if (!m) {
+    console.error("[ia] sem vínculo do usuário com o cliente em exibição");
+    return volta("falha");
+  }
   if (!process.env.ANTHROPIC_API_KEY) return volta("sem_chave");
 
   // limite ANTES de chamar a IA (o banco também barra, mas aí o custo já teria sido gasto)
@@ -47,7 +50,9 @@ export async function gerarLeituraIA(formData: FormData) {
   try {
     resultado = await gerarLeitura(montarDados(m.tenant.name, dias, ov.dados, fun.dados, perf.dados));
   } catch (e) {
-    return volta(e instanceof LeituraErro ? e.codigo : "falha");
+    if (e instanceof LeituraErro) return volta(e.codigo);
+    console.error(`[ia] erro inesperado: ${e instanceof Error ? `${e.name}: ${e.message}`.slice(0, 200) : "desconhecido"}`);
+    return volta("inesperado");
   }
 
   const { error } = await supabase.from("panel_ai_readings").insert({

@@ -28,7 +28,9 @@ export type ErroIA =
   | "api_fora"
   | "rede"
   | "gravar"
-  | "dados";
+  | "dados"
+  | "sem_texto"
+  | "inesperado";
 
 export class LeituraErro extends Error {
   codigo: ErroIA;
@@ -42,7 +44,9 @@ export const MENSAGEM_ERRO: Record<ErroIA, string> = {
   sem_chave: "A leitura por IA ainda não está ativada neste painel.",
   sem_modelo: "A leitura por IA está sem modelo configurado. Avise a GeoLynq.",
   limite: "Já foi gerada uma leitura há pouco (ou o limite do dia foi atingido). Tente de novo em alguns minutos.",
-  falha: "Não foi possível gerar a leitura agora. Tente novamente em instantes.",
+  falha: "Não foi possível gerar a leitura agora (código IA-FALHA). Tente novamente em instantes.",
+  sem_texto: "A IA respondeu sem texto aproveitável (código IA-SEMTEXTO). Tente novamente; se repetir, avise a GeoLynq.",
+  inesperado: "Ocorreu um erro inesperado ao preparar a leitura (código IA-INESPERADO). Avise a GeoLynq.",
   nao_confiavel: "A leitura gerada citou números que não conferem com os dados e foi descartada por segurança. Tente gerar de novo.",
   api_chave: "A IA recusou a chave configurada (código IA-CHAVE). Avise a GeoLynq para conferir a chave.",
   api_modelo: "A IA não aceitou o modelo configurado (código IA-MODELO). Avise a GeoLynq para conferir o nome do modelo.",
@@ -127,9 +131,12 @@ export function lerNumeroBR(token: string): number {
   return Number(token.replace(",", "."));
 }
 
+/** Regra fixa do produto ("sem revendedor a 100 km"): o 100 só aparece no NOME de um campo dos dados, e a IA o cita com naturalidade. */
+const RAIO_COBERTURA_KM = 100;
+
 /** Devolve os números do texto que NÃO existem nos dados (vazio = tudo confere). */
 export function numerosNaoConferem(textos: string[], dados: unknown): string[] {
-  const fonte = numerosDe(dados);
+  const fonte = [...numerosDe(dados), RAIO_COBERTURA_KM];
   const ruins = new Set<string>();
   for (const texto of textos) {
     for (const token of texto.match(/\d+(?:[.,]\d+)*/g) ?? []) {
@@ -226,7 +233,10 @@ async function chamar(mensagens: { role: "user" | "assistant"; content: string }
   }
   const j = (await r.json().catch(() => null)) as Resposta | null;
   const texto = j?.content?.find((c) => c.type === "text")?.text;
-  if (!texto) throw new LeituraErro("falha", MENSAGEM_ERRO.falha);
+  if (!texto) {
+    console.error(`[ia] resposta sem texto: stop_reason=${(j as { stop_reason?: string } | null)?.stop_reason ?? "?"} blocos=${(j?.content ?? []).map((c) => c.type).join(",") || "nenhum"}`);
+    throw new LeituraErro("sem_texto", MENSAGEM_ERRO.sem_texto);
+  }
   return { texto, entrada: j?.usage?.input_tokens ?? 0, saida: j?.usage?.output_tokens ?? 0 };
 }
 
@@ -242,6 +252,8 @@ export async function gerarLeitura(dados: Dados): Promise<{ leitura: Leitura; mo
     saida += r.saida;
     const leitura = lerResposta(r.texto);
     const ruins = leitura ? numerosNaoConferem(textosDaLeitura(leitura), dados) : [];
+    if (!leitura) console.error(`[ia] tentativa ${tentativa + 1}: resposta fora do formato combinado (JSON inválido ou tamanho acima do limite)`);
+    else if (ruins.length > 0) console.error(`[ia] tentativa ${tentativa + 1}: números que não conferem: ${ruins.join(", ")}`);
     if (leitura && ruins.length === 0) return { leitura, modelo: process.env.ANTHROPIC_MODEL ?? "", entrada, saida };
     mensagens = [
       pedido,

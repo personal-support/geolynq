@@ -1,4 +1,5 @@
 import { gerarLeituraIA } from "@/app/dashboard/actions";
+import { BotaoGerar } from "@/components/botao-gerar";
 import { Card, CardHeader, Empty } from "@/components/ui";
 import type { LeituraGuardada } from "@/lib/data";
 import { MENSAGEM_ERRO, type ErroIA } from "@/lib/ia";
@@ -10,12 +11,7 @@ function Botao({ dias, rotulo }: { dias: number; rotulo: string }) {
   return (
     <form action={gerarLeituraIA}>
       <input type="hidden" name="dias" value={dias} />
-      <button
-        type="submit"
-        className="rounded-lg border border-line-2 px-3.5 py-2 text-[13px] font-semibold text-ink-2 hover:bg-line"
-      >
-        {rotulo}
-      </button>
+      <BotaoGerar rotulo={rotulo} />
     </form>
   );
 }
