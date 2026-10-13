@@ -72,6 +72,9 @@ funcione de verdade, seja robusto e valha a compra. "Pronto para vender" = todos
   (o serviço `geolynq_widget` publica da `claude/bold-cray-vbbdyb`): o banner nos bundles só chega ao ar quando essa branch receber estes commits. Painel e demo não estão no ar com esta mudança.
 - **Imagem de compartilhamento (WhatsApp) refeita em 2026-10-13:** a antiga (`og.jpg`) era só o mapa e tinha uma faixa preta à esquerda. A nova, `assets/og-v2.jpg` (1200x630, 92 KB), leva marca, título e endereço.
   Prévia no WhatsApp já mostrava título, descrição e domínio (conferido pelo usuário em captura). Nome novo de propósito: o WhatsApp guarda a prévia em cache por link.
+- **Página de privacidade (2026-10-13):** o aviso "texto-base em revisão" saiu e a seção "Onde ficam e por quanto tempo" ficou definida: Supabase em São Paulo (`sa-east-1`, conferido no projeto), guarda de **30 dias** (decisão do usuário),
+  fornecedores citados (Supabase e Resend, que pode processar fora do Brasil). **PENDENTE: o apagamento em 30 dias ainda NÃO existe** (nenhum job apaga `leads`); a página promete isso. Plano: `pg_cron` do Supabase (extensão disponível, não instalada),
+  1 job diário `delete from public.leads where created_at < now() - interval '30 days'` — precisa de OK do usuário (grava em produção). A página segue `noindex` e **sem revisão jurídica** (o usuário optou por não levar a advogado).
 - **Regra daqui em diante:** arquivo novo leva o mesmo cabeçalho (texto em `CLAUDE.md`). Notar: o repositório no GitHub é **público** — o aviso não impede cópia; para isso, repositório privado
   (cuidado: o clone HTTPS sem chave da landing no EasyPanel deixaria de funcionar; precisaria de chave de deploy) e/ou registro do programa no INPI.
 
