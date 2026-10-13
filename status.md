@@ -672,6 +672,11 @@ do banco agora é schema + migration acima.
 - Pendências: conferir alegações do funil/WhatsApp em outras leituras; rotacionar a chave da Anthropic que apareceu no chat (uma por vez, atualizando o EasyPanel);
   citar a IA como operador no texto de privacidade. Commits na `claude/keen-johnson-c0x5hs` (ad96087, 8457265, 504323c); `geolynq_admin` reimplantado por `deployAppService`.
 
+## Teste real do widget no site demo (2026-10-13, 00:00, feito pelo usuário no computador)
+- Passos 1–6 OK e conferidos no banco (SELECT): busca "whey" (`catalog_search`, 2 resultados); busca em Praia Grande (5 revendedores, mais perto 10,55 km); cliques WhatsApp, Como chegar e Ligar
+  (`reseller_click`); busca em Manaus (0 resultados, "sem revendedor físico em até 100 km", opção online na tela); termo fora do catálogo ("pasta de amendoim": 0 produtos, aviso na tela, busca gravada sem produto).
+- **Falta o passo 7: repetir no celular** (usuário deixou para depois). Antes de usar em site de cliente real: aviso de medição anônima (LGPD) ainda não publicado.
+
 ### Histórico (2026-10-07) — antes de ligar
 - Cartão "Leitura do período" na Visão geral: resumo, destaques e ações, gerados sob demanda (botão), guardados em `panel_ai_readings` por cliente e período.
   Números vêm do SQL (`montarDados`); a IA só narra; TODO número escrito é conferido contra os dados (`numerosNaoConferem`); se não conferir, tenta 1 vez
