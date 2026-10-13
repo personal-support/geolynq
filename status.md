@@ -666,7 +666,10 @@ do banco agora é schema + migration acima.
   (resumo 900, ação 260…), JSON aceito mesmo com frase em volta, 100 km aceito na conferência; (3) botão sem aviso → "Gerando leitura…".
 - Diagnóstico: o painel mostra na tela o "Detalhe técnico" quando descarta (números reprovados ou motivo do formato) e grava `[ia] …` no log. O EasyPanel do usuário NÃO devolve logs
   (`queryServiceLogs` dá 400; coleta de logs provavelmente desligada).
-- Pendências: IA escreve "36.7%" com ponto (pt-BR pede vírgula); conferir alegações do funil/WhatsApp; rotacionar a chave da Anthropic que apareceu no chat (uma por vez, atualizando o EasyPanel);
+- **Ajustes publicados em 2026-10-13 (commit bca47bf, `geolynq_admin` reimplantado; aviso e linha confirmados na tela do demo pelo usuário):** (a) aviso dentro do cartão da leitura quando o cliente tem eventos simulados
+  (demo: 1.496 de 1.545 simulados, só 49 reais); (b) linha "Sem ação registrada" em "O que as pessoas fazem depois da busca" — havia 1 clique sem `action` no demo (60+33+33+15+1 = 142);
+  (c) vírgula decimal: instrução à IA + `virgulaBR` depois da conferência dos números (testado, 25 testes). A vírgula só vale para leituras NOVAS; a leitura de 23:33 foi gravada antes.
+- Pendências: conferir alegações do funil/WhatsApp em outras leituras; rotacionar a chave da Anthropic que apareceu no chat (uma por vez, atualizando o EasyPanel);
   citar a IA como operador no texto de privacidade. Commits na `claude/keen-johnson-c0x5hs` (ad96087, 8457265, 504323c); `geolynq_admin` reimplantado por `deployAppService`.
 
 ### Histórico (2026-10-07) — antes de ligar
