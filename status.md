@@ -7,7 +7,19 @@
 # Status — GeoLynq
 
 ## Última atualização
-2026-10-06 — **retomada + auditoria de infraestrutura** (só leitura; nada gravado em produção). Ver
+**2026-10-15 — retomada + PLANEJAMENTO (nada executado).** Plano completo, decisões do usuário, fatos verificados e pendências em
+**`docs/plano-2026-10-15.md` — LER ANTES DE QUALQUER COISA.** Resumo:
+- **ALERTA (não confirmado):** o log do Postgres mostra desligamento em 2026-10-15 15:45 UTC e nada depois; 5 consultas SQL deram timeout. Pode ser o plano grátis pausado
+  (widget, demo, painel e landing sem dados). **Primeiro passo: o usuário abre o dashboard do Supabase e informa o estado** (se pausado, "Restore", grátis).
+- **Decisões do usuário (15/10):** não trocar para Supabase Pro por ora; **implantar o B0.5** (base da Receita para o mapa de lacunas); **migrar o n8n para a VPS**, compartilhado,
+  em `n8n.personalsupport.tech` (projeto EasyPanel novo `automacoes`); seguir com privacidade/contrato (parte contratante = **DCM Marketing Digital**). Chaves expostas: "tá tudo bem".
+- **Ordem:** Fase 0 banco → Fase 1 n8n novo (prazo duro 10–13/11; meta ~25/10) → Fase 2 retenção (`pg_cron`), página de privacidade do widget (4 trechos "[a definir]") e minuta de contrato →
+  Fase 3 B0.5 (primeiro passo = comando de leitura da lista de arquivos da Receita, pendente) → Fase 4 unificar branches → Fase 5 operação.
+- **Pendentes do usuário:** estado do Supabase; comandos de DNS e da Receita (no plano); aprovar valores da Fase 2.1 e a direção "universo da Receita na VPS, resumo no Supabase" (o Supabase grátis tem 500 MB).
+- **Correção:** a migration do funil **está aplicada** (não é risco). A `bold-cray` e a `keen-johnson` estavam divergentes: a `keen-johnson` é a mais atual; nesta sessão a `bold-cray` foi avançada até ela.
+- **Falha minha a não repetir:** chamei `listProjectsAndServices` do EasyPanel antes de ler este arquivo e expôs variáveis de ambiente de outros projetos. Regra agora também no `CLAUDE.md`.
+
+*(Bloco anterior)* 2026-10-06 — **retomada + auditoria de infraestrutura** (só leitura; nada gravado em produção). Ver
 "Auditoria de 2026-10-06" logo abaixo. Trabalho do dia na branch `claude/keen-johnson-c0x5hs`,
 que contém tudo da `claude/bold-cray-vbbdyb` (merge feito em 2026-10-06).
 

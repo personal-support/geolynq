@@ -42,6 +42,12 @@ n8n para importação de catálogo, EasyPanel/Hostinger para hospedagem. Bluepri
   `total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.` / `Unauthorized copying, replication, redistribution or commercial use is prohibited.`
   (cópia pronta: o topo deste arquivo). Não vai em JSON, imagens, fontes, `.xlsx`/`.tsv` (quebraria leitura). O aviso **não pode alterar comportamento**: só comentário.
 
+## Ao começar uma sessão (lições de 2026-10-15)
+- Rode `git fetch` e compare as branches: o `status.md` mais novo pode estar em **outra branch** (em 2026-10-15 era a `claude/keen-johnson-c0x5hs`; a `bold-cray` estava 34 commits atrás).
+  Depois leia `status.md` **e** `docs/plano-2026-10-15.md` antes de chamar qualquer ferramenta de infraestrutura.
+- **EasyPanel: nunca** chame `listProjectsAndServices` (devolve as variáveis de ambiente, com chaves, de TODOS os projetos da conta). Use `getDockerContainers`/`inspectAppService`
+  só em `personalsupport_saas`. Se uma ferramenta devolver segredo sem querer, não repita o valor em nenhum lugar e avise o usuário.
+
 ## Regras técnicas
 - Desenvolva e dê push só na branch `claude/bold-cray-vbbdyb`. Push na branch **publica o widget
   sozinho** (webhook → EasyPanel): rode tipos, testes e E2E antes de empurrar.
