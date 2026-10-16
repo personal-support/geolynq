@@ -9,8 +9,12 @@
 ## Última atualização
 **2026-10-15 — retomada + PLANEJAMENTO (nada executado).** Plano completo, decisões do usuário, fatos verificados e pendências em
 **`docs/plano-2026-10-15.md` — LER ANTES DE QUALQUER COISA.** Resumo:
-- **ALERTA (não confirmado):** o log do Postgres mostra desligamento em 2026-10-15 15:45 UTC e nada depois; 5 consultas SQL deram timeout. Pode ser o plano grátis pausado
-  (widget, demo, painel e landing sem dados). **Primeiro passo: o usuário abre o dashboard do Supabase e informa o estado** (se pausado, "Restore", grátis).
+- **FASE 0 CONCLUÍDA (2026-10-16): o banco ficou FORA DO AR ~24,5 h e já voltou.** O log do Postgres registrou desligamento em 2026-10-15 15:45 UTC e nenhuma linha até hoje; `pg_postmaster_start_time()`
+  = **2026-10-16 16:10:26 UTC** (religado). A API de gestão dizia `ACTIVE_HEALTHY` o tempo todo e **recusou** `restore_project` ("não está pausado... pode demorar a restaurar"); a religação aconteceu minutos depois
+  desse pedido, **mas não dá para provar que foi ele** (pode ter sido a plataforma/outra pessoa). **Causa NÃO confirmada.** Prova de que voltou: teste do usuário na VPS, `widget_get_tenant('demo')` = HTTP 200 em 1,7 s;
+  SQL pelo conector voltou a funcionar. **Integridade conferida:** tenants `demo:active` e `fabrica-teste:trial`; 18 produtos, 22 revendedores, 22 endereços, 2.091 eventos, 1 lead; 17 de 18 tabelas com RLS
+  (a exceção é `spatial_ref_sys`, conhecida); as 7 funções-chave existem; banco com **21 MB** (4 % dos 500 MB do plano grátis). Último evento do widget: 13/10 (ninguém registrou nada durante a queda; não há como saber se houve visitas perdidas).
+  **Lição:** ninguém percebeu 24 h de queda → falta um monitor externo (Fase 5 sobe de prioridade: ping a cada 5 min no `widget_get_tenant`; não exige Supabase Pro). Decisão do usuário de adiar o Pro continua valendo.
 - **Decisões do usuário (15/10):** não trocar para Supabase Pro por ora; **implantar o B0.5** (base da Receita para o mapa de lacunas); **migrar o n8n para a VPS**, compartilhado,
   em `n8n.personalsupport.tech` (projeto EasyPanel novo `automacoes`); seguir com privacidade/contrato (parte contratante = **DCM Marketing Digital**). Chaves expostas: "tá tudo bem".
 - **Ordem:** Fase 0 banco → Fase 1 n8n novo (prazo duro 10–13/11; meta ~25/10) → Fase 2 retenção (`pg_cron`), página de privacidade do widget (4 trechos "[a definir]") e minuta de contrato →
