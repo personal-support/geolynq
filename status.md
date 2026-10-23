@@ -7,10 +7,12 @@
 - **Queda da VPS Hostinger** (`srv1887859`, 179.198.116.157): parou entre 15:18 e 15:52 (BRT)
   sem causa registrada; religada (`ct_start`) e reiniciada pelo usuário. Depois disso, no
   EasyPanel: Traefik, EasyPanel, n8n, geolynq_admin, geolynq_landing rodando (1/1).
-  **`geolynq_widget` está em 0/1** (motivo desconhecido: a consulta de logs do EasyPanel
-  via MCP dá 400; ver a aba Logs no painel). Redeploy pelo MCP foi bloqueado pelo
-  classificador de permissões ("Production Deploy"): clicar em Implantar no painel ou
-  liberar a regra `mcp__EasyPanel__execute_destructive`. Backup semanal da VPS: último em 16/10.
+  `geolynq_widget` ficou em 0/1 após a queda (motivo não identificado; logs do EasyPanel via
+  MCP dão 400) e **voltou a 1/1 depois de Implantar pelo painel**. Conferido pelo usuário em
+  23/10: `https://widget.geolynq.personalsupport.tech/healthz` responde OK e `/v1/embed.js`
+  entrega o bundle (aponta para `geolynq-prod`, chave publishable). Redeploy pelo MCP é
+  bloqueado pelo classificador de permissões ("Production Deploy"): usar o painel ou liberar a
+  regra `mcp__EasyPanel__execute_destructive`. Backup semanal da VPS: último em 16/10.
 - **Supabase `geolynq-prod`**: ficou Unhealthy (SQL com timeout, depois ECONNREFUSED);
   voltou depois de Restart project no painel. Postgres sobe limpo (sem crash).
 - **n8n novo (VPS, https://n8n.personalsupport.tech, conector `n8n-novo`)**: credenciais
