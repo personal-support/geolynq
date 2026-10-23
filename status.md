@@ -1,7 +1,34 @@
 # Status — GeoLynq
 
 ## Última atualização
-2026-10-02
+2026-10-23
+
+## Estado em 2026-10-23 (retomar daqui)
+- **Queda da VPS Hostinger** (`srv1887859`, 179.198.116.157): parou entre 15:18 e 15:52 (BRT)
+  sem causa registrada; religada (`ct_start`) e reiniciada pelo usuário. Depois disso, no
+  EasyPanel: Traefik, EasyPanel, n8n, geolynq_admin, geolynq_landing rodando (1/1).
+  **`geolynq_widget` está em 0/1** (motivo desconhecido: a consulta de logs do EasyPanel
+  via MCP dá 400; ver a aba Logs no painel). Redeploy pelo MCP foi bloqueado pelo
+  classificador de permissões ("Production Deploy"): clicar em Implantar no painel ou
+  liberar a regra `mcp__EasyPanel__execute_destructive`. Backup semanal da VPS: último em 16/10.
+- **Supabase `geolynq-prod`**: ficou Unhealthy (SQL com timeout, depois ECONNREFUSED);
+  voltou depois de Restart project no painel. Postgres sobe limpo (sem crash).
+- **n8n novo (VPS, https://n8n.personalsupport.tech, conector `n8n-novo`)**: credenciais
+  criadas pelo usuário (`Supabase account` e `Google Service Account account`, conta de serviço
+  `tiana-moda-afro@…`, que serve outros projetos: criar uma só do GeoLynq depois). Ligadas ao
+  Import Catálogo v2 (id `8hXMMiLGaFTa8bw6`, 7 nós) e à gravação do Cadastro por CNPJ
+  (`gTDZOrphnSqujiux`, nó provision_tenant) e aos 2 nós Supabase do Aviso de novo contato
+  (`nhiCkFN9GAllOdsJ`). **Import v2 testado em 23/10** no tenant de teste
+  `88a5496b-…` (Fábrica Teste): 33 linhas, 0 falhas, `partial` só pelo aviso de foto
+  `http://` do TST-002 (esperado). O n8n antigo (AWS, conector `n8n`) tem os mesmos workflows.
+- **Falta no n8n novo**: credencial do **Resend** (nó "Enviar e-mail (Resend)" usa Bearer;
+  criar como `httpTemplatedCustomAuth` com `Authorization: Bearer {{api_key}}`). Workflows
+  seguem inativos; o de aviso só ativa depois do Resend.
+- **Contas**: Drive/n8n = `gestao.junior.lopes@gmail.com`; Vercel NÃO é usado no projeto
+  (hospedagem é EasyPanel). Conector GitHub da sessão precisa de sessão nova após a troca de
+  conta; git por linha de comando funciona.
+- **Cuidado**: `listProjectsAndServices` do EasyPanel devolve as variáveis de ambiente de
+  todos os serviços (chaves). Preferir `inspectAppService` só do serviço do GeoLynq.
 
 ## Fase atual
 Fase 4 — widget construído e **validado contra o Supabase real** (2026-10-01): nível SQL
