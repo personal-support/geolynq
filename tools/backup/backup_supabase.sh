@@ -17,7 +17,7 @@
 #   0 3 * * * bash /root/geolynq-tools/backup_supabase.sh >> /root/backups/geolynq/cron.log 2>&1     # todo dia às 3h (crontab -e)
 #
 # Variáveis opcionais: GEOLYNQ_BACKUP_ENV (arquivo com a senha), GEOLYNQ_BACKUP_DIR (padrão ~/backups/geolynq), KEEP_DAYS (padrão 14).
-# Sai com código diferente de zero se algo falhar (o cron registra no cron.log). Precisa do cliente do Postgres: apt install postgresql-client.
+# Sai com código diferente de zero se algo falhar (o cron registra no cron.log). Precisa do cliente do Postgres na MESMA versão (ou maior) que o servidor do Supabase (17 em 2026-10): postgresql-client-17 (repositório PGDG).
 set -euo pipefail
 umask 077
 
@@ -25,10 +25,15 @@ ENV_FILE="${GEOLYNQ_BACKUP_ENV:-$HOME/.geolynq-backup.env}"
 DEST="${GEOLYNQ_BACKUP_DIR:-$HOME/backups/geolynq}"
 KEEP_DAYS="${KEEP_DAYS:-14}"
 
-falha() { echo "$(date '+%F %T') ERRO: $*" | tee -a "$DEST/backup.log" >&2; exit 1; }
+falha() {
+  echo "$(date '+%F %T') ERRO: $*" | tee -a "$DEST/backup.log" >&2
+  # não deixa arquivo parcial (ou vazio) desta rodada parecendo um backup bom
+  [ -z "${stamp:-}" ] || rm -f "$DEST/public-$stamp.dump"* "$DEST/auth-$stamp.dump"*
+  exit 1
+}
 mkdir -p "$DEST"; chmod 700 "$DEST"
 
-command -v pg_dump >/dev/null || falha "pg_dump não encontrado (apt install postgresql-client)"
+command -v pg_dump >/dev/null || falha "pg_dump não encontrado (instale postgresql-client-17, ver docs/seguranca-e-backup.md)"
 [ -f "$ENV_FILE" ] || falha "falta o arquivo $ENV_FILE com a linha DATABASE_URL='...'"
 perm="$(stat -c '%a' "$ENV_FILE")"
 [ "$perm" = "600" ] || [ "$perm" = "400" ] || falha "o arquivo $ENV_FILE precisa ter permissão 600 (chmod 600 $ENV_FILE); está $perm"

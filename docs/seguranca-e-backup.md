@@ -28,12 +28,15 @@ Testes: `supabase/tests/19_endurecimento_seguranca.sql` (hermético; falha no es
 4. **Nunca** colar a senha do banco, a `service_role` ou o token de deploy no chat nem no repositório.
 
 ## 4. Backup pela VPS (enquanto o plano é gratuito)
-O plano gratuito **não tem backup**. Script: `tools/backup/backup_supabase.sh` (testado em ambiente local: gera os dois arquivos, recusa senha com permissão aberta, confere se o arquivo abre, guarda o SHA-256, apaga o que passa de 14 dias, e a restauração em um banco novo devolveu as mesmas contagens de linhas). **Não testado:** a conexão real com o Supabase a partir da VPS.
+O plano gratuito **não tem backup**. Script: `tools/backup/backup_supabase.sh` (testado em ambiente local: gera os dois arquivos, recusa senha com permissão aberta, confere se o arquivo abre, guarda o SHA-256, apaga o que passa de 14 dias, e a restauração em um banco novo devolveu as mesmas contagens de linhas). **Testado na VPS em 24/10/2026:** conexão real pelo Session pooler, `public` (≈300 KB) e `auth` gerados, conferidos e com SHA-256. **Ainda não feito:** agendamento no cron, cópia para fora da VPS e treino de restauração.
 
 Passo a passo na VPS (um bloco por vez):
 ```bash
-# 1) cliente do Postgres (versão 16 ou maior)
-apt-get install -y postgresql-client
+# 1) cliente do Postgres 17 (o Supabase roda 17.x; o pg_dump 16 do Ubuntu recusa: "server version mismatch")
+apt-get install -y postgresql-common
+/usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+apt-get install -y postgresql-client-17
+pg_dump --version      # deve mostrar 17.x
 # 2) arquivo da senha, só seu (a senha vem do painel do Supabase: Connect > Session pooler)
 install -m 600 /dev/null ~/.geolynq-backup.env
 nano ~/.geolynq-backup.env      # uma linha:  DATABASE_URL='postgresql://postgres.vshlsisnuaugeceafipt:SUASENHA@HOST-DO-POOLER:5432/postgres'
@@ -43,6 +46,7 @@ ls -la ~/backups/geolynq
 # 4) todo dia às 3h
 (crontab -l 2>/dev/null; echo "0 3 * * * bash /root/geolynq-tools/backup_supabase.sh >> /root/backups/geolynq/cron.log 2>&1") | crontab -
 ```
+- A senha do banco deve ter **só letras e números**: caractere especial (`@`, `%`, `#`…) quebra a URL (`invalid percent-encoded token`).
 - Use o **Session pooler** (IPv4). A conexão direta (`db.<ref>.supabase.co`) é só IPv6 e costuma falhar em VPS sem IPv6.
 - Os arquivos têm dados pessoais (e-mails, telefones): ficam em pasta `700`, arquivos `600`. Copiar para fora da VPS (Google Drive, outro servidor) é o próximo passo, **ainda não feito**: a VPS é um ponto único de falha.
 - **Restaurar:** crie um projeto Supabase novo (ou Postgres com PostGIS e as funções `auth.*`), `pg_restore --no-owner -d "$URL" public-AAAAMMDD-HHMMSS.dump` e, para os logins, `pg_restore --data-only -d "$URL" auth-AAAAMMDD-HHMMSS.dump`. Treine a restauração **uma vez** antes de precisar dela.
