@@ -278,6 +278,16 @@ async function setup(ctx) {
   const colunas = await pm.locator('geolynq-widget').locator('.grid').first().evaluate((g) => getComputedStyle(g).gridTemplateColumns.split(' ').length);
   await shot(pm, 'v2-05-celular');
   check('celular (390 px): sem rolagem lateral e 2 colunas', !over && colunas === 2, `overflow=${over} colunas=${colunas}`);
+  // varredura de larguras (do celular pequeno ao monitor): sem rolagem lateral, grade com 1 ou mais colunas, nenhum botão cortado
+  for (const w of [320, 360, 414, 600, 768, 1024, 1440]) {
+    await pm.setViewportSize({ width: w, height: 800 });
+    await pm.waitForTimeout(150);
+    const ovW = await pm.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    const colsW = await pm.locator('geolynq-widget').locator('.grid').first().evaluate((g) => getComputedStyle(g).gridTemplateColumns.split(' ').length);
+    const cortW = await pm.locator('geolynq-widget').locator('.btn').evaluateAll((bs) => bs.filter((b) => b.scrollWidth > b.clientWidth + 1 || b.scrollHeight > b.clientHeight + 1).map((b) => b.textContent));
+    check(`widget em ${w} px: sem rolagem lateral, ${colsW} coluna(s), nenhum botão cortado`, !ovW && colsW >= 1 && cortW.length === 0, `overflow=${ovW} colunas=${colsW} cortados=${JSON.stringify(cortW)}`);
+  }
+  await pm.setViewportSize({ width: 390, height: 800 });
   // texto dos botões (caixa alta + negrito + fonte grande do celular) nunca pode ficar cortado
   const cortados = async (rotulo) => {
     const lista = await pm.locator('geolynq-widget').locator('.btn').evaluateAll((bs) => bs.filter((b) => b.scrollWidth > b.clientWidth + 1 || b.scrollHeight > b.clientHeight + 1).map((b) => b.textContent));
