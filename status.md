@@ -32,9 +32,13 @@
   com esse e-mail (leitora basta).
   **Pendências de limpeza:** apagar o `.json` baixado da pasta Downloads e, no Google Cloud,
   a chave que foi criada em 23/10 para a conta antiga `tiana-moda-afro` (a mais recente).
-- **Falta no n8n novo**: credencial do **Resend** (nó "Enviar e-mail (Resend)" usa Bearer;
-  criar como `httpTemplatedCustomAuth` com `Authorization: Bearer {{api_key}}`). Workflows
-  seguem inativos; o de aviso só ativa depois do Resend.
+- **Resend: FEITO em 24/10.** Credencial `Resend API key` (tipo Bearer Auth, chave só do
+  GeoLynq, "Sending access" no domínio `personalsupport.tech`) ligada ao nó "Enviar e-mail
+  (Resend)". Teste manual no workflow "Aviso de novo contato" (execução 4): e-mail aceito
+  pelo Resend, contato de 13/10 marcado como avisado. Para o teste o destinatário ficou só
+  `personalsupport@hotmail.com` e foi **revertido** para os dois originais (hotmail e
+  danilo.coletivaweb@gmail.com). **O workflow segue inativo**: ativar (toggle no n8n) para o
+  aviso rodar a cada 5 min. Não foi conferido se a caixa recebeu o e-mail (spam/domínio).
 - **Contas**: Drive/n8n = `gestao.junior.lopes@gmail.com`; Vercel NÃO é usado no projeto
   (hospedagem é EasyPanel). Conector GitHub da sessão precisa de sessão nova após a troca de
   conta; git por linha de comando funciona.
