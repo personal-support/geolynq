@@ -48,13 +48,9 @@
 - **n8n antigo (AWS/EasyPanel, expira 10/11/2026)**: tem 5 workflows, todos inativos, 1 projeto,
   sem arquivados (conferido em 24/10). Os 3 do GeoLynq em uso (Aviso, Cadastro por CNPJ, Import
   v2) já estão no n8n novo. **Import Catálogo v1 não foi migrado de propósito** (o v2 o
-  substitui; o v1 duplica revendedores na reimportação). Resta migrar o **`acervo-meishu-sama`**
-  (não é do GeoLynq): o usuário guardou o `.json` e importa no n8n novo (Import from file). Para
-  rodar lá: (1) credencial Google com acesso à pasta do acervo (`13tDR-…`), provavelmente a
-  conta de serviço `tiana-moda-afro` (por isso NÃO apagar a chave dela criada em 23/10);
-  (2) variáveis de ambiente `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `GEMINI_API_KEY` no serviço
-  `n8n` do EasyPanel, mais `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` se `$env` vier bloqueado (n8n
-  2.x); (3) o `x-api-key` do extrator vai dentro do nó. Depois de migrar, o n8n antigo pode sair.
+  substitui; o v1 duplica revendedores na reimportação). O `acervo-meishu-sama` **não faz parte
+  do GeoLynq**: decisão do usuário em 24/10 de ignorá-lo (ele já guardou uma cópia do `.json`).
+  Não há mais nada do GeoLynq a migrar: o n8n antigo pode sair do ar no prazo.
 - **Contas**: Drive/n8n = `gestao.junior.lopes@gmail.com`; Vercel NÃO é usado no projeto
   (hospedagem é EasyPanel). Conector GitHub da sessão precisa de sessão nova após a troca de
   conta; git por linha de comando funciona.
@@ -191,7 +187,17 @@ do banco agora é schema + migration acima.
       `unaccent` + RPC de busca quando houver catálogo real.
 
 ## Pendente
-- [ ] Fase 4.1 — site de amostra (em paralelo à Fase 5)
+- [ ] Fase 4.1 — site de amostra (em paralelo à Fase 5). **Código pronto em 24/10 na branch
+      `claude/tender-goodall-fmpm7m`** (`apps/demo`: `index.html` com 2 widgets do tenant `demo`,
+      12 SVGs `img/<sku>.svg` que o banco já referencia, `nginx.conf`, `Dockerfile`; layout
+      conferido no Chromium em 420 e 1100 px; **Dockerfile/nginx.conf não foram construídos**,
+      sem daemon Docker no ambiente). **Falta no EasyPanel (usuário):** criar o app
+      `geolynq_demo` em `personalsupport_saas` (fonte Git `git@github.com:personal-support/geolynq.git`,
+      branch `claude/tender-goodall-fmpm7m`, Dockerfile `apps/demo/Dockerfile`, contexto na raiz,
+      porta 80), **mover o domínio `demo.geolynq.personalsupport.tech`** do serviço `geolynq_widget`
+      (onde está hoje e só serve `/v1/*` e `/healthz`, então as fotos dão 404) para o novo app,
+      e implantar. Validar: `/healthz` = ok, `/img/wpi-900.svg` abre, a página mostra os widgets.
+      Quando a branch for para a `main`, trocar a branch do app.
 - [ ] Fase 5 — painel admin
 - [x] Limpeza do tenant `demo`: **feita em 24/10.** A única duplicata era "Farmácia Saúde Total"
       (`814f5182-…`, inativa, sem cobertura, 1 endereço): apagada pelo usuário no SQL Editor
