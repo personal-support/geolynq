@@ -38,7 +38,7 @@ Em troca: depoimento ou caso de uso **aprovado por escrito por ela** e feedback 
 **Do que precisamos da New Millen:**
 1. Lista de revendedores **com CNPJ**, endereço ou CEP, telefone/WhatsApp e tipo (loja, distribuidor, online).
 2. Lista de produtos: código (SKU), nome, categoria e **link da foto**.
-3. Quem cuida do site: ele cola 2 linhas de código (15 minutos). Não precisamos de senha do site.
+3. Decisão de onde o widget aparece: página "Onde encontrar" no site institucional (WordPress), páginas de produto da loja (Nuvemshop), ou os dois. A instalação é feita pela DCM, que mantém os dois sites: 2 linhas de código, cerca de 15 minutos. Não precisamos de senha de nada.
 4. E-mail de quem vai usar o painel.
 
 **Limites que dizemos de frente:**
@@ -80,19 +80,22 @@ Em troca: depoimento ou caso de uso **aprovado por escrito por ela** e feedback 
 > **Proposta:** piloto de 12 meses por **R$ 990/mês**, implantação sem custo, em troca de depoimento (que eles aprovam por escrito). Hoje eles pagam R$ 1.600 ao Gofind (valor que eles informaram), então a economia é de R$ 7.320 no ano.
 >
 > **Antes de apresentar, descubra com eles:**
-> 1. Em qual plataforma está a loja (Nuvemshop, Shopify, Loja Integrada, VTEX, outra) e se aceita colar um código (script)?
-> 2. Quantas visitas por mês o site tem?
+> 1. **Onde o widget vai ficar?** Só na página "Onde encontrar" do site institucional (WordPress), nas páginas de produto da Nuvemshop, ou nos dois? (Atenção: na loja, o widget leva o consumidor para um revendedor em vez de comprar na loja própria. A New Millen precisa querer isso.)
+> 2. **Quantas visitas por mês** tem cada um (site institucional e loja)? Pegue do Google Analytics ou da Nuvemshop.
 > 3. Quantos revendedores eles têm e a lista tem o CNPJ de cada um?
 > 4. Quantos produtos (SKUs) e se têm foto de cada um?
-> 5. Quem cuida do site (nome e contato) e quem assina o contrato pela empresa?
+> 5. Quem assina o contrato pela New Millen? (O site quem cola é você mesmo.)
 >
 > **Se disserem sim, peça até segunda (26/10):**
 > - planilha de revendedores **com CNPJ** (eu mando o modelo);
 > - lista de produtos com link das fotos;
-> - contato de quem cola o código no site;
 > - e-mail de quem vai usar o painel.
 >
-> **Prazo:** 1º de novembro é **domingo**. Proponho colocar no ar até **sexta, 30/10**, se a lista chegar na segunda. Se chegar depois, vira segunda 02/11 ou terça 03/11.
+> **Prazo:** 1º de novembro é **domingo**. Como o site é você que mexe, proponho colocar no ar até **sexta, 30/10**, se a lista chegar na segunda. Se chegar depois, vira segunda 02/11 ou terça 03/11.
+>
+> **Instalação:** você cola as 2 linhas primeiro numa **página rascunho** do WordPress (e num teste da Nuvemshop, se for usar lá) e só publica depois que eu conferir. Quando eu cadastrar a New Millen, te passo o código exato.
+>
+> **Privacidade:** a política de privacidade do site da New Millen precisa citar o widget (busca por CEP/localização e medição anônima de uso). Eu te mando o texto.
 >
 > **Importante:** não prometa relatório em PDF nem a lista de candidatos a revendedor com data. Diga que vêm em marcos, sem data fixa.
 >
@@ -107,7 +110,7 @@ Prazo do compromisso com o Danilo: **01/11 (domingo)**. Meta realista: **sexta, 
 | # | Item | Quem | Estado |
 |---|---|---|---|
 | 1 | **Lista de revendedores com CNPJ**, produtos e fotos | New Millen via Danilo | Pendente (maior risco) |
-| 2 | Plataforma da loja aceita script? | Danilo pergunta | Pendente (risco técnico) |
+| 2 | Instalação do widget. **Resolvido em parte:** o Danilo faz os dois sites (WordPress/HostGator e Nuvemshop). Falta decidir **onde** vai o widget e testar o script na Nuvemshop (não verifiquei se o tema aceita script externo) | Danilo | Parcial |
 | 3 | **Contrato:** licença Jucimar↔DCM, MEI (contador), advogado, vencimento e preço pós-piloto | Junior + Danilo | Minuta pronta; revisão pendente |
 | 4 | **Supabase Pro** (US$ 25/mês, ~13% da mensalidade): sem ele não há backup do banco | Junior decide | Pendente |
 | 5 | Usuário de demonstração do painel para o Danilo | Eu / Junior | Pendente |
@@ -115,7 +118,14 @@ Prazo do compromisso com o Danilo: **01/11 (domingo)**. Meta realista: **sexta, 
 | 7 | Cadastro da New Millen pelo CNPJ `00385181000111` (conferência, depois gravar) | Eu | Pronto para rodar |
 | 8 | Planilha-modelo `docs/geolynq-catalogo-modelo.xlsx` enviada ao Danilo | Junior | Pendente |
 | 9 | Frase sobre ViaCEP/OpenStreetMap na página de privacidade do widget (novo deploy) | Eu, com OK do Junior | Pendente |
-| 10 | Ir ao ar: webmaster cola o script, 10 CEPs de teste, monitor ativo | New Millen + eu | Depois dos itens 1 a 4 |
+| 10 | Ir ao ar: Danilo cola o script em página **rascunho**, eu confiro com 10 CEPs de teste, depois ele publica; monitor ativo | Danilo + eu | Depois dos itens 1 a 4 |
+| 12 | Política de privacidade do **site da New Millen** citar o widget (ela é a controladora). Eu escrevo o texto, o Danilo publica | Eu + Danilo | Pendente |
+| 13 | Decidir se o widget entra na loja (Nuvemshop): conflito entre vender na loja própria e indicar revendedor | New Millen | Pendente (decisão de negócio) |
 | 11 | Avisar o Danilo do novo remetente `avisos@personalsupport.tech` | Junior | Pendente |
+
+**Observações técnicas (verificadas no código em 24/10):**
+- O widget **não trava por domínio**: funciona em qualquer site com o código e o `tenant`. Não precisa cadastrar o endereço da WordPress nem da Nuvemshop.
+- O evento de busca **não guarda a página de origem**: se o widget ficar nos dois sites, o painel mistura os dois e **não separa** quem buscou onde. Se a New Millen quiser separar, precisa de um campo novo (pequena mudança, a combinar).
+- O widget só atende cliente com status `active`. Para a página rascunho funcionar, o cliente precisa estar `active` (a página não publicada não é vista por ninguém).
 
 **Regra:** só vai para produção com contrato assinado, porque o widget passa a medir visitantes do site do cliente.
