@@ -1,0 +1,385 @@
+<!doctype html>
+<!--
+  GeoLynq — Copyright © 2026 Jucimar Lopes (Personal Support). Todos os direitos reservados.
+  Desenvolvido por Jucimar Lopes, da Personal Support. É proibida a cópia, réplica, redistribuição ou comercialização,
+  total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
+  Unauthorized copying, replication, redistribution or commercial use is prohibited.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GeoLynq | Localizador de revendedores para marcas</title>
+<meta name="description" content="Coloque um “Onde encontrar” no site da sua marca, leve o consumidor ao revendedor mais próximo e descubra onde ainda faltam revendedores.">
+<meta name="keywords" content="localizador de revendedores, onde encontrar, store locator, onde comprar, rede de revendedores, cobertura de revendedores, geolocalização, indústria, marca">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="author" content="DCM Marketing Digital">
+<link rel="alternate" hreflang="pt-BR" href="https://geolynq.personalsupport.tech/">
+<link rel="alternate" hreflang="x-default" href="https://geolynq.personalsupport.tech/">
+<link rel="alternate" type="text/plain" href="/llms.txt" title="Resumo do GeoLynq para assistentes de IA">
+<link rel="canonical" href="https://geolynq.personalsupport.tech/">
+<meta name="theme-color" content="#0a1f2c">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="GeoLynq">
+<meta property="og:title" content="GeoLynq | Descubra onde sua marca é procurada e ainda não tem revendedor">
+<meta property="og:description" content="“Onde encontrar” no site da marca e um painel que mostra onde faltam revendedores.">
+<meta property="og:url" content="https://geolynq.personalsupport.tech/">
+<meta property="og:image" content="https://geolynq.personalsupport.tech/assets/og-v2.jpg">
+<meta property="og:image:secure_url" content="https://geolynq.personalsupport.tech/assets/og-v2.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="GeoLynq: Descubra onde sua marca é procurada e ainda não tem revendedor, sobre mapa do Brasil com marcadores laranja onde faltam revendedores">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="GeoLynq | Localizador de revendedores para marcas">
+<meta name="twitter:description" content="Descubra onde sua marca é procurada e ainda não tem revendedor.">
+<meta name="twitter:image" content="https://geolynq.personalsupport.tech/assets/og-v2.jpg">
+<meta name="twitter:image:alt" content="GeoLynq: Descubra onde sua marca é procurada e ainda não tem revendedor, sobre mapa do Brasil com marcadores laranja onde faltam revendedores">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a1f2c'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%232fb8ae' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%232fb8ae'/%3E%3Ccircle cx='23' cy='10' r='2.4' fill='%23d94a18'/%3E%3C/svg%3E">
+<link rel="preload" href="/fonts/bricolage-grotesque-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/instrument-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" as="image" href="/assets/hero-mobile.webp" type="image/webp" media="(max-width: 760px)" fetchpriority="high">
+<link rel="preload" as="image" href="/assets/hero-desktop.webp" type="image/webp" media="(min-width: 761px)" fetchpriority="high">
+<link rel="stylesheet" href="/styles.css">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://geolynq.personalsupport.tech/#org",
+   "name": "DCM Marketing Digital",
+   "legalName": "Danilo Carlos Machado",
+   "taxID": "52.721.470/0001-48",
+   "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Praia Grande",
+    "addressRegion": "SP",
+    "addressCountry": "BR"
+   },
+   "brand": {
+    "@type": "Brand",
+    "name": "GeoLynq"
+   },
+   "areaServed": "BR"
+  },
+  {
+   "@type": "WebSite",
+   "@id": "https://geolynq.personalsupport.tech/#site",
+   "url": "https://geolynq.personalsupport.tech/",
+   "name": "GeoLynq",
+   "inLanguage": "pt-BR",
+   "publisher": {
+    "@id": "https://geolynq.personalsupport.tech/#org"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://geolynq.personalsupport.tech/#app",
+   "name": "GeoLynq",
+   "applicationCategory": "BusinessApplication",
+   "operatingSystem": "Web",
+   "inLanguage": "pt-BR",
+   "url": "https://geolynq.personalsupport.tech/",
+   "provider": {
+    "@id": "https://geolynq.personalsupport.tech/#org"
+   },
+   "description": "Localizador de revendedores com geolocalização para sites de marcas e indústrias, com painel que mostra onde a marca é procurada e ainda não tem revendedor.",
+   "featureList": [
+    "Widget “Onde encontrar” para o site da marca",
+    "Revendedores mais próximos num raio de 100 km",
+    "Contato por WhatsApp, ligação, rota e site",
+    "Painel de lacunas de cobertura por produto e cidade",
+    "Mapa de cobertura",
+    "Funil de uso do localizador",
+    "Leitura do período escrita por IA com números conferidos"
+   ]
+  },
+  {
+   "@type": "WebPage",
+   "@id": "https://geolynq.personalsupport.tech/#page",
+   "url": "https://geolynq.personalsupport.tech/",
+   "name": "GeoLynq | Localizador de revendedores para marcas",
+   "inLanguage": "pt-BR",
+   "isPartOf": {
+    "@id": "https://geolynq.personalsupport.tech/#site"
+   },
+   "about": {
+    "@id": "https://geolynq.personalsupport.tech/#app"
+   },
+   "primaryImageOfPage": {
+    "@type": "ImageObject",
+    "url": "https://geolynq.personalsupport.tech/assets/og-v2.jpg",
+    "width": 1200,
+    "height": 630
+   }
+  },
+  {
+   "@type": "FAQPage",
+   "mainEntity": [
+    {
+     "@type": "Question",
+     "name": "Preciso trocar o meu site?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Não. O widget é um código que entra no site que você já tem. Na maioria dos casos basta colar uma linha na página “Onde encontrar”."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "O consumidor precisa criar conta ou se cadastrar?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Não. Ele escolhe o produto, informa onde está e vê os revendedores. Não há cadastro do consumidor."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Como as buscas são medidas?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Contamos buscas e cliques por produto e região, de forma anônima, sem identificar o consumidor. O que isso significa na prática está descrito na página de privacidade."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "E se minha lista de revendedores não estiver organizada?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Isso é comum. Começamos com uma planilha-modelo e ajudamos a montar a lista, inclusive conferindo os dados de cada revendedor pelo CNPJ."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Quanto custa?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "O investimento é sob consulta, de acordo com o tamanho da rede e os recursos. Fale com a gente pelo formulário abaixo."
+     }
+    }
+   ]
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#conteudo">Ir para o conteúdo</a>
+
+<header class="topo" id="topo">
+  <div class="wrap topo__in">
+    <a class="marca" href="#topo" aria-label="GeoLynq, início">
+      <svg class="marca__ico" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" stroke-width="2" opacity=".9"/><circle cx="16" cy="16" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".6"/><circle cx="16" cy="16" r="2.6" fill="currentColor"/><circle cx="24" cy="9" r="2.6" fill="#ef6a35"/></svg>
+      <span>GeoLynq</span>
+    </a>
+    <nav class="topo__nav" aria-label="Principal">
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#painel">Painel</a>
+      <a href="#faq">Dúvidas</a>
+      <a class="btn btn--claro" href="#contato">Falar com a GeoLynq</a>
+    </nav>
+  </div>
+</header>
+
+<main id="conteudo">
+
+<!-- HERO -->
+<section class="hero" aria-labelledby="h1">
+  <picture class="hero__bg">
+    <source media="(max-width: 760px)" srcset="/assets/hero-mobile.webp" type="image/webp">
+    <img src="/assets/hero-desktop.webp" width="1672" height="941" alt="" fetchpriority="high" decoding="async">
+  </picture>
+  <div class="hero__veu" aria-hidden="true"></div>
+  <div class="wrap hero__in">
+    <p class="eyebrow">Radar de cobertura para marcas</p>
+    <h1 id="h1">Descubra onde sua marca é procurada e <em>ainda não tem revendedor.</em></h1>
+    <p class="hero__sub">O GeoLynq coloca um “Onde encontrar” no site da sua marca, leva o consumidor ao revendedor mais próximo e mostra à sua equipe comercial onde faltam lojas.</p>
+    <div class="hero__acoes">
+      <a class="btn btn--forte" href="#contato">Falar com a GeoLynq</a>
+      <a class="btn btn--vazado" href="https://demo.geolynq.personalsupport.tech/onde-encontrar.html" target="_blank" rel="noopener">Ver demonstração</a>
+    </div>
+    <ul class="hero__fatos">
+      <li>Para indústrias e marcas com rede de revendedores</li>
+      <li>Implantação conduzida pela nossa equipe</li>
+      <li>Investimento sob consulta</li>
+    </ul>
+  </div>
+</section>
+
+<!-- PROBLEMA -->
+<section class="sec sec--claro" aria-labelledby="h-prob">
+  <div class="wrap estreito">
+    <p class="def"><strong>GeoLynq</strong> é um localizador de revendedores com geolocalização para sites de marcas e indústrias. O consumidor escolhe o produto, informa onde está e vê as lojas mais próximas que o vendem; a marca recebe um painel que mostra onde há procura e ainda não há revendedor.</p>
+    <h2 id="h-prob">Quem procura e não encontra, compra de outra marca. E você não fica sabendo.</h2>
+    <p class="lead">Sua marca tem revendedores, mas o consumidor nem sempre sabe onde estão. E quando ele procura numa cidade sem loja, essa busca some: ninguém registra, ninguém prioriza, nenhuma loja é prospectada. O GeoLynq transforma essa busca perdida em informação para a sua equipe comercial agir.</p>
+  </div>
+</section>
+
+<!-- COMO FUNCIONA -->
+<section class="sec" id="como-funciona" aria-labelledby="h-como">
+  <div class="wrap">
+    <p class="eyebrow eyebrow--escuro">Como funciona</p>
+    <h2 id="h-como">Da busca do consumidor à decisão da sua equipe</h2>
+    <ol class="passos">
+      <li class="passo">
+        <span class="passo__n" aria-hidden="true">1</span>
+        <h3>O consumidor busca</h3>
+        <p>O widget entra no site da marca com uma linha de código. O consumidor escolhe o produto e informa onde está.</p>
+      </li>
+      <li class="passo">
+        <span class="passo__n" aria-hidden="true">2</span>
+        <h3>Chega ao revendedor certo</h3>
+        <p>Mostramos as lojas mais próximas, num raio de 100 km, com WhatsApp, ligação, rota e site. Sem loja por perto, indicamos a venda online.</p>
+      </li>
+      <li class="passo">
+        <span class="passo__n" aria-hidden="true">3</span>
+        <h3>Sua equipe vê o que faltava</h3>
+        <p>Cada busca vira dado: onde há demanda sem cobertura, para quais produtos e cidades, e quais revendedores geram contato.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- PAINEL -->
+<section class="sec sec--escuro" id="painel" aria-labelledby="h-painel">
+  <div class="wrap painel">
+    <div class="painel__txt">
+      <p class="eyebrow">O painel da sua marca</p>
+      <h2 id="h-painel">Mostra onde expandir a rede de revendedores</h2>
+      <ul class="lista">
+        <li><strong>Lacunas por produto e cidade.</strong> Quantas buscas ficaram sem revendedor num raio de 100 km.</li>
+        <li><strong>Mapa de cobertura.</strong> Onde as pessoas buscaram e onde já existe revendedor.</li>
+        <li><strong>Funil de uso.</strong> Quantos escolheram produto, informaram o local e chegaram a um contato.</li>
+        <li><strong>Rede de revendedores.</strong> Quem mais gera contato e quem está parado.</li>
+        <li><strong>Leitura do período por IA.</strong> Um resumo com os pontos de atenção e ações sugeridas. A IA só escreve: cada número citado é conferido contra os dados antes de aparecer.</li>
+      </ul>
+    </div>
+    <figure class="painel__fig">
+      <img src="/assets/painel.webp" width="1137" height="1230" loading="lazy" decoding="async" alt="Painel do GeoLynq com buscas sem revendedor por perto, mapa de cobertura e lista das maiores lacunas">
+      <figcaption>Exemplo ilustrativo com dados fictícios de uma marca de teste.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- IMPLANTAÇÃO -->
+<section class="sec" aria-labelledby="h-impl">
+  <div class="wrap">
+    <p class="eyebrow eyebrow--escuro">Implantação</p>
+    <h2 id="h-impl">Você não precisa montar nada. A gente conduz.</h2>
+    <ol class="passos passos--linha">
+      <li class="passo">
+        <span class="passo__n" aria-hidden="true">1</span>
+        <h3>Cadastro e dados</h3>
+        <p>Cadastramos a marca e importamos o catálogo e a sua rede de revendedores por planilha. Se a lista ainda não está organizada, damos uma planilha-modelo e ajudamos a preencher.</p>
+      </li>
+      <li class="passo">
+        <span class="passo__n" aria-hidden="true">2</span>
+        <h3>Widget no seu site</h3>
+        <p>Instalamos o “Onde encontrar” no site da marca, com as cores da sua identidade. Funciona na maioria dos sites e lojas virtuais.</p>
+      </li>
+      <li class="passo">
+        <span class="passo__n" aria-hidden="true">3</span>
+        <h3>Painel no ar</h3>
+        <p>Você e sua equipe acessam o painel com login próprio e acompanham buscas, cobertura e lacunas.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- INVESTIMENTO -->
+<section class="sec sec--claro" aria-labelledby="h-inv">
+  <div class="wrap estreito centro">
+    <h2 id="h-inv">Investimento sob consulta</h2>
+    <p class="lead">O valor depende do tamanho da sua rede de revendedores e dos recursos de que você precisa. Conte a sua situação e voltamos com uma proposta.</p>
+    <a class="btn btn--forte btn--escuro" href="#contato">Pedir proposta</a>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec" id="faq" aria-labelledby="h-faq">
+  <div class="wrap estreito">
+    <h2 id="h-faq">Dúvidas frequentes</h2>
+    <details>
+      <summary>Preciso trocar o meu site?</summary>
+      <p>Não. O widget é um código que entra no site que você já tem. Na maioria dos casos basta colar uma linha na página “Onde encontrar”.</p>
+    </details>
+    <details>
+      <summary>O consumidor precisa criar conta ou se cadastrar?</summary>
+      <p>Não. Ele escolhe o produto, informa onde está e vê os revendedores. Não há cadastro do consumidor.</p>
+    </details>
+    <details>
+      <summary>Como as buscas são medidas?</summary>
+      <p>Contamos buscas e cliques por produto e região, de forma anônima, sem identificar o consumidor. O que isso significa na prática está descrito na <a href="/privacidade.html">página de privacidade</a>.</p>
+    </details>
+    <details>
+      <summary>E se minha lista de revendedores não estiver organizada?</summary>
+      <p>Isso é comum. Começamos com uma planilha-modelo e ajudamos a montar a lista, inclusive conferindo os dados de cada revendedor pelo CNPJ.</p>
+    </details>
+    <details>
+      <summary>Quanto custa?</summary>
+      <p>O investimento é sob consulta, de acordo com o tamanho da rede e os recursos. Fale com a gente pelo formulário abaixo.</p>
+    </details>
+  </div>
+</section>
+
+<!-- CONTATO -->
+<section class="sec sec--escuro" id="contato" aria-labelledby="h-contato">
+  <div class="wrap contato">
+    <div class="contato__txt">
+      <p class="eyebrow">Contato</p>
+      <h2 id="h-contato">Fale com a GeoLynq</h2>
+      <p class="lead lead--claro">Conte quantas marcas, produtos e revendedores você tem. Respondemos por e-mail ou telefone, como preferir.</p>
+      <a class="demo" href="https://demo.geolynq.personalsupport.tech/onde-encontrar.html" target="_blank" rel="noopener">Antes, veja o “Onde encontrar” funcionando &rarr;</a>
+      <a class="zap" id="zap" href="https://wa.me/?text=GeoLynq%3A%20descubra%20onde%20sua%20marca%20%C3%A9%20procurada%20e%20ainda%20n%C3%A3o%20tem%20revendedor.%20https%3A%2F%2Fgeolynq.personalsupport.tech%2F" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.200Zm4.500-6.100c-.2-.1-1.500-.7-1.700-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.200-.3.200-.5.100a6.700 6.700 0 0 1-3.300-2.900c-.2-.4.200-.4.700-1.300.1-.2 0-.3 0-.5l-.8-1.800c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.300 3 3 0 0 0-.9 2.200c0 1.300.9 2.600 1 2.800.1.200 1.800 2.800 4.400 3.900 1.600.7 2.300.7 3.100.6.500-.1 1.500-.6 1.700-1.200.2-.6.200-1.100.1-1.200-.100-.1-.2-.2-.4-.3Z"/></svg>Compartilhar no WhatsApp</a>
+    </div>
+
+    <form id="form-lead" class="form" novalidate>
+      <div class="campo">
+        <label for="f-nome">Seu nome</label>
+        <input id="f-nome" name="nome" type="text" autocomplete="name" maxlength="120" required>
+      </div>
+      <div class="campo">
+        <label for="f-empresa">Empresa ou marca</label>
+        <input id="f-empresa" name="empresa" type="text" autocomplete="organization" maxlength="120" required>
+      </div>
+      <div class="campo">
+        <label for="f-email">E-mail</label>
+        <input id="f-email" name="email" type="email" autocomplete="email" maxlength="160" required>
+      </div>
+      <div class="campo">
+        <label for="f-tel">Telefone com DDD <span class="opc">(opcional)</span></label>
+        <input id="f-tel" name="telefone" type="tel" autocomplete="tel" inputmode="tel" maxlength="30">
+      </div>
+      <div class="campo">
+        <label for="f-msg">Como podemos ajudar? <span class="opc">(opcional)</span></label>
+        <textarea id="f-msg" name="mensagem" rows="4" maxlength="1000"></textarea>
+      </div>
+      <!-- isca para robôs: pessoas não veem nem preenchem -->
+      <div class="isca" aria-hidden="true">
+        <label for="f-site">Não preencha este campo</label>
+        <input id="f-site" name="site" type="text" tabindex="-1" autocomplete="off">
+      </div>
+      <label class="aceite">
+        <input id="f-aceite" name="aceite" type="checkbox" required>
+        <span>Concordo em ser contatado pela GeoLynq sobre este pedido. Meus dados serão usados só para isso, como explica a <a href="/privacidade.html" target="_blank" rel="noopener">página de privacidade</a>.</span>
+      </label>
+      <p id="form-msg" class="form__msg" role="status" aria-live="polite"></p>
+      <button class="btn btn--forte" type="submit" id="form-enviar">Enviar contato</button>
+    </form>
+  </div>
+</section>
+
+</main>
+
+<footer class="rodape">
+  <div class="wrap rodape__in">
+    <p><strong>GeoLynq</strong> é um produto da DCM Marketing Digital · CNPJ 52.721.470/0001-48 · Praia Grande/SP.</p>
+    <p><a href="/privacidade.html">Privacidade</a> · <a href="https://demo.geolynq.personalsupport.tech/onde-encontrar.html" target="_blank" rel="noopener">Demonstração</a></p>
+    <p class="rodape__pq">Mapas: © colaboradores do OpenStreetMap, quando exibidos no widget e no painel.</p>
+  </div>
+</footer>
+
+<script src="/app.js" defer></script>
+</body>
+</html>

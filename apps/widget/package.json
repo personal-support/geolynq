@@ -1,14 +1,17 @@
 {
   "name": "@geolynq/widget",
+  "author": "Jucimar Lopes (Personal Support)",
+  "license": "UNLICENSED",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build -c vite.config.v2.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "e2e": "node e2e/widget.e2e.cjs"
+    "e2e": "node e2e/widget.e2e.cjs",
+    "e2e:v2": "node e2e/widget-v2.e2e.cjs"
   },
   "dependencies": {
     "@geolynq/shared": "*"

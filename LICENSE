@@ -1,0 +1,42 @@
+GeoLynq — TODOS OS DIREITOS RESERVADOS
+Copyright © 2026 Jucimar Alves Lopes (Personal Support)
+
+1. AUTORIA
+   O GeoLynq e todos os arquivos deste repositório (código-fonte, widget, painel, landing page,
+   demonstração, migrações e scripts de banco de dados, fluxos de automação, documentação, textos,
+   planilhas-modelo e demais materiais) foram desenvolvidos por Jucimar Lopes, da Personal Support,
+   que é o responsável pelo seu desenvolvimento e o titular dos direitos sobre eles.
+
+2. O QUE É PROIBIDO SEM AUTORIZAÇÃO PRÉVIA E POR ESCRITO DO DESENVOLVEDOR
+   a) copiar, reproduzir, replicar ou duplicar, no todo ou em parte;
+   b) modificar, criar obras derivadas ou fazer engenharia reversa;
+   c) redistribuir, publicar, sublicenciar, ceder, emprestar ou hospedar para terceiros;
+   d) comercializar, vender, alugar, oferecer como serviço (SaaS, marca própria/white-label ou similar)
+      ou incorporar a produto ou serviço de terceiros.
+   Ver o código-fonte, ou ele estar acessível em um repositório ou servidor, não é autorização de uso.
+
+3. EXCEÇÃO CONDICIONADA A ACORDO ESCRITO
+   A comercialização do GeoLynq pela DCM Marketing Digital (Danilo Carlos Machado, CNPJ 52.721.470/0001-48,
+   Praia Grande/SP) só vale nos termos de acordo por escrito entre ela e o desenvolvedor. Sem esse acordo,
+   vale a proibição do item 2.
+
+4. USO PELOS CLIENTES
+   O uso do GeoLynq pelos clientes contratados é regido pelo contrato de prestação do serviço, e não
+   por este arquivo. Contratar o serviço não transfere a titularidade nem o código-fonte.
+
+5. COMPONENTES DE TERCEIROS
+   Bibliotecas de código aberto (instaladas via npm), as fontes Bricolage Grotesque e Instrument Sans,
+   os dados e mapas do OpenStreetMap e outros materiais de terceiros pertencem aos seus autores e seguem
+   as licenças deles. Este aviso não cobre esses componentes.
+
+6. SEM GARANTIA
+   O software é fornecido "como está", sem garantias além das previstas em contrato ou em lei.
+
+Pedidos de autorização: personalsupport@hotmail.com
+
+-----------------------------------------------------------------------------------------------------
+ENGLISH SUMMARY
+All rights reserved. GeoLynq was developed by Jucimar Lopes (Personal Support), who owns it. Copying,
+replicating, modifying, redistributing, sublicensing, reselling, offering as a service (including
+white-label) or otherwise commercializing this software, in whole or in part, is prohibited without
+the developer's prior written permission. Third-party components keep their own licenses.

@@ -1,0 +1,44 @@
+{
+  "_comentario": "Marca do site de demonstração: TROCAR AQUI para vestir o demo com o visual de um cliente (só cores, fontes e arredondamento; nunca logo, nome ou fotos do cliente real). Depois: node apps/demo/build.mjs e node apps/demo/brand-sql.mjs (imprime o UPDATE do tema do widget no banco). Tema atual: estilo da loja New Millen conforme especificação enviada pelo usuário (cores, cantos, botões). FONTE: o usuário ainda não informou a fonte da loja; por isso usa a fonte do sistema.",
+  "fonts": {
+    "googleHref": "",
+    "display": "system-ui, -apple-system, \"Segoe UI\", Roboto, Arial, sans-serif",
+    "body": "system-ui, -apple-system, \"Segoe UI\", Roboto, Arial, sans-serif"
+  },
+  "colors": {
+    "bg": "#ffffff",
+    "ink": "#111111",
+    "ink2": "#333333",
+    "muted": "#666666",
+    "line": "#f0f0f0",
+    "primary": "#ff5500",
+    "primaryDark": "#e04a00",
+    "accent": "#ff5500"
+  },
+  "radius": 14,
+  "extra": {
+    "soft": "#fff4ee",
+    "soft-2": "#ffe9dd",
+    "soft-3": "#ffe3d3",
+    "soft-4": "#ffd2b8",
+    "on-dark": "#ff8a4d",
+    "on-dark-2": "#d4d4d4",
+    "top-bg": "#000000",
+    "top-fg": "#ffffff",
+    "top-line": "#000000",
+    "top-brand": "#ffffff",
+    "btn-radius": "28px",
+    "btn-case": "uppercase",
+    "card-hover": "0 4px 12px rgba(0, 0, 0, 0.05)",
+    "btn-text": "#ffffff"
+  },
+  "widget": {
+    "radius": 14,
+    "buttonRadius": 28,
+    "inputRadius": 25,
+    "inputBorder": "#D1D1D1",
+    "buttonUppercase": true,
+    "hoverShadow": true,
+    "imageRatio": "3/4"
+  }
+}
