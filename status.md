@@ -51,6 +51,10 @@
   **Validado em produção:** execução 22 (modo `trigger`, 03:00:35 UTC) rodou sozinha: 6 de 6 HTTP 200 com o conteúdo esperado, sem aviso. Depois da
   conferência o histórico voltou a `saveDataSuccessExecution: none` (só guarda execuções com erro). **Ainda NÃO visto em produção:** o ciclo de 2 falhas
   seguidas, aviso de volta ao normal e lembrete de 3 h (o estado só persiste com o workflow ativo).
+  **UptimeRobot — 4 monitores no ar e todos Up (conferido pelo print do usuário em 24/10 ~00:10 BRT):** `widget…/healthz`, `n8n…/healthz`,
+  `painel…/` e `geolynq.personalsupport.tech/` (landing), HTTP a cada 5 min, aviso por e-mail. Conta criada com o Gmail. O monitor do Supabase NÃO
+  fica lá (exige cabeçalho com chave, que o plano grátis não oferece); essa checagem é do monitor do n8n. Os dois se cobrem: o UptimeRobot vigia o
+  n8n e a VPS por fora; o n8n vigia o banco e os sites por dentro.
   **UptimeRobot (monitor externo) criado em 24/10:** o cadastro com `hotmail.com` foi recusado ("email domain is disposable"), usar o Gmail. Primeiro aviso
   real: `Connection Timeout` a partir da **Europa** em `widget…/healthz`, enquanto por dentro (n8n) estava 200 e a API da Hostinger dizia `running`:
   hipótese principal = falha pontual de rota; conferir o "is up again" e testar pelo celular com dados móveis. O plano grátis do UptimeRobot é, pelo
