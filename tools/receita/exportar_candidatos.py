@@ -10,7 +10,7 @@
 
 Só as cidades pedidas (as que têm lacuna), no máximo --limite por cidade (padrão 60), os de maior aderência primeiro:
   score = peso do CNAE x 10 + 5 (tem nome fantasia) + 3 (matriz) - 8 (CNAE ruidoso, "guarda-chuva").
-  + 3 por CNAE secundário que também seja de canal (máx. +6).
+  + 3 por CNAE secundário de canal que não seja o "guarda-chuva" (máx. +6); - 4 se a empresa lista mais de 12 atividades (loja de tudo).
 Só empresas ATIVAS (o carregador já filtra) e com CNPJ de DV válido. Traz endereço, telefone e e-mail cadastrais (dado público da
 Receita); sem sócios nem razão social. Rodar de novo atualiza esses campos e o score, sem mexer no andamento marcado pela equipe.
 O SQL sai na saída padrão; o resumo (cidades, linhas, ignoradas) vai para a saída de erro. Aplicar: SQL Editor do Supabase.
@@ -111,8 +111,10 @@ def gerar(con, tenant, mes, cidades, cnaes, limite, excluir=()):
                 continue
             peso, ruidoso = cnaes[cnae]
             sec = [x for x in re.findall(r"[0-9]{7}", secund or "") if x != cnae]
-            sec_canal = sorted({x for x in sec if x in cnaes})
-            score = peso * 10 + (5 if (fantasia or "").strip() else 0) + (3 if matriz == 1 else 0) - (8 if ruidoso else 0) + min(6, 3 * len(sec_canal))
+            # só CNAE secundário de canal que NÃO seja o "guarda-chuva" conta; quem lista muitas atividades (loja de tudo) perde 4 pontos
+            sec_canal = sorted({x for x in sec if x in cnaes and not cnaes[x][1]})
+            score = (peso * 10 + (5 if (fantasia or "").strip() else 0) + (3 if matriz == 1 else 0) - (8 if ruidoso else 0)
+                     + min(6, 3 * len(sec_canal)) - (4 if len(set(sec)) > 12 else 0))
             cep8 = re.sub(r"\D", "", cep or "")
             rua_txt = " ".join(x.strip() for x in (tipo, rua) if x and x.strip()) or None
             fone = (ddd1 or "") + tel1 if tel1 else ((ddd2 or "") + tel2 if tel2 else None)

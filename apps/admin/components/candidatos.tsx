@@ -185,7 +185,7 @@ export function CandidatosPorCidade({
       )}
       <p className="border-t border-line px-5 py-3 text-[12px] text-ink-3">
         Fonte: base pública de CNPJ da Receita Federal (só empresas ativas): nome fantasia, endereço comercial, atividade e o telefone e e-mail cadastrais, quando
-        existem. Site não consta na Receita: use “Pesquisar no Google”. Confira o contato antes de abordar.
+        existem. Site não consta na Receita: use “Pesquisar no Google”. Atenção: o e-mail cadastrado na Receita costuma ser o do contador da empresa, não o da loja. Confira o contato antes de abordar.
       </p>
     </Card>
   );

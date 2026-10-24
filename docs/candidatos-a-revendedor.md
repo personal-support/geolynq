@@ -72,3 +72,8 @@ Colar `candidatos.sql` no SQL Editor. Repetir o passo 6 todo mês (e quando surg
 ## Testes
 `supabase/tests/17_candidatos_a_revendedor.sql` (banco), `python3 tools/receita/testes.py` (scripts da VPS; sem rede), E2E do painel (`apps/admin/e2e/painel.e2e.cjs`).
 **Não testado em produção:** consulta real à BrasilAPI, carga real de um cliente novo e o desempenho com dezenas de milhares de candidatos.
+
+## Qualidade do dado (medida em 24/10, base 2026-10, 599.618 estabelecimentos dos 10 CNAEs de suplementos)
+- Endereço: 100%. Telefone: 96%. E-mail: 89%. CNAE secundário: 71%.
+- **O e-mail cadastrado na Receita costuma ser o do contador da empresa**, não o da loja (aparece o mesmo e-mail em várias empresas). O telefone também pode ser do escritório contábil. O painel avisa; a equipe confere antes de abordar.
+- O CNAE de artigos esportivos (4763602) e o de farmácias (4771701) trazem muita empresa fora do ramo; o ranking sobe quem lista CNAE de academia ou de esporte entre os secundários e derruba quem lista mais de 12 atividades. Não elimina o ruído: a equipe marca "Sem interesse".

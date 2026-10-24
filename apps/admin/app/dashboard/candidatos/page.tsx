@@ -176,7 +176,7 @@ export default async function Candidatos({ searchParams }: { searchParams: Promi
         )}
         <p className="border-t border-line px-5 py-3 text-[12px] text-ink-3">
           Fonte: base pública de CNPJ da Receita Federal (só empresas ativas): nome fantasia, endereço comercial, atividade e o telefone e e-mail cadastrais, quando existem.
-          O site da empresa não consta na Receita: use “Pesquisar no Google”. A exportação traz até 5.000 linhas com os filtros aplicados.
+          O site da empresa não consta na Receita: use “Pesquisar no Google”. O e-mail cadastrado costuma ser o do contador da empresa, não o da loja: confira antes de abordar. A exportação traz até 5.000 linhas com os filtros aplicados.
         </p>
       </Card>
     </>

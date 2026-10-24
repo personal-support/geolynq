@@ -412,7 +412,7 @@ async function esperado() {
       const txtCand = await texto(pageA);
       check("candidatos: o cartão mostra a cidade da maior lacuna e 4 em aberto", /Candidatos a revendedor/.test(txtCand) && new RegExp(`${top.cidade}[\\s\\S]{0,60}4 candidatos em aberto`).test(txtCand), top.cidade);
       check("candidatos: lista os 4 pelo nome fantasia, maior aderência primeiro", (await pageA.locator("[data-candidato]").evaluateAll((els) => els.map((e) => e.querySelector("p").textContent))).join("|") === "E2E Alfa Suplementos|E2E Beta Academia|E2E Gama Nutrição|E2E Delta Esportes");
-      check("candidatos: avisa que não sabemos se já vendem e que telefone/e-mail são os cadastrais (site não consta)", /não sabemos se já vendem/.test(txtCand) && /telefone e e-mail cadastrais/.test(txtCand) && /Site não consta na Receita/.test(txtCand));
+      check("candidatos: avisa que não sabemos se já vendem e que telefone/e-mail são os cadastrais (site não consta)", /não sabemos se já vendem/.test(txtCand) && /telefone e e-mail cadastrais/.test(txtCand) && /Site não consta na Receita/.test(txtCand) && /e-mail cadastrado na Receita costuma ser o do contador/.test(txtCand));
       check("candidatos: CNPJ formatado e CEP com hífen", /19\.283\.746\/0001-88/.test(txtCand) && /11060-001/.test(txtCand));
       const alfa = pageA.locator('[data-candidato="19283746000188"]');
       check("candidatos: mostra endereço, telefone formatado (link tel:) e e-mail (link mailto:)",

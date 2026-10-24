@@ -85,14 +85,22 @@ class Exportar(unittest.TestCase):
         self.assertIn("null, '4763602', 'SP', 'SANTOS', 'Embaré'", sql)   # sem nome fantasia vira null
         # CEP malformado vira null; score: Alfa = 3*10+5+3 = 38; Delta (ruidoso) = 1*10+5+3-8 = 10
         self.assertIn("'Delta Esportes', '4729699', 'SP', 'SANTOS', 'Aparecida', null, 10,", sql)
-        # Alfa: 3*10 + 5 (fantasia) + 3 (matriz) + 6 (dois CNAEs secundários de canal: 9313100 e 4729699) = 44
-        self.assertIn("'Alfa Suplementos', '4763602', 'SP', 'SANTOS', 'Gonzaga', '11060001', 44, '2026-10', 'AVENIDA ANA COSTA', '100', 'SALA 2', '13999990000', 'alfa@exemplo.com.br', array['4729699','9313100']::text[]", sql)
+        # Alfa: 3*10 + 5 (fantasia) + 3 (matriz) + 3 (só 9313100 conta: o 4729699 é o guarda-chuva e não pontua) = 41
+        self.assertIn("'Alfa Suplementos', '4763602', 'SP', 'SANTOS', 'Gonzaga', '11060001', 41, '2026-10', 'AVENIDA ANA COSTA', '100', 'SALA 2', '13999990000', 'alfa@exemplo.com.br', array['4729699','9313100']::text[]", sql)
         self.assertIn("'1333334444'", sql)                       # sem telefone 1: usa o 2
         self.assertIn("on conflict (tenant_id, cnpj) do update set", sql)
         self.assertNotIn("do nothing", sql)
         self.assertEqual([c for c in r["cidades"] if c[2] != "ok"][0][1], "Cidade Que Nao Existe")
         # maior aderência primeiro dentro da cidade
         self.assertLess(sql.index("Alfa Suplementos"), sql.index("Delta Esportes"))
+
+    def test_loja_de_tudo_perde_pontos(self):
+        con = banco()
+        muitos = ",".join("%07d" % (4500000 + i) for i in range(13))
+        con.execute("update estabelecimentos set cnaes_secundarios=? where cnpj='24681012000197'", (muitos,))
+        linhas, r = exp.gerar(con, TENANT, "2026-10", [("SP", "Santos")], exp.ler_cnaes("4763602:3,9313100:1,4729699:1:ruidoso"), 60)
+        # sem nome fantasia: 3*10 + 3 (matriz) - 4 (13 atividades) = 29
+        self.assertIn("'4763602', 'SP', 'SANTOS', 'Embaré', '11040000', 29,", "\n".join(linhas))
 
     def test_excluir_cnpj(self):
         linhas, r = exp.gerar(banco(), TENANT, "2026-10", [("SP", "Santos")], exp.ler_cnaes("4763602:3,9313100:1,4729699:1:ruidoso"), 60, {"86420975000194"})
