@@ -64,14 +64,21 @@
   crítico do 16.3.4 está resolvido); build do Pódio OK. **Não rodado:** E2E do painel (exige Postgres local, ver `supabase/tests/README.md`) e E2E do widget. **Parte 2 pendente
   (decisão do usuário):** apontar widget/demo, painel e landing do EasyPanel para a `main` (hoje: `bold-cray` e `keen-johnson`) e atualizar a regra de push do `CLAUDE.md`.
   Serviço `geolynq_demo` APAGADO em 24/10 (era do meu erro); sobra remover a deploy key `easypanel-geolynq-demo` no GitHub (Settings → Deploy keys).
-- **Fase 2 (privacidade, retenção, contrato) — INICIADA em 24/10, nada aplicado em produção.** Achados: a landing promete apagar contatos em **30 dias** e nenhum job faz
-  isso; o único contato (13/10, do próprio usuário) completa 30 dias em **2026-11-12** (prazo real). `pg_cron` 1.6.4 está **disponível e não instalado**. `leads`: 1 linha;
-  `widget_events`: ~2.050 linhas (784 kB; as mais antigas são simuladas). A página de privacidade do widget (`apps/widget/public/privacidade.html`) tem **3 trechos
-  `[a definir]`** (linhas ~53 base legal, ~59 prazo de guarda, ~65 contato) mais o banner "texto-base em revisão" (linha 27). **Rascunho pronto no repositório:**
-  `supabase/migrations/20261024000000_retencao_pg_cron.sql` (extensão + `retencao_simular()` + `retencao_limpar()` + agenda diária 06:17 UTC; sintaxe validada com `pglast`, **não
-  executada**; aplicar pelo SQL Editor, não pelo conector). **Pendente do usuário (plano 2.1):** aprovar os valores (leads 30 dias; eventos individuais 12 meses; base legal =
-  legítimo interesse da marca com aviso e opção de recusar; contato = `personalsupport@hotmail.com` ou e-mail da DCM). Só depois: aplicar a migration, preencher a página (2.3) e redigir o contrato (2.4).
-- **Fase 3 (B0.5, base da Receita):** primeiro passo é o comando 3.1 do `docs/plano-2026-10-15.md` na VPS (só leitura, lista os arquivos e tamanhos). **Ainda não rodado.**
+- **Fase 2 (privacidade, retenção, contrato) — 2.1, 2.2 e 2.3 FEITAS em 24/10; 2.3 ainda NÃO publicada; falta 2.4 (contrato).**
+  **2.1 APROVADA pelo usuário em 24/10:** contatos da landing 30 dias; eventos individuais do widget 12 meses; base legal = legítimo interesse da marca (LGPD art. 7º, IX) com
+  aviso e opção de recusar; contato = `personalsupport@hotmail.com`. O usuário optou por não levar a página a advogado (o plano recomenda revisão antes de assinar contrato com a New Millen).
+  **2.2 APLICADA EM PRODUÇÃO em 24/10** (extensão `pg_cron` 1.6.4, `retencao_simular()` pelo conector; `retencao_limpar()`, `revoke` e `cron.schedule` pelo SQL Editor do usuário):
+  job `retencao-geolynq` ativo, `17 6 * * *` (06:17 UTC = 03:17 BRT); funções `security definer` sem execução para `anon`/`authenticated` (conferido). Simulação em 24/10: 0 a apagar
+  (leads 1, widget_events 2.093). **Primeiro disparo a conferir:** `select status, return_message, start_time from cron.job_run_details order by start_time desc limit 5;`. O contato de 13/10
+  será apagado na execução de 12–13/11. **Aviso:** como o painel calcula os relatórios a partir de `widget_events`, depois de 12 meses esse histórico some (nada passa disso hoje).
+  **2.3 FEITA no repositório:** `apps/widget/public/privacidade.html` sem `[a definir]` e sem o banner "em revisão" (texto só diz o que o sistema faz; não promete agregados guardados no banco).
+  **Para publicar:** o serviço `geolynq_widget` publica da `bold-cray`; precisa avançar a `bold-cray` até aqui (é ancestral, fast-forward) ou apontar o serviço para a `main`, e implantar.
+- **Fase 3 (B0.5, base da Receita) — 3.1 rodado em 24/10, SEM sucesso:** o caminho do plano (`arquivos.receitafederal.gov.br/dados/cnpj/dados_abertos_cnpj/`) devolve **HTTP 404**
+  (a página é um Nextcloud "SERPRO+": qualquer caminho inexistente cai na tela do aplicativo). O sandbox leva 403 nesse host, então a verificação tem que ser feita na VPS ou no navegador do usuário.
+  Pesquisa web (fontes de terceiros, NÃO oficiais): a Receita mudou o layout e os caminhos no fim de jan/2026; o acesso principal seria um *compartilhamento Nextcloud* (`/index.php/s/<código>`).
+  **Falta descobrir o endereço atual** (abrir o site no navegador, achar a pasta de dados abertos do CNPJ e copiar o endereço). **Atenção:** CNPJ alfanumérico — notícias de jul/2026 falam em
+  novos CNPJs com letras a partir de 31/07/2026; o Import v2 e o Cadastro por CNPJ validam só dígitos (`replace(/\D/g, '')` e dígito verificador numérico) e precisarão aceitar letras
+  (12 primeiras posições alfanuméricas; 2 dígitos verificadores calculados com o valor ASCII menos 48). Conferir na fonte oficial antes de mexer.
 - **Próximos passos restantes (Fase 5 do plano = Operação):** (1) ativar o monitor acima e criar o monitor externo (UptimeRobot), (2) decisão sobre o Supabase Pro, (3) Fase 2 (retenção `pg_cron`, página de
   privacidade do widget, contrato), (4) Fase 3 (B0.5, base da Receita), (5) Fase 4 (unificar branches em `main`).
 
