@@ -81,6 +81,12 @@
   (e decidir como ler em fluxo, um arquivo por vez; disco livre da VPS ~62 GB). Nada foi baixado. **CNPJ alfanumérico:** notícias de jul/2026 (fontes de terceiros, não oficiais) falam em novos CNPJs com
   letras a partir de 31/07/2026; o Import v2 e o Cadastro por CNPJ validam só dígitos (`replace(/\D/g, '')` e dígito verificador numérico) e precisarão aceitar letras (12 primeiras posições
   alfanuméricas; 2 dígitos verificadores com o valor ASCII menos 48). Conferir na fonte oficial antes de mexer. Detalhe: o dado da Receita vem em CSV sem cabeçalho, separador `;`, latin-1 (fonte de terceiros).
+- **Fase 3 — tamanhos MEDIDOS de `2026-10/` (24/10, pela VPS):** `Estabelecimentos0..9.zip` ≈ **5,2 GB no total** (o `0` tem 2,17 GB; os outros ~320–350 MB), `Empresas0..9.zip` ≈ 1,3 GB,
+  `Socios0..9.zip` ≈ 0,66 GB (NÃO usar: dado pessoal), `Simples.zip` ≈ 0,3 GB, tabelas pequenas (`Cnaes`, `Municipios`, `Naturezas`, `Motivos`, `Paises`, `Qualificacoes`) < 0,1 MB.
+  Arquivo solto `cnpj.tar.gz` ≈ **61 GB** (não usar). Para o recorte basta `Estabelecimentos` + `Municipios` + `Cnaes` (+ `Empresas` numa 2ª passada só para as raízes que sobrarem): ~6,5 GB a baixar,
+  com pico de disco de ~2,2 GB se o zip for salvo, ou ~0 se for lido em fluxo (`curl | funzip`). Disco livre da VPS ~62 GB. Esse volume é bem menor que a estimativa do plano (~85 GB descompactado,
+  que continua NÃO medido). Segmento `suplementos` tem 10 CNAEs de canal (4729699, 4617600, 4637199, 4763602, 4771701, 4619200, 4639701, 4691500, 4771702, 9313100, pesos 1–3); o tenant
+  `fabrica-teste` tem territórios UF RJ e SP. **Decisão pendente do usuário (3.4):** onde guardar o universo filtrado (Postgres na VPS, arquivo SQLite na VPS, ou direto no Supabase, que não cabe).
 - **Página de privacidade do widget:** `bold-cray` foi avançada para `e37c61f` em 24/10 a pedido do usuário (fast-forward); o EasyPanel **não redeploya sozinho** ao empurrar: falta o usuário clicar
   em **Implantar** em `geolynq_widget` e conferir `https://widget.geolynq.personalsupport.tech/privacidade.html`.
 - **Próximos passos restantes (Fase 5 do plano = Operação):** (1) ativar o monitor acima e criar o monitor externo (UptimeRobot), (2) decisão sobre o Supabase Pro, (3) Fase 2 (retenção `pg_cron`, página de
