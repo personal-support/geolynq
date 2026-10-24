@@ -138,6 +138,7 @@ async function esperado() {
     await dbSeed.query("delete from public.widget_events where session_id like 'e2e-%'");
     await dbSeed.query("delete from public.panel_ai_readings");
     await dbSeed.query("delete from public.reseller_candidates where nome_fantasia like 'E2E %'");
+    await dbSeed.query("delete from public.tenant_candidate_terms where tenant_id=(select id from public.tenants where slug='fabrica-teste')");
     await dbSeed.query(`insert into public.widget_events (tenant_id, session_id, event_type, query_text, results_count, telemetry_v, created_at)
       select (select id from public.tenants where slug='demo'), 'e2e-' || g, 'search', 'whey', 1, 2, now() - (g || ' hours')::interval from generate_series(1, 5) g`);
     browser = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });
@@ -481,11 +482,58 @@ async function esperado() {
       }
       await pageA.waitForLoadState("networkidle").catch(() => {});
       check("candidatos (página): marcar 'Vende' grava e volta para a página com os filtros", /\/dashboard\/candidatos\?/.test(pageA.url()) && /q=delta/.test(pageA.url()) && /cnae=4763602/.test(pageA.url()), pageA.url());
-      // exportação
+      // ---- palavras do ramo: adicionar, ver o ranking mudar, remover
       const baixarCorpo = (u) => pageA.evaluate(async (url) => { const x = await fetch(url); const buf = new Uint8Array(await x.clone().arrayBuffer()); return { status: x.status, anexo: x.headers.get("content-disposition"), bom: [...buf.slice(0, 3)].join(","), corpo: await x.text() }; }, u);
+      await pageA.goto(`${BASE}/dashboard/candidatos?cnae=4763602`);
+      const nomesDaLista = () => pageA.locator("[data-lista-candidatos] > li").evaluateAll((els) => els.map((e) => e.querySelector("p").textContent));
+      check("palavras: o cartão 'Palavras do ramo' existe, vazio no começo", (await pageA.locator("[data-termos]").count()) === 1 && (await pageA.locator("[data-termo]").count()) === 0 && /Nenhuma palavra/.test(await pageA.locator("[data-termos]").innerText()));
+      check("palavras: ordem inicial pela aderência (Alfa 40, Beta 30, Gama 20, Delta 10)", (await nomesDaLista()).join("|") === "E2E Alfa Suplementos|E2E Beta Academia|E2E Gama Nutrição|E2E Delta Esportes");
+      await pageA.locator('input[name="termo"][type="text"]').fill("Gama");
+      await pageA.locator('form:has(input[name="termo"]) select[name="peso"]').selectOption("12");
+      await pageA.locator('form:has(input[name="termo"]) button', { hasText: "Adicionar" }).click();
+      for (let i = 0; i < 40; i++) {
+        if (Number((await dbSeed.query("select count(*)::int n from public.tenant_candidate_terms where termo='gama'")).rows[0].n) === 1) break;
+        await pageA.waitForTimeout(150);
+      }
+      await pageA.waitForURL(/termo|#palavras|candidatos/, { timeout: 10000 }).catch(() => {});
+      await pageA.goto(`${BASE}/dashboard/candidatos?cnae=4763602`);
+      check("palavras: a palavra aparece na lista 'Sobem' com o peso", (await pageA.locator('[data-termo="sobe:gama"]').innerText()).includes("+12"));
+      check("palavras: o candidato com a palavra sobe (Gama 20+12=32 passa o Beta 30)", (await nomesDaLista()).join("|") === "E2E Alfa Suplementos|E2E Gama Nutrição|E2E Beta Academia|E2E Delta Esportes");
+      check("palavras: a linha explica o ajuste ('subiu 12 pontos: nome com palavra do ramo')", /subiu 12 pontos: nome com palavra do ramo/.test(await pageA.locator('[data-candidato="24681012000197"] [data-ajuste]').innerText()));
+      await pageA.screenshot({ path: `${OUT}/19-candidatos-palavras-desktop.png`, fullPage: false });
+      // palavra que desce
+      await pageA.locator('input[name="termo"][type="text"]').fill("alfa");
+      await pageA.locator('form:has(input[name="termo"]) select[name="tipo"]').selectOption("desce");
+      await pageA.locator('form:has(input[name="termo"]) select[name="peso"]').selectOption("12");
+      await pageA.locator('form:has(input[name="termo"]) button', { hasText: "Adicionar" }).click();
+      for (let i = 0; i < 40; i++) {
+        if (Number((await dbSeed.query("select count(*)::int n from public.tenant_candidate_terms where termo='alfa'")).rows[0].n) === 1) break;
+        await pageA.waitForTimeout(150);
+      }
+      await pageA.goto(`${BASE}/dashboard/candidatos?cnae=4763602`);
+      check("palavras: uma palavra que desce derruba o candidato (Alfa 40-12=28 fica atrás do Gama 32 e do Beta 30)", (await nomesDaLista()).join("|") === "E2E Gama Nutrição|E2E Beta Academia|E2E Alfa Suplementos|E2E Delta Esportes", (await nomesDaLista()).join("|"));
+      const csvAj = await baixarCorpo(`${BASE}/dashboard/candidatos/export?cnae=4763602`);
+      check("palavras: o CSV traz a aderência já ajustada e a coluna 'Ajuste do ranking'", /E2E Gama Nutrição;[^\r\n]*;32;12(\r|$)/.test(csvAj.corpo) && /E2E Alfa Suplementos;[^\r\n]*;28;-12(\r|$)/.test(csvAj.corpo), csvAj.corpo.split("\r\n")[1]);
+      // remover
+      await pageA.locator('[data-termo="sobe:gama"] button').click();
+      for (let i = 0; i < 40; i++) {
+        if (Number((await dbSeed.query("select count(*)::int n from public.tenant_candidate_terms where termo='gama'")).rows[0].n) === 0) break;
+        await pageA.waitForTimeout(150);
+      }
+      await pageA.goto(`${BASE}/dashboard/candidatos?cnae=4763602`);
+      check("palavras: remover uma palavra volta o ranking (nada foi gravado no score)", (await pageA.locator('[data-termo="sobe:gama"]').count()) === 0 && (await nomesDaLista()).join("|") === "E2E Beta Academia|E2E Alfa Suplementos|E2E Gama Nutrição|E2E Delta Esportes".replace("E2E Beta Academia|E2E Alfa Suplementos", "E2E Beta Academia|E2E Alfa Suplementos"), (await nomesDaLista()).join("|"));
+      await dbSeed.query("delete from public.tenant_candidate_terms where tenant_id=(select id from public.tenants where slug='fabrica-teste')");
+
+      // ---- aprendizado: 5 marcações decididas na mesma atividade mudam o ranking de quem ainda é novo
+      await dbSeed.query("update public.reseller_candidates set status='sem_interesse' where nome_fantasia like 'E2E Extra %' and cnpj in (select cnpj from public.reseller_candidates where nome_fantasia like 'E2E Extra %' order by cnpj limit 5)");
+      const ajExtra = await dbSeed.query("select count(*)::int n from public.reseller_candidates where nome_fantasia like 'E2E Extra %' and status='sem_interesse'");
+      await pageA.goto(`${BASE}/dashboard/candidatos?cnae=9313100&status=novo`);
+      check("aprendizado: com 5 'Sem interesse' na atividade, quem ainda é novo desce 6 e a linha explica", Number(ajExtra.rows[0].n) === 5 && /desceu 6 pontos: atividade com baixo retorno nas suas marcações/.test(await pageA.locator("[data-lista-candidatos] > li [data-ajuste]").first().innerText()));
+      await dbSeed.query("update public.reseller_candidates set status='novo' where nome_fantasia like 'E2E Extra %'");
+      // exportação
       const exp = await baixarCorpo(`${BASE}/dashboard/candidatos/export?cnae=4763602`);
       const linhasCsv = exp.corpo.replace(/^\uFEFF/, "").trim().split(/\r\n/);
-      check("candidatos (CSV): arquivo com nome, BOM e cabeçalho esperado", exp.status === 200 && /candidatos-fabrica-teste-\d{4}-\d{2}-\d{2}\.csv/.test(exp.anexo || "") && exp.bom === "239,187,191" && linhasCsv[0] === "Nome fantasia;CNPJ;Atividade (CNAE);Descrição da atividade;Logradouro;Número;Complemento;Bairro;Cidade;UF;CEP;Telefone;E-mail;Andamento;Aderência", `${exp.status} ${exp.anexo} bom=${exp.bom} cab=${linhasCsv[0]}`);
+      check("candidatos (CSV): arquivo com nome, BOM e cabeçalho esperado", exp.status === 200 && /candidatos-fabrica-teste-\d{4}-\d{2}-\d{2}\.csv/.test(exp.anexo || "") && exp.bom === "239,187,191" && linhasCsv[0] === "Nome fantasia;CNPJ;Atividade (CNAE);Descrição da atividade;Logradouro;Número;Complemento;Bairro;Cidade;UF;CEP;Telefone;E-mail;Andamento;Aderência;Ajuste do ranking", `${exp.status} ${exp.anexo} bom=${exp.bom} cab=${linhasCsv[0]}`);
       check("candidatos (CSV): traz só os filtrados (4 + cabeçalho) com endereço, telefone formatado e e-mail", linhasCsv.length === 5 && linhasCsv.some((l) => l.startsWith("E2E Alfa Suplementos;19.283.746/0001-88;4763602;") && /AVENIDA ANA COSTA;100;SALA 2;/.test(l) && /;\(13\) 99999-0000;alfa@exemplo\.com\.br;/.test(l)), `${linhasCsv.length} linhas`);
       check("candidatos (CSV): sem filtro exporta os 60", (await baixarCorpo(`${BASE}/dashboard/candidatos/export`)).corpo.replace(/^\uFEFF/, "").trim().split(/\r\n/).length === 61);
       await dbSeed.query("delete from public.reseller_candidates where nome_fantasia like 'E2E Extra %'");
@@ -710,6 +758,7 @@ async function esperado() {
       await c.connect();
       await c.query("delete from public.widget_events where session_id like 'e2e-%'");
       await c.query("delete from public.reseller_candidates where nome_fantasia like 'E2E %'");
+      await c.query("delete from public.tenant_candidate_terms where tenant_id=(select id from public.tenants where slug='fabrica-teste')");
       await c.query("delete from public.tenant_users where user_id='00000000-0000-4000-8000-0000000000aa' and tenant_id=(select id from public.tenants where slug='demo')");
       await c.end();
     } catch {}

@@ -11,7 +11,8 @@
  */
 export function celulaCsv(valor: string | number | null | undefined): string {
   let t = valor == null ? "" : String(valor);
-  if (/^[=+\-@\t\r]/.test(t)) t = `'${t}`;
+  // número vindo do código (ex.: ajuste -12) não precisa de proteção; texto vindo da planilha do cliente, sim
+  if (typeof valor !== "number" && /^[=+\-@\t\r]/.test(t)) t = `'${t}`;
   return /[";\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
 }
 

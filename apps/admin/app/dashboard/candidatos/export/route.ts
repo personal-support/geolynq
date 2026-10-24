@@ -27,10 +27,10 @@ export async function GET(req: Request) {
   if (!lista) return new Response("A lista de candidatos ainda não foi habilitada.", { status: 404 });
 
   const csv = paraCsv([
-    ["Nome fantasia", "CNPJ", "Atividade (CNAE)", "Descrição da atividade", "Logradouro", "Número", "Complemento", "Bairro", "Cidade", "UF", "CEP", "Telefone", "E-mail", "Andamento", "Aderência"],
+    ["Nome fantasia", "CNPJ", "Atividade (CNAE)", "Descrição da atividade", "Logradouro", "Número", "Complemento", "Bairro", "Cidade", "UF", "CEP", "Telefone", "E-mail", "Andamento", "Aderência", "Ajuste do ranking"],
     ...lista.itens.map((c) => [
       c.nome, formataCnpj(c.cnpj), c.cnae, c.cnae_desc, c.logradouro, c.numero, c.complemento, c.bairro, c.municipio, c.uf,
-      formataCep(c.cep), formataTelefone(c.telefone), c.email, ROTULO_ANDAMENTO[c.status], c.score,
+      formataCep(c.cep), formataTelefone(c.telefone), c.email, ROTULO_ANDAMENTO[c.status], c.score, c.ajuste ?? 0,
     ]),
   ]);
   const nome = `candidatos-${m.tenant.slug.replace(/[^a-z0-9-]/gi, "")}-${new Date().toISOString().slice(0, 10)}.csv`;

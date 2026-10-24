@@ -119,3 +119,55 @@ export async function marcarCandidato(formData: FormData) {
   }
   return volta();
 }
+
+/** Adiciona (ou atualiza o peso de) uma palavra do ramo: "sobe" ou "desce" o candidato no ranking. O banco confere o papel (owner/admin). */
+export async function salvarTermo(formData: FormData) {
+  const campo = (k: string) => {
+    const v = formData.get(k);
+    return typeof v === "string" ? v : "";
+  };
+  const volta = (erro?: string) => redirect(`/dashboard/candidatos?${filtrosSeguros(campo("filtros"))}${erro ? `${filtrosSeguros(campo("filtros")) ? "&" : ""}termo=${erro}` : ""}#palavras`);
+  const termo = campo("termo").trim();
+  const tipo = campo("tipo");
+  const peso = parseInt(campo("peso") || "6", 10);
+  if (termo.length < 2 || termo.length > 40 || !["sobe", "desce"].includes(tipo) || !(peso >= 1 && peso <= 12)) return volta("invalido");
+  const m = await getMembership();
+  if (!m) return volta("falha");
+  const { supabase } = await getSession();
+  const { error } = await supabase.rpc("panel_term_set", { p_tenant_id: m.tenant.id, p_termo: termo, p_tipo: tipo, p_peso: peso });
+  if (error) {
+    console.error("[termos] não gravado:", error.code, error.message);
+    return volta(error.code === "42501" ? "permissao" : error.code === "54000" ? "limite" : error.code === "22023" ? "invalido" : "falha");
+  }
+  return volta();
+}
+
+export async function removerTermo(formData: FormData) {
+  const campo = (k: string) => {
+    const v = formData.get(k);
+    return typeof v === "string" ? v : "";
+  };
+  const volta = (erro?: string) => redirect(`/dashboard/candidatos?${filtrosSeguros(campo("filtros"))}${erro ? `${filtrosSeguros(campo("filtros")) ? "&" : ""}termo=${erro}` : ""}#palavras`);
+  const tipo = campo("tipo");
+  if (!["sobe", "desce"].includes(tipo) || !/^[a-z0-9 ]{2,40}$/.test(campo("termo"))) return volta("invalido");
+  const m = await getMembership();
+  if (!m) return volta("falha");
+  const { supabase } = await getSession();
+  const { error } = await supabase.rpc("panel_term_remove", { p_tenant_id: m.tenant.id, p_termo: campo("termo"), p_tipo: tipo });
+  if (error) {
+    console.error("[termos] não removido:", error.code, error.message);
+    return volta(error.code === "42501" ? "permissao" : "falha");
+  }
+  return volta();
+}
+
+/** Só as chaves de filtro conhecidas, com tamanho curto, para voltar à página Candidatos sem confiar na querystring. */
+function filtrosSeguros(bruto: string): string {
+  const entrada = new URLSearchParams(bruto);
+  const saida = new URLSearchParams();
+  for (const k of ["uf", "cidade", "cnae", "status", "q", "pagina"]) {
+    const v = entrada.get(k);
+    if (v && v.length <= 80) saida.set(k, v);
+  }
+  return saida.toString();
+}

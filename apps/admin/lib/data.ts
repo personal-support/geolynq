@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Leitura } from "@/lib/ia";
-import type { CandidatosCidade, ListaCandidatos, Catalog, EventoRecente, Funil, ImportBatch, LacunasCompletas, Overview, RevendedorDesempenho, Tenant } from "@/lib/types";
+import type { CandidatosCidade, ListaCandidatos, TermoRamo, Catalog, EventoRecente, Funil, ImportBatch, LacunasCompletas, Overview, RevendedorDesempenho, Tenant } from "@/lib/types";
 import type { Periodo } from "./periodo";
 
 /** Usuário logado (validado no servidor do Supabase) + client. Uma consulta por requisição. */
@@ -190,6 +190,17 @@ export async function getCandidatosLista(
   }
   if (!data) throw new Error("Sem acesso a este cliente.");
   return data as ListaCandidatos;
+}
+
+/** Palavras do ramo do cliente (sobem ou descem o candidato no ranking). Se a função ainda não existe, devolve lista vazia. */
+export async function getTermos(tenantId: string): Promise<TermoRamo[]> {
+  const { supabase } = await getSession();
+  const { data, error } = await supabase.rpc("panel_terms", { p_tenant_id: tenantId });
+  if (error) {
+    if (error.code !== "PGRST202") console.error("[termos]", error.code, error.message);
+    return [];
+  }
+  return (data ?? []) as TermoRamo[];
 }
 
 export const getGaps = cache(async (tenantId: string, periodo: Periodo): Promise<LacunasCompletas> => {

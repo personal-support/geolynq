@@ -64,6 +64,11 @@ export function LinhaCandidato({
           ) : null}
         </p>
         <p className="mt-0.5 break-words text-xs text-ink-3">{c.cnae_desc ?? `CNAE ${c.cnae}`}</p>
+        {c.ajuste ? (
+          <p className="mt-0.5 break-words text-xs text-ink-3" data-ajuste>
+            Ranking {c.ajuste > 0 ? "subiu" : "desceu"} {Math.abs(c.ajuste)} {Math.abs(c.ajuste) === 1 ? "ponto" : "pontos"}: {c.motivo}.
+          </p>
+        ) : null}
         <p className="mt-2 flex flex-wrap gap-2">
           <a href={linkGoogle(c)} target="_blank" rel="noopener noreferrer" className={linkClasse}>
             Pesquisar no Google

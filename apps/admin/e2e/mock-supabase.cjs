@@ -139,6 +139,22 @@ function start(port = 54321) {
             return send(400, { code: e.code, message: e.message });
           }
         }
+        if (rota === "rpc/panel_terms") {
+          const r = await comoUsuario(claims.sub, (db) => db.query("select public.panel_terms($1::uuid) as j", [body.p_tenant_id]));
+          return send(200, r.rows[0].j);
+        }
+        if (rota === "rpc/panel_term_set" || rota === "rpc/panel_term_remove") {
+          try {
+            const r = await comoUsuario(claims.sub, (db) =>
+              rota === "rpc/panel_term_set"
+                ? db.query("select public.panel_term_set($1::uuid, $2::text, $3::text, $4::int) as j", [body.p_tenant_id, body.p_termo, body.p_tipo, body.p_peso ?? 6])
+                : db.query("select public.panel_term_remove($1::uuid, $2::text, $3::text) as j", [body.p_tenant_id, body.p_termo, body.p_tipo]),
+            );
+            return send(200, r.rows[0].j);
+          } catch (e) {
+            return send(e.code === "42501" ? 403 : 400, { code: e.code, message: e.message });
+          }
+        }
         if (rota === "rpc/panel_candidate_status") {
           try {
             const r = await comoUsuario(claims.sub, (db) =>

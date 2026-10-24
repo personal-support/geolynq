@@ -56,8 +56,18 @@ export interface Candidato {
   uf: string;
   telefone: string | null;
   email: string | null;
+  /** Aderência já com o ajuste da equipe (marcações e palavras do ramo). */
   score: number;
+  /** Quanto o ranking foi ajustado (positivo sobe, negativo desce) e por quê. */
+  ajuste?: number;
+  motivo?: string | null;
   status: StatusCandidato;
+}
+
+export interface TermoRamo {
+  termo: string;
+  tipo: "sobe" | "desce";
+  peso: number;
 }
 
 /** Resposta de panel_candidates_list: uma página de candidatos mais as opções dos filtros. */
