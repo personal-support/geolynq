@@ -39,7 +39,7 @@
   `widget_get_tenant*` e `is_active_tenant` executáveis por `anon` é intencional).
 - **Contas:** Drive/n8n = `gestao.junior.lopes@gmail.com`; **Vercel não é usado** (hospedagem = EasyPanel). Conector GitHub da
   sessão ficou com `invalid session` após a troca de conta (git por linha de comando funciona).
-- **Monitor de disponibilidade (Fase 5 do plano) CRIADO em 24/10, INATIVO até o usuário aprovar:** workflow n8n novo
+- **Monitor de disponibilidade (Fase 5 do plano) CRIADO e ATIVADO em 24/10 (≈02:55 UTC):** workflow n8n novo
   `n99RNNzlBSWDZs0Y` ("GeoLynq — Monitor de disponibilidade"). A cada 5 min confere 6 endereços: Supabase
   (`rpc/widget_get_tenant?p_slug=demo` com a chave publishable; exige `"slug"` na resposta), `widget…/healthz`, `widget…/v1/embed.js`,
   `demo…/`, `painel…/` e a landing (todos HTTP 200). Só avisa após **2 rodadas seguidas** com falha, avisa a volta ao normal e repete a cada
@@ -48,6 +48,13 @@
   bug meu (o corpo da resposta vinha em `data`, não `body`), gerou 1 alerta falso (e-mail de teste enviado) e provou o caminho do e-mail;
   corrigido com `outputPropertyName: body`. **Limite honesto:** roda na mesma VPS do n8n, então **não avisa se a VPS inteira cair**: usar
   também um monitor externo gratuito (UptimeRobot, e-mail a cada 5 min) para a VPS e para `widget…/healthz`.
+  **Validado em produção:** execução 22 (modo `trigger`, 03:00:35 UTC) rodou sozinha: 6 de 6 HTTP 200 com o conteúdo esperado, sem aviso. Depois da
+  conferência o histórico voltou a `saveDataSuccessExecution: none` (só guarda execuções com erro). **Ainda NÃO visto em produção:** o ciclo de 2 falhas
+  seguidas, aviso de volta ao normal e lembrete de 3 h (o estado só persiste com o workflow ativo).
+  **UptimeRobot (monitor externo) criado em 24/10:** o cadastro com `hotmail.com` foi recusado ("email domain is disposable"), usar o Gmail. Primeiro aviso
+  real: `Connection Timeout` a partir da **Europa** em `widget…/healthz`, enquanto por dentro (n8n) estava 200 e a API da Hostinger dizia `running`:
+  hipótese principal = falha pontual de rota; conferir o "is up again" e testar pelo celular com dados móveis. O plano grátis do UptimeRobot é, pelo
+  que sei, de uso não comercial (conferir os termos; alternativa gratuita: Better Stack).
 - **Próximos passos restantes (Fase 5 do plano = Operação):** (1) ativar o monitor acima e criar o monitor externo (UptimeRobot), (2) decisão sobre o Supabase Pro, (3) Fase 2 (retenção `pg_cron`, página de
   privacidade do widget, contrato), (4) Fase 3 (B0.5, base da Receita), (5) Fase 4 (unificar branches em `main`).
 
