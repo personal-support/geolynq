@@ -95,7 +95,17 @@ export async function marcarCandidato(formData: FormData) {
     return typeof v === "string" ? v : "";
   };
   const periodo = resolverPeriodo({ p: campo("p") || undefined, de: campo("de") || undefined, ate: campo("ate") || undefined, dias: campo("dias") || undefined }, new Date());
-  const volta = (erro?: string) => redirect(`/dashboard/lacunas?${periodo.query}${erro ? `&cand=${erro}` : ""}#candidatos`);
+  // para onde voltar: a tela Lacunas (com o período) ou a página Candidatos (com os filtros e a página de antes, só chaves conhecidas)
+  const filtros = new URLSearchParams(campo("filtros"));
+  const seguros = new URLSearchParams();
+  for (const k of ["uf", "cidade", "cnae", "status", "q", "pagina"]) {
+    const v = filtros.get(k);
+    if (v && v.length <= 80) seguros.set(k, v);
+  }
+  const volta = (erro?: string) =>
+    campo("onde") === "candidatos"
+      ? redirect(`/dashboard/candidatos?${seguros.toString()}${erro ? `${seguros.size ? "&" : ""}cand=${erro}` : ""}`)
+      : redirect(`/dashboard/lacunas?${periodo.query}${erro ? `&cand=${erro}` : ""}#candidatos`);
   const id = campo("id");
   const status = campo("status");
   if (!/^[0-9a-f-]{36}$/i.test(id) || !(ANDAMENTOS as readonly string[]).includes(status)) return volta("invalido");

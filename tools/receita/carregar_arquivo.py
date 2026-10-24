@@ -11,7 +11,8 @@ Só precisa de python3 e curl (nada de unzip/funzip/iconv/sqlite3). Nunca grava 
        --arquivo Estabelecimentos1.zip --cnaes 4729699,4617600
 
 Tipos: estabelecimentos (padrão; filtra por situação ativa e CNAE principal), municipios, cnaes.
-Minimização de dados (LGPD): NÃO guarda telefone, e-mail, sócios nem razão social; só o necessário para localizar a loja.
+Dados guardados: só o cadastro público do ESTABELECIMENTO (CNPJ, nome fantasia, CNAE principal e secundários, endereço, telefones e e-mail
+cadastrais). NÃO guarda sócios nem razão social (em MEI traz o nome da pessoa) nem o CNPJ de ninguém fora dos CNAEs pedidos.
 --amostra N imprime só campos técnicos das N primeiras linhas (sem nomes) e sai: serve para conferir o layout.
 """
 import argparse
@@ -102,7 +103,26 @@ def abrir_banco(caminho, rapido=True):
         );
         """
     )
+    # bancos criados antes de 25/10 não têm as colunas de contato e de CNAEs secundários: acrescenta (sem perder nada)
+    existentes = {r[1] for r in con.execute("pragma table_info(estabelecimentos)")}
+    for col in ("cnaes_secundarios", "ddd1", "telefone1", "ddd2", "telefone2", "email"):
+        if col not in existentes:
+            con.execute("alter table estabelecimentos add column %s text" % col)
     return con
+
+
+def limpa_telefone(ddd, tel):
+    """DDD + número só com dígitos; None para vazio e para placeholders (zeros, 8 a 9 dígitos fora do padrão)."""
+    d = re.sub(r"\D", "", ddd or "")
+    t = re.sub(r"\D", "", tel or "")
+    if not t or set(t) == {"0"} or not 8 <= len(t) <= 9:
+        return None, None
+    return (d if len(d) == 2 and set(d) != {"0"} else None), t
+
+
+def limpa_email(v):
+    e = (v or "").strip().lower()
+    return e if re.fullmatch(r"[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}", e) else None
 
 
 def main():
@@ -156,7 +176,9 @@ def main():
         ufs = {x.strip().upper() for x in a.ufs.split(",") if x.strip()}
         prefiltro = re.compile("|".join(sorted(cnaes)))  # barato: só linhas que citam algum CNAE vão para o parser
         lote = []
-        sql = "insert or replace into estabelecimentos values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+        sql = ("insert or replace into estabelecimentos (cnpj, cnpj_basico, matriz_filial, nome_fantasia, situacao, data_inicio, cnae_principal, "
+               "tipo_logradouro, logradouro, numero, complemento, bairro, cep, uf, municipio_receita, mes_referencia, "
+               "cnaes_secundarios, ddd1, telefone1, ddd2, telefone2, email) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
         for ln in fluxo:
             lidas += 1
             if any(ch.isalpha() for ch in ln[1:9]):
@@ -171,8 +193,11 @@ def main():
                 continue
             if ufs and c[19].upper() not in ufs:
                 continue
+            d1, t1 = limpa_telefone(c[21], c[22])
+            d2, t2 = limpa_telefone(c[23], c[24])
             lote.append((c[0] + c[1] + c[2], c[0], int(c[3]) if c[3].isdigit() else None, c[4], c[5], c[10], c[11],
-                         c[13], c[14], c[15], c[16], c[17], c[18], c[19], c[20], a.mes))
+                         c[13], c[14], c[15], c[16], c[17], c[18], c[19], c[20], a.mes,
+                         c[12] or None, d1, t1, d2, t2, limpa_email(c[27])))
             if len(lote) >= 5000:
                 con.executemany(sql, lote)
                 gravadas += len(lote)

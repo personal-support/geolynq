@@ -4,7 +4,8 @@
 
 **O que entrega:** na tela **Lacunas**, para cada cidade onde houve busca sem revendedor, a lista de empresas ativas do ramo do cliente que
 **não constam na rede dele** (nome fantasia, CNPJ, bairro/CEP, atividade), com andamento (novo, contatado, vende, não vende, sem interesse).
-**O que não é:** não diz que a empresa "não vende" (diz "não consta na sua base"); não traz telefone, e-mail, sócios nem razão social.
+**O que não é:** não diz que a empresa "não vende" (diz "não consta na sua base"); não traz sócios nem razão social; o telefone e o e-mail são os cadastrais da Receita (muitos vêm vazios).
+**Onde ver:** cartão na tela Lacunas (por cidade) e página **Candidatos** (filtros por nome/CNPJ, estado, cidade, atividade e andamento; paginação; **Exportar CSV** até 5.000 linhas).
 
 ## Como funciona (3 ideias)
 1. **Os CNAEs de canal vêm da rede do próprio cliente.** A planilha de revendedores já tem CNPJ. Descobrimos o CNAE (principal + secundários) de cada um,
@@ -15,7 +16,7 @@
    encontrado, inativo, consulta falhou, pendente).
 
 ## Passo a passo para um cliente novo
-**0. Uma vez só:** aplicar `supabase/migrations/20261025000000_candidatos_a_revendedor.sql` e `20261025010000_candidatos_optout.sql` no SQL Editor (já aplicadas em produção em 24/10) (tabelas novas; não altera nada existente).
+**0. Uma vez só:** aplicar no SQL Editor `supabase/migrations/20261025000000_candidatos_a_revendedor.sql`, `20261025010000_candidatos_optout.sql` e `20261026000000_candidatos_contato_e_lista.sql` (todas aditivas: tabelas, colunas e funções novas; não alteram nada existente). Aplicadas em produção em 24/10.
 Sem isso o painel continua igual e a tela Lacunas mostra "Em breve".
 
 **1. Lista de revendedores já importada** (Import v2). Pegar `id` e `cnpj` (SQL Editor → "Download CSV" ou copiar o resultado para `revendedores.csv` na VPS):
@@ -39,7 +40,7 @@ update public.tenant_channel_cnaes set status = 'descartado' where tenant_id = '
 ```
 Conferir a descrição de cada CNAE (IBGE) antes de confirmar. `ruidoso = true` é o CNAE "guarda-chuva" (4729699): só entra com score menor.
 
-**4. Carregar a Receita só com os CNAEs confirmados** (VPS, dentro do `tmux`; ~5,2 GB lidos em fluxo; nada de zip no disco):
+**4. Carregar a Receita só com os CNAEs confirmados** (VPS, dentro do `tmux`; ~5,2 GB lidos em fluxo, cerca de 20 min; nada de zip no disco). O carregador agora guarda também endereço completo, telefones, e-mail e CNAEs secundários; um `cnpj.db` antigo ganha as colunas novas sozinho e é preenchido ao recarregar:
 ```bash
 CNAES="4763602,9313100" DB=$HOME/cnpj/cliente.db bash ~/geolynq/tools/receita/carregar_mes.sh 2026-10 tudo
 ```
@@ -58,10 +59,11 @@ select upper(btrim(state)) as uf, btrim(city) as cidade, count(*) as buscas
 python3 ~/geolynq/tools/receita/exportar_candidatos.py --db ~/cnpj/cliente.db --tenant <UUID> --mes 2026-10 \
   --cidades "SP:Santos,SP:Mirassol" --cnaes 4763602:3,9313100:1 > ~/candidatos.sql
 ```
-Colar `candidatos.sql` no SQL Editor. Repetir o passo 6 todo mês (e quando surgir lacuna em cidade nova): `ON CONFLICT DO NOTHING` preserva o andamento já marcado.
+Colar `candidatos.sql` no SQL Editor. Repetir o passo 6 todo mês (e quando surgir lacuna em cidade nova): o `ON CONFLICT DO UPDATE` atualiza endereço, contato e score e **preserva o andamento** já marcado. `--excluir CNPJ1,CNPJ2` tira empresas fora do ramo; `--limite` controla quantas por cidade (cuidado: o SQL é colado no SQL Editor, então 10 a 25 por cidade para demo).
 
 ## Privacidade e regras
-- Guardamos só dado cadastral de **empresa**: CNPJ, nome fantasia, CNAE, bairro, CEP, cidade. Sem telefone, e-mail, sócios, razão social (que em MEI traz o nome da pessoa).
+- Guardamos o cadastro público do **estabelecimento**: CNPJ, nome fantasia, CNAE principal e secundários, endereço, telefone e e-mail cadastrais (quando existem; muitos vêm vazios). Sem sócios nem razão social (que em MEI traz o nome da pessoa). Decisão do usuário (24/10): são dados públicos; precisam constar na página de privacidade (já consta).
+- O **site** da empresa não consta na Receita. O painel oferece os links "Pesquisar no Google" e "Ver no mapa" (nada é guardado; usar a API do Google para guardar sites violaria os termos).
 - **Pedido de exclusão** (a página de privacidade da landing promete): o titular escreve com o CNPJ; no SQL Editor: `insert into public.candidate_optout (raiz) values ('<8 primeiros caracteres do CNPJ>') on conflict do nothing;`. Vale para matriz e filiais e para todos os clientes, e continua valendo quando a base for recarregada.
 - Quem já é revendedor (mesmo CNPJ **ou mesma raiz de 8 caracteres**, isto é, filial) nunca aparece como candidato.
 - Só `owner` e `admin` do cliente mudam o andamento; `viewer` só lê (o banco confere, não só a tela).

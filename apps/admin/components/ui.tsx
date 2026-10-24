@@ -46,7 +46,7 @@ export function CardHeader({
   direita?: ReactNode;
 }) {
   return (
-    <header className="flex items-start justify-between gap-4 px-5 pt-5">
+    <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-5 pt-5">
       <div>
         <h2 className="text-[17px] font-semibold leading-tight">{titulo}</h2>
         {dica ? <p className="mt-1 max-w-prose text-[13px] leading-snug text-ink-3">{dica}</p> : null}

@@ -406,12 +406,21 @@ async function esperado() {
       const cnpjsCand = [["19283746000188", "E2E Alfa Suplementos", 40], ["86420975000194", "E2E Beta Academia", 30], ["24681012000197", "E2E Gama Nutrição", 20], ["13579113000135", "E2E Delta Esportes", 10]];
       for (const [cnpj, nome, score] of cnpjsCand)
         await dbSeed.query("insert into public.reseller_candidates (tenant_id, cnpj, nome_fantasia, cnae, uf, municipio, bairro, cep, score) values ($1,$2,$3,'4763602',$4,$5,'Centro','11060001',$6)", [T, cnpj, nome, top.uf, semAcento(top.cidade), score]);
+      // endereço e contato do primeiro candidato (os outros ficam sem telefone/e-mail para testar o "sem telefone cadastrado")
+      await dbSeed.query("update public.reseller_candidates set logradouro='AVENIDA ANA COSTA', numero='100', complemento='SALA 2', telefone='13999990000', email='alfa@exemplo.com.br' where cnpj='19283746000188' and tenant_id=$1", [T]);
       await pageA.goto(`${BASE}/dashboard/lacunas`);
       const txtCand = await texto(pageA);
       check("candidatos: o cartão mostra a cidade da maior lacuna e 4 em aberto", /Candidatos a revendedor/.test(txtCand) && new RegExp(`${top.cidade}[\\s\\S]{0,60}4 candidatos em aberto`).test(txtCand), top.cidade);
       check("candidatos: lista os 4 pelo nome fantasia, maior aderência primeiro", (await pageA.locator("[data-candidato]").evaluateAll((els) => els.map((e) => e.querySelector("p").textContent))).join("|") === "E2E Alfa Suplementos|E2E Beta Academia|E2E Gama Nutrição|E2E Delta Esportes");
-      check("candidatos: avisa que não sabemos se já vendem e que não há telefone/e-mail", /não sabemos se já vendem/.test(txtCand) && /sem\s+telefone nem e-mail/.test(txtCand));
+      check("candidatos: avisa que não sabemos se já vendem e que telefone/e-mail são os cadastrais (site não consta)", /não sabemos se já vendem/.test(txtCand) && /telefone e e-mail cadastrais/.test(txtCand) && /Site não consta na Receita/.test(txtCand));
       check("candidatos: CNPJ formatado e CEP com hífen", /19\.283\.746\/0001-88/.test(txtCand) && /11060-001/.test(txtCand));
+      const alfa = pageA.locator('[data-candidato="19283746000188"]');
+      check("candidatos: mostra endereço, telefone formatado (link tel:) e e-mail (link mailto:)",
+        /AVENIDA ANA COSTA, 100, SALA 2/.test(await alfa.locator("[data-endereco]").innerText()) && (await alfa.locator('a[href="tel:+5513999990000"]').innerText()) === "(13) 99999-0000" && (await alfa.locator('a[href="mailto:alfa@exemplo.com.br"]').count()) === 1);
+      check("candidatos: quem não tem telefone mostra 'Sem telefone cadastrado'", /Sem telefone cadastrado/.test(await pageA.locator('[data-candidato="86420975000194"] [data-contato]').innerText()));
+      const hrefG = await alfa.locator("a", { hasText: "Pesquisar no Google" }).getAttribute("href");
+      const hrefM = await alfa.locator("a", { hasText: "Ver no mapa" }).getAttribute("href");
+      check("candidatos: links de pesquisa abrem em outra aba, sem referência, com nome e cidade", /^https:\/\/www\.google\.com\/search\?q=E2E%20Alfa%20Suplementos/.test(hrefG) && /^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=AVENIDA%20ANA%20COSTA/.test(hrefM) && (await alfa.locator('a[target="_blank"][rel~="noopener"]').count()) === 2, hrefG);
       await pageA.screenshot({ path: `${OUT}/16-lacunas-candidatos-desktop.png`, fullPage: true });
       // o dono marca "Contatado" e depois "Sem interesse"
       const linhaAlfa = pageA.locator('[data-candidato="19283746000188"]');
@@ -437,6 +446,51 @@ async function esperado() {
       await dbSeed.query("update public.reseller_candidates set status='novo' where nome_fantasia like 'E2E %'");
       await pageA.goto(`${BASE}/dashboard/lacunas`);
       await pageA.screenshot({ path: `${OUT}/16b-lacunas-candidatos-reset.png`, fullPage: false });
+
+      // ---- página Candidatos: filtros, paginação, exportação e retorno com os filtros
+      // 56 candidatos extras (cidade fictícia "E2E Cidade") para passar de uma página de 50
+      const cnpjDv = (b12) => { const calc = (v) => { let w = 2, t = 0; for (let i = v.length - 1; i >= 0; i--) { t += v[i] * w; w = w < 9 ? w + 1 : 2; } const r = t % 11; return r < 2 ? 0 : 11 - r; }; const v = [...b12].map((ch) => ch.charCodeAt(0) - 48); const d1 = calc(v); const d2 = calc([...v, d1]); return b12 + d1 + d2; };
+      for (let i = 0; i < 56; i++)
+        await dbSeed.query("insert into public.reseller_candidates (tenant_id, cnpj, nome_fantasia, cnae, uf, municipio, bairro, cep, score) values ($1,$2,$3,'9313100','MG','E2E CIDADE','Centro','30000000',$4)", [T, cnpjDv("9990" + String(i).padStart(4, "0") + "0001"), `E2E Extra ${String(i).padStart(2, "0")}`, 5]);
+      check("menu lateral: tem o item 'Candidatos'", (await pageA.locator('nav a[href="/dashboard/candidatos"]').count()) >= 1);
+      await pageA.goto(`${BASE}/dashboard/candidatos`);
+      const tCand = await texto(pageA);
+      check("candidatos (página): título com o total e aviso de que não sabemos se vendem", /60 candidatos/.test(tCand) && /não sabemos se a empresa já vende/i.test(tCand), (tCand.match(/\d+ candidatos?[^\n]*/) || [""])[0]);
+      check("candidatos (página): 50 por página, com 'Página 1 de 2' e botão Próximos", (await pageA.locator("[data-lista-candidatos] > li").count()) === 50 && /Página 1 de 2/.test(tCand) && (await pageA.locator('a', { hasText: "Próximos" }).count()) === 1);
+      await pageA.screenshot({ path: `${OUT}/18-candidatos-pagina-desktop.png`, fullPage: false });
+      await pageA.locator('a', { hasText: "Próximos" }).click();
+      await pageA.waitForURL(/pagina=2/);
+      check("candidatos (página): a segunda página tem os 10 restantes", (await pageA.locator("[data-lista-candidatos] > li").count()) === 10 && /Página 2 de 2/.test(await texto(pageA)));
+      // filtros
+      const contar = async (qsx) => { await pageA.goto(`${BASE}/dashboard/candidatos?${qsx}`); return pageA.locator("[data-lista-candidatos] > li").count(); };
+      check("candidatos (filtro): por estado", (await contar("uf=MG")) === 50 && /56 candidatos com esses filtros/.test(await texto(pageA)));
+      check("candidatos (filtro): por cidade sem acento e sem caixa", (await contar(`uf=${top.uf}&cidade=${encodeURIComponent(top.cidade)}`)) === 4);
+      check("candidatos (filtro): por atividade", (await contar("cnae=4763602")) === 4 && (await contar("cnae=9313100")) === 50);
+      check("candidatos (filtro): por nome", (await contar("q=delta")) === 1 && (await contar("q=zzzz")) === 0);
+      check("candidatos (filtro): por CNPJ com máscara", (await contar("q=19.283.746")) === 1);
+      check("candidatos (filtro): por andamento 'em aberto'", (await contar("status=abertos&cnae=4763602")) === 4);
+      check("candidatos (filtro): valor estranho na URL é ignorado, sem erro", (await contar("uf=%3Cscript%3E&cnae=abc&status=hack&pagina=-3")) === 50 && !/Erro|indispon/i.test((await texto(pageA)).slice(0, 400)));
+      check("candidatos (filtro): 'Limpar' aparece só com filtro e os campos voltam preenchidos", (await pageA.goto(`${BASE}/dashboard/candidatos?q=delta`), (await pageA.locator('a', { hasText: "Limpar" }).count()) === 1 && (await pageA.locator('input[name="q"]').inputValue()) === "delta"));
+      // marcar andamento na página e voltar com os filtros
+      await pageA.goto(`${BASE}/dashboard/candidatos?q=delta&cnae=4763602`);
+      await pageA.locator('[data-candidato="13579113000135"] select').selectOption("vende");
+      await pageA.locator('[data-candidato="13579113000135"] button', { hasText: "Salvar" }).click();
+      for (let i = 0; i < 40; i++) {
+        if ((await dbSeed.query("select status from public.reseller_candidates where cnpj='13579113000135'")).rows[0].status === "vende") break;
+        await pageA.waitForTimeout(150);
+      }
+      await pageA.waitForLoadState("networkidle").catch(() => {});
+      check("candidatos (página): marcar 'Vende' grava e volta para a página com os filtros", /\/dashboard\/candidatos\?/.test(pageA.url()) && /q=delta/.test(pageA.url()) && /cnae=4763602/.test(pageA.url()), pageA.url());
+      // exportação
+      const baixarCorpo = (u) => pageA.evaluate(async (url) => { const x = await fetch(url); const buf = new Uint8Array(await x.clone().arrayBuffer()); return { status: x.status, anexo: x.headers.get("content-disposition"), bom: [...buf.slice(0, 3)].join(","), corpo: await x.text() }; }, u);
+      const exp = await baixarCorpo(`${BASE}/dashboard/candidatos/export?cnae=4763602`);
+      const linhasCsv = exp.corpo.replace(/^\uFEFF/, "").trim().split(/\r\n/);
+      check("candidatos (CSV): arquivo com nome, BOM e cabeçalho esperado", exp.status === 200 && /candidatos-fabrica-teste-\d{4}-\d{2}-\d{2}\.csv/.test(exp.anexo || "") && exp.bom === "239,187,191" && linhasCsv[0] === "Nome fantasia;CNPJ;Atividade (CNAE);Descrição da atividade;Logradouro;Número;Complemento;Bairro;Cidade;UF;CEP;Telefone;E-mail;Andamento;Aderência", `${exp.status} ${exp.anexo} bom=${exp.bom} cab=${linhasCsv[0]}`);
+      check("candidatos (CSV): traz só os filtrados (4 + cabeçalho) com endereço, telefone formatado e e-mail", linhasCsv.length === 5 && linhasCsv.some((l) => l.startsWith("E2E Alfa Suplementos;19.283.746/0001-88;4763602;") && /AVENIDA ANA COSTA;100;SALA 2;/.test(l) && /;\(13\) 99999-0000;alfa@exemplo\.com\.br;/.test(l)), `${linhasCsv.length} linhas`);
+      check("candidatos (CSV): sem filtro exporta os 60", (await baixarCorpo(`${BASE}/dashboard/candidatos/export`)).corpo.replace(/^\uFEFF/, "").trim().split(/\r\n/).length === 61);
+      await dbSeed.query("delete from public.reseller_candidates where nome_fantasia like 'E2E Extra %'");
+      await dbSeed.query("update public.reseller_candidates set status='novo' where nome_fantasia like 'E2E %'");
+      await pageA.goto(`${BASE}/dashboard/lacunas`);
       const g = ref.gaps30;
       check("lacunas: título e total vêm de panel_gaps (exato), não da soma truncada", new RegExp(`${g.combinacoes} combinações de produto e cidade`).test(await texto(pageA)) && (await texto(pageA)).includes(String(g.total_buscas)), `${g.combinacoes} combinações / ${g.total_buscas} buscas`);
       // filtro por estado
@@ -586,7 +640,7 @@ async function esperado() {
       });
       check("mobile: menu de períodos aberto cabe na tela (sem rolagem lateral e sem sair pela borda)", lm.sw <= lm.iw + 1 && lm.esq >= 0 && lm.dir <= lm.iw, JSON.stringify(lm));
       await page.screenshot({ path: `${OUT}/15-menu-periodos-mobile.png`, clip: { x: 0, y: 0, width: 390, height: 760 } });
-      check("mobile: menu de seções disponível", (await page.locator('header nav[aria-label="Seções do painel"] a').count()) === 6);
+      check("mobile: menu de seções disponível", (await page.locator('header nav[aria-label="Seções do painel"] a').count()) === 7);
       check("sem erros de JS no mobile", erros.length === 0, erros.join(" | "));
       await page.goto(`${BASE}/login`);
       await ctx.close();

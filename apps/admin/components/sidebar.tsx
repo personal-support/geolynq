@@ -17,6 +17,7 @@ import { STATUS_CLIENTE } from "@/lib/format";
 const ICONES: Record<string, string> = {
   visao: "M3 12l9-8 9 8M5 10v10h5v-6h4v6h5V10",
   lacunas: "M12 3v4M12 17v4M3 12h4M17 12h4M12 8a4 4 0 100 8 4 4 0 000-8z",
+  candidatos: "M16 11a4 4 0 10-8 0 4 4 0 008 0zM4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1",
   rede: "M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11zM12 12a2.5 2.5 0 100-5 2.5 2.5 0 000 5z",
   catalogo: "M4 7l8-4 8 4-8 4-8-4zM4 12l8 4 8-4M4 17l8 4 8-4",
   importacoes: "M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3",
@@ -26,6 +27,7 @@ const ICONES: Record<string, string> = {
 const ITENS = [
   { href: "/dashboard", rotulo: "Visão geral", icone: "visao", exato: true },
   { href: "/dashboard/lacunas", rotulo: "Lacunas", icone: "lacunas" },
+  { href: "/dashboard/candidatos", rotulo: "Candidatos", icone: "candidatos" },
   { href: "/dashboard/rede", rotulo: "Rede de revendedores", icone: "rede" },
   { href: "/dashboard/catalogo", rotulo: "Catálogo", icone: "catalogo" },
   { href: "/dashboard/importacoes", rotulo: "Importações", icone: "importacoes" },

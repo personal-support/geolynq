@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Leitura } from "@/lib/ia";
-import type { CandidatosCidade, Catalog, EventoRecente, Funil, ImportBatch, LacunasCompletas, Overview, RevendedorDesempenho, Tenant } from "@/lib/types";
+import type { CandidatosCidade, ListaCandidatos, Catalog, EventoRecente, Funil, ImportBatch, LacunasCompletas, Overview, RevendedorDesempenho, Tenant } from "@/lib/types";
 import type { Periodo } from "./periodo";
 
 /** Usuário logado (validado no servidor do Supabase) + client. Uma consulta por requisição. */
@@ -161,6 +161,35 @@ export async function getCandidatos(tenantId: string, cidades: { uf: string; cid
     return null;
   }
   return (data ?? []) as CandidatosCidade[];
+}
+
+/**
+ * Página de candidatos com filtros (e a exportação, com limite alto). Devolve null quando a função ainda não existe no banco
+ * (migration 20261026000000 não aplicada); outros erros viram exceção, que a tela mostra com `carregar`.
+ */
+export async function getCandidatosLista(
+  tenantId: string,
+  f: { uf: string; cidade: string; cnae: string; status: string; q: string },
+  limite: number,
+  deslocamento: number,
+): Promise<ListaCandidatos | null> {
+  const { supabase } = await getSession();
+  const { data, error } = await supabase.rpc("panel_candidates_list", {
+    p_tenant_id: tenantId,
+    p_uf: f.uf || null,
+    p_cidade: f.cidade || null,
+    p_cnae: f.cnae || null,
+    p_status: f.status || null,
+    p_q: f.q || null,
+    p_limit: limite,
+    p_offset: deslocamento,
+  });
+  if (error) {
+    if (error.code === "PGRST202") return null;
+    throw new Error(`Lista de candidatos indisponível: ${error.message}`);
+  }
+  if (!data) throw new Error("Sem acesso a este cliente.");
+  return data as ListaCandidatos;
 }
 
 export const getGaps = cache(async (tenantId: string, periodo: Periodo): Promise<LacunasCompletas> => {

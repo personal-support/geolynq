@@ -47,10 +47,29 @@ export interface Candidato {
   nome: string | null;
   cnae: string;
   cnae_desc: string | null;
+  logradouro: string | null;
+  numero: string | null;
+  complemento: string | null;
   bairro: string | null;
   cep: string | null;
+  municipio: string;
+  uf: string;
+  telefone: string | null;
+  email: string | null;
   score: number;
   status: StatusCandidato;
+}
+
+/** Resposta de panel_candidates_list: uma página de candidatos mais as opções dos filtros. */
+export interface ListaCandidatos {
+  total: number;
+  itens: Candidato[];
+  filtros: {
+    ufs: string[];
+    cidades: { uf: string; cidade: string; n: number }[];
+    cnaes: { cnae: string; descricao: string | null; n: number }[];
+    por_status: Record<StatusCandidato, number>;
+  };
 }
 
 export interface CandidatosCidade {

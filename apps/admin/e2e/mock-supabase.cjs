@@ -127,6 +127,18 @@ function start(port = 54321) {
           );
           return send(200, r.rows[0].j);
         }
+        if (rota === "rpc/panel_candidates_list") {
+          try {
+            const r = await comoUsuario(claims.sub, (db) =>
+              db.query("select public.panel_candidates_list($1::uuid, $2::text, $3::text, $4::text, $5::text, $6::text, $7::int, $8::int) as j", [
+                body.p_tenant_id, body.p_uf ?? null, body.p_cidade ?? null, body.p_cnae ?? null, body.p_status ?? null, body.p_q ?? null, body.p_limit ?? 50, body.p_offset ?? 0,
+              ]),
+            );
+            return send(200, r.rows[0].j);
+          } catch (e) {
+            return send(400, { code: e.code, message: e.message });
+          }
+        }
         if (rota === "rpc/panel_candidate_status") {
           try {
             const r = await comoUsuario(claims.sub, (db) =>

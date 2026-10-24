@@ -10,9 +10,11 @@
 
 Só as cidades pedidas (as que têm lacuna), no máximo --limite por cidade (padrão 60), os de maior aderência primeiro:
   score = peso do CNAE x 10 + 5 (tem nome fantasia) + 3 (matriz) - 8 (CNAE ruidoso, "guarda-chuva").
-Só empresas ATIVAS (o carregador já filtra) e com CNPJ de DV válido. Sem telefone, e-mail, sócios nem razão social.
+  + 3 por CNAE secundário que também seja de canal (máx. +6).
+Só empresas ATIVAS (o carregador já filtra) e com CNPJ de DV válido. Traz endereço, telefone e e-mail cadastrais (dado público da
+Receita); sem sócios nem razão social. Rodar de novo atualiza esses campos e o score, sem mexer no andamento marcado pela equipe.
 O SQL sai na saída padrão; o resumo (cidades, linhas, ignoradas) vai para a saída de erro. Aplicar: SQL Editor do Supabase.
-Quem já é revendedor do cliente NÃO é removido aqui: o painel (panel_candidates) esconde pela raiz do CNPJ na hora de ler.
+Quem já é revendedor do cliente (ou pediu exclusão) NÃO é removido aqui: o painel (panel_candidates) esconde pela raiz do CNPJ na hora de ler.
 """
 import argparse
 import re
@@ -77,7 +79,7 @@ def ler_cidades(txt):
     return out
 
 
-def gerar(con, tenant, mes, cidades, cnaes, limite):
+def gerar(con, tenant, mes, cidades, cnaes, limite, excluir=()):
     """Devolve (linhas_sql, resumo). `con` é uma conexão SQLite do cnpj.db."""
     if not re.fullmatch(r"[0-9a-fA-F-]{36}", tenant):
         raise SystemExit("--tenant precisa ser o UUID do cliente")
@@ -94,32 +96,52 @@ def gerar(con, tenant, mes, cidades, cnaes, limite):
             continue
         cc = ",".join("?" * len(codigos))
         rows = con.execute(
-            "select cnpj, nome_fantasia, cnae_principal, matriz_filial, bairro, cep from estabelecimentos "
+            "select cnpj, nome_fantasia, cnae_principal, matriz_filial, bairro, cep, tipo_logradouro, logradouro, numero, complemento, "
+            "cnaes_secundarios, ddd1, telefone1, ddd2, telefone2, email from estabelecimentos "
             "where uf = ? and municipio_receita in (%s) and cnae_principal in (%s)" % (cc, marcadores),
             [uf] + codigos + list(cnaes),
         ).fetchall()
         itens = []
-        for cnpj, fantasia, cnae, matriz, bairro, cep in rows:
+        for cnpj, fantasia, cnae, matriz, bairro, cep, tipo, rua, num, compl, secund, ddd1, tel1, ddd2, tel2, email in rows:
+            if cnpj in excluir:
+                resumo["excluidas"] = resumo.get("excluidas", 0) + 1
+                continue
             if not cnpj_valido(cnpj):
                 resumo["ignoradas_cnpj"] += 1
                 continue
             peso, ruidoso = cnaes[cnae]
-            score = peso * 10 + (5 if (fantasia or "").strip() else 0) + (3 if matriz == 1 else 0) - (8 if ruidoso else 0)
+            sec = [x for x in re.findall(r"[0-9]{7}", secund or "") if x != cnae]
+            sec_canal = sorted({x for x in sec if x in cnaes})
+            score = peso * 10 + (5 if (fantasia or "").strip() else 0) + (3 if matriz == 1 else 0) - (8 if ruidoso else 0) + min(6, 3 * len(sec_canal))
             cep8 = re.sub(r"\D", "", cep or "")
-            itens.append((max(score, 0), cnpj, (fantasia or "").strip() or None, cnae, bairro and bairro.strip() or None, cep8 if len(cep8) == 8 else None))
+            rua_txt = " ".join(x.strip() for x in (tipo, rua) if x and x.strip()) or None
+            fone = (ddd1 or "") + tel1 if tel1 else ((ddd2 or "") + tel2 if tel2 else None)
+            itens.append({
+                "score": max(score, 0), "cnpj": cnpj, "fantasia": (fantasia or "").strip() or None, "cnae": cnae,
+                "bairro": bairro and bairro.strip() or None, "cep": cep8 if len(cep8) == 8 else None,
+                "logradouro": rua_txt, "numero": (num or "").strip() or None, "complemento": (compl or "").strip() or None,
+                "telefone": fone, "email": email, "sec": sorted(set(sec))[:20],
+            })
         municipio = normaliza_exibicao(con, codigos)
-        itens.sort(key=lambda x: (-x[0], x[1]))
+        itens.sort(key=lambda x: (-x["score"], x["cnpj"]))
         itens = itens[:limite]
         resumo["cidades"].append((uf, cidade, "ok", len(itens)))
         for lote in range(0, len(itens), 100):
             valores = ",\n".join(
-                "  (%s, %s, %s, %s, %s, %s, %s, %s, %d, %s)"
-                % (aspas(tenant), aspas(c), aspas(f), aspas(cn), aspas(uf), aspas(municipio), aspas(b), aspas(cp), s, aspas(mes))
-                for s, c, f, cn, b, cp in itens[lote:lote + 100]
+                "  (%s, %s, %s, %s, %s, %s, %s, %s, %d, %s, %s, %s, %s, %s, %s, %s)"
+                % (aspas(tenant), aspas(i["cnpj"]), aspas(i["fantasia"]), aspas(i["cnae"]), aspas(uf), aspas(municipio), aspas(i["bairro"]),
+                   aspas(i["cep"]), i["score"], aspas(mes), aspas(i["logradouro"]), aspas(i["numero"]), aspas(i["complemento"]),
+                   aspas(i["telefone"]), aspas(i["email"]),
+                   ("array[%s]::text[]" % ",".join(aspas(x) for x in i["sec"])) if i["sec"] else "'{}'::text[]")
+                for i in itens[lote:lote + 100]
             )
             linhas.append(
-                "insert into public.reseller_candidates (tenant_id, cnpj, nome_fantasia, cnae, uf, municipio, bairro, cep, score, fonte_mes) values\n"
-                + valores + "\non conflict (tenant_id, cnpj) do nothing;"
+                "insert into public.reseller_candidates (tenant_id, cnpj, nome_fantasia, cnae, uf, municipio, bairro, cep, score, fonte_mes, "
+                "logradouro, numero, complemento, telefone, email, cnaes_secundarios) values\n"
+                + valores + "\non conflict (tenant_id, cnpj) do update set nome_fantasia = excluded.nome_fantasia, cnae = excluded.cnae, "
+                "bairro = excluded.bairro, cep = excluded.cep, score = excluded.score, fonte_mes = excluded.fonte_mes, logradouro = excluded.logradouro, "
+                "numero = excluded.numero, complemento = excluded.complemento, telefone = excluded.telefone, email = excluded.email, "
+                "cnaes_secundarios = excluded.cnaes_secundarios;"
             )
         resumo["linhas"] += len(itens)
     return linhas, resumo
@@ -138,16 +160,18 @@ def main():
     ap.add_argument("--cidades", required=True, help="UF:Cidade separadas por vírgula (as cidades com lacuna)")
     ap.add_argument("--cnaes", required=True, help="cnae:peso[:ruidoso], separados por vírgula")
     ap.add_argument("--limite", type=int, default=60, help="máximo de candidatos por cidade (padrão 60)")
+    ap.add_argument("--excluir", default="", help="CNPJs (14 caracteres, separados por vírgula) que NÃO devem entrar, ex.: empresas fora do ramo")
     a = ap.parse_args()
     if not re.fullmatch(r"\d{4}-\d{2}", a.mes):
         raise SystemExit("--mes precisa ser AAAA-MM")
     con = sqlite3.connect(a.db)
-    linhas, resumo = gerar(con, a.tenant, a.mes, ler_cidades(a.cidades), ler_cnaes(a.cnaes), max(1, a.limite))
+    linhas, resumo = gerar(con, a.tenant, a.mes, ler_cidades(a.cidades), ler_cnaes(a.cnaes), max(1, a.limite),
+                              {re.sub(r"[^0-9A-Za-z]", "", x).upper() for x in a.excluir.split(",") if x.strip()})
     print("-- GeoLynq: candidatos a revendedor (base %s). Gerado por tools/receita/exportar_candidatos.py" % a.mes)
     print("\n\n".join(linhas) if linhas else "-- (nenhum candidato encontrado)")
     for uf, cid, msg, n in resumo["cidades"]:
         print("%s/%s: %s (%d)" % (cid, uf, msg, n), file=sys.stderr)
-    print("total: %d linhas; CNPJ de DV inválido ignorados: %d" % (resumo["linhas"], resumo["ignoradas_cnpj"]), file=sys.stderr)
+    print("total: %d linhas; CNPJ de DV inválido ignorados: %d; excluídos por você: %d" % (resumo["linhas"], resumo["ignoradas_cnpj"], resumo.get("excluidas", 0)), file=sys.stderr)
 
 
 if __name__ == "__main__":

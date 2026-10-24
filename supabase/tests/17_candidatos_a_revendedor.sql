@@ -95,6 +95,9 @@ insert into public.reseller_candidates (tenant_id, cnpj, nome_fantasia, cnae, uf
   ('00000000-0000-4000-8000-0000000017aa', '12345678000276', 'Teta Saúde',         '4763602', 'SP', 'MIRASSOL','Centro',      '15130000', 25, 'novo'),
   ('00000000-0000-4000-8000-0000000017aa', '11222333000262', 'Filial do revendedor 1', '4763602', 'SP', 'SANTOS', 'Centro',   '11010000', 99, 'novo'),   -- mesma raiz (11222333) do revendedor 1
   ('00000000-0000-4000-8000-0000000017aa', '60701190000287', null,                 '4763602', 'RJ', 'SANTOS',  null,          null,       5,  'novo');
+update public.reseller_candidates set logradouro = 'AVENIDA ANA COSTA', numero = '100', complemento = 'SALA 2', telefone = '13999990000', email = 'alfa@exemplo.com.br', cnaes_secundarios = array['9313100']
+ where tenant_id = '00000000-0000-4000-8000-0000000017aa' and cnpj = '19283746000188';
+update public.reseller_candidates set telefone = '1333334444' where tenant_id = '00000000-0000-4000-8000-0000000017aa' and cnpj = '86420975000194';
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-0000000000e2', true);   -- viewer
@@ -134,6 +137,41 @@ begin
   assert public.panel_candidates(t, '[]'::jsonb) = '[]'::jsonb and public.panel_candidates(t, null) = '[]'::jsonb and public.panel_candidates(t, '{"a":1}'::jsonb) = '[]'::jsonb, 'entradas inválidas';
   -- descrição do CNAE só quando o catálogo conhece (4763602 está no catálogo de suplementos)
   assert (select i ->> 'cnae_desc' from jsonb_array_elements(g -> 'itens') i where i ->> 'nome' = 'Alfa Suplementos') is not null or not exists (select 1 from public.cnae_catalog where cnae = '4763602'), 'descrição do CNAE';
+
+  -- 3b) cartão traz endereço e contato
+  g := (select x from jsonb_array_elements(public.panel_candidates(t, '[{"uf":"SP","cidade":"Santos"}]'::jsonb)) x);
+  assert (select i ->> 'telefone' from jsonb_array_elements(g -> 'itens') i where i ->> 'nome' = 'Alfa Suplementos') = '13999990000'
+     and (select i ->> 'logradouro' from jsonb_array_elements(g -> 'itens') i where i ->> 'nome' = 'Alfa Suplementos') = 'AVENIDA ANA COSTA'
+     and (select i ->> 'email' from jsonb_array_elements(g -> 'itens') i where i ->> 'nome' = 'Alfa Suplementos') = 'alfa@exemplo.com.br', 'endereço/contato no cartão';
+
+  -- 3c) página Candidatos: lista, filtros, busca, paginação e opções de filtro
+  j := public.panel_candidates_list(t);
+  assert (j ->> 'total')::int = 8, 'total sem filtro: 7 em Santos/SP + 1 em Mirassol (a filial do revendedor 1 e o RJ, com raiz de revendedor, ficam escondidos): ' || (j ->> 'total');
+  assert jsonb_array_length(j -> 'itens') = 8, 'itens da primeira página';
+  assert (j #> '{filtros,ufs}') = '["SP"]'::jsonb, 'ufs: ' || (j #>> '{filtros,ufs}');
+  assert (select count(*) from jsonb_array_elements(j #> '{filtros,cidades}')) = 2, 'cidades do filtro: Mirassol/SP e Santos/SP';
+  assert (select (x ->> 'n')::int from jsonb_array_elements(j #> '{filtros,cnaes}') x where x ->> 'cnae' = '4763602') = 5, 'contagem por CNAE';
+  assert (j #>> '{filtros,por_status,contatado}')::int = 1 and (j #>> '{filtros,por_status,nao_vende}')::int = 1, 'contagem por andamento';
+  assert (public.panel_candidates_list(t, 'sp') ->> 'total')::int = 8 and (public.panel_candidates_list(t, 'rj') ->> 'total')::int = 0, 'filtro por UF (minúscula aceita)';
+  assert (public.panel_candidates_list(t, null, 'santos', null, null, null) ->> 'total')::int = 7, 'cidade sem acento/caixa em qualquer UF';
+  assert (public.panel_candidates_list(t, 'SP', 'SANTOS') ->> 'total')::int = 7 and (public.panel_candidates_list(t, 'SP', 'Mirassol') ->> 'total')::int = 1, 'UF + cidade';
+  assert (public.panel_candidates_list(t, null, null, '9313100') ->> 'total')::int = 1, 'filtro por atividade';
+  assert (public.panel_candidates_list(t, null, null, null, 'abertos') ->> 'total')::int = 6, 'abertos = novo + contatado: ' || (public.panel_candidates_list(t, null, null, null, 'abertos') ->> 'total');
+  assert (public.panel_candidates_list(t, null, null, null, 'nao_vende') ->> 'total')::int = 1, 'filtro por andamento';
+  assert (public.panel_candidates_list(t, null, null, null, null, 'ALFA') ->> 'total')::int = 1, 'busca por nome (caixa)';
+  assert (public.panel_candidates_list(t, null, null, null, null, 'épsilon') ->> 'total')::int = 1, 'busca por nome (acento)';
+  assert (public.panel_candidates_list(t, null, null, null, null, '86.420.975') ->> 'total')::int = 1, 'busca por CNPJ com máscara';
+  assert (public.panel_candidates_list(t, null, null, null, null, 'zzz') ->> 'total')::int = 0, 'busca sem resultado';
+  j := public.panel_candidates_list(t, null, null, null, null, null, 3, 0);
+  assert (j ->> 'total')::int = 8 and jsonb_array_length(j -> 'itens') = 3, 'página de 3';
+  assert (j #>> '{itens,0,nome}') = 'Alfa Suplementos', 'ordem: maior score aberto primeiro';
+  assert (public.panel_candidates_list(t, null, null, null, null, null, 3, 6) -> 'itens' -> 0 ->> 'nome') is not null and jsonb_array_length(public.panel_candidates_list(t, null, null, null, null, null, 3, 6) -> 'itens') = 2, 'última página tem 2';
+  ok := false;
+  begin perform public.panel_candidates_list(t, null, null, null, 'inventado'); exception when invalid_parameter_value then ok := true; end;
+  assert ok, 'andamento inválido no filtro deveria dar erro';
+  assert (select jsonb_array_length(x -> 'cnaes_secundarios') from jsonb_array_elements(public.panel_candidates_list(t, null, null, null, null, 'alfa') -> 'itens') x) = 1, 'secundários na lista';
+  -- a filial de revendedor e o pedido de exclusão também valem na lista
+  assert not exists (select 1 from jsonb_array_elements(public.panel_candidates_list(t) -> 'itens') i where i ->> 'nome' = 'Filial do revendedor 1'), 'filial não pode aparecer na lista';
 
   -- 4) viewer não altera
   id1 := (select id from public.reseller_candidates where tenant_id = t and cnpj = '19283746000188');
@@ -205,6 +243,10 @@ begin
   assert ok, 'CNPJ com DV errado deveria ser recusado';
   ok := false; begin insert into public.reseller_candidates (tenant_id, cnpj, cnae, uf, municipio) values (t, '11222333000181', '4763602', 'sp', 'SANTOS'); exception when check_violation then ok := true; end;
   assert ok, 'UF em minúsculas deveria ser recusada';
+  ok := false; begin insert into public.reseller_candidates (tenant_id, cnpj, cnae, uf, municipio, telefone) values (t, '11222333000181', '4763602', 'SP', 'SANTOS', '(13) 3333-4444'); exception when check_violation then ok := true; end;
+  assert ok, 'telefone com máscara deveria ser recusado (só dígitos)';
+  ok := false; begin insert into public.reseller_candidates (tenant_id, cnpj, cnae, uf, municipio, email) values (t, '11222333000181', '4763602', 'SP', 'SANTOS', 'nao é e-mail'); exception when check_violation then ok := true; end;
+  assert ok, 'e-mail inválido deveria ser recusado';
   ok := false; begin insert into public.reseller_candidates (tenant_id, cnpj, cnae, uf, municipio, cep) values (t, '11222333000181', '4763602', 'SP', 'SANTOS', '11.060-001'); exception when check_violation then ok := true; end;
   assert ok, 'CEP com máscara deveria ser recusado (só 8 dígitos)';
   ok := false; begin insert into public.reseller_candidates (tenant_id, cnpj, cnae, uf, municipio) values (t, '19283746000188', '4763602', 'SP', 'SANTOS'); exception when unique_violation then ok := true; end;

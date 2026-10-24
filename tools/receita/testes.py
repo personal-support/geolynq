@@ -9,7 +9,13 @@ import http.server
 import json
 import sqlite3
 import threading
+import io
+import os
+import subprocess
+import sys
+import tempfile
 import unittest
+import zipfile
 
 import cnae_dos_revendedores as rev
 import exportar_candidatos as exp
@@ -24,7 +30,7 @@ def banco():
         create table municipios (codigo text primary key, nome text);
         create table estabelecimentos (cnpj text primary key, cnpj_basico text, matriz_filial integer, nome_fantasia text, situacao text,
           data_inicio text, cnae_principal text, tipo_logradouro text, logradouro text, numero text, complemento text, bairro text,
-          cep text, uf text, municipio_receita text, mes_referencia text);
+          cep text, uf text, municipio_receita text, mes_referencia text, cnaes_secundarios text, ddd1 text, telefone1 text, ddd2 text, telefone2 text, email text);
         insert into municipios values ('7071', 'SANTOS'), ('6285', 'SÃO JOSÉ DO RIO PRETO'), ('1111', 'SANTOS');  -- 1111 = Santos de outra UF
         """
     )
@@ -40,7 +46,11 @@ def banco():
         ("55800012000192", 1, "Fora do canal", "1099607", "Centro", "11000000", "SP", "7071"),    # CNAE fora da lista
     ]
     for cnpj, m, f, cn, b, cep, uf, mun in linhas:
-        con.execute("insert into estabelecimentos values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (cnpj, cnpj[:8], m, f, "02", "", cn, "", "", "", "", b, cep, uf, mun, "2026-10"))
+        con.execute("insert into estabelecimentos (cnpj, cnpj_basico, matriz_filial, nome_fantasia, situacao, data_inicio, cnae_principal, tipo_logradouro, logradouro, numero, complemento, bairro, cep, uf, municipio_receita, mes_referencia) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (cnpj, cnpj[:8], m, f, "02", "", cn, "", "", "", "", b, cep, uf, mun, "2026-10"))
+    # contato, endereço e CNAEs secundários de dois estabelecimentos
+    con.execute("update estabelecimentos set tipo_logradouro='AVENIDA', logradouro='ANA COSTA', numero='100', complemento='SALA 2', cnaes_secundarios='9313100,4729699', ddd1='13', telefone1='999990000', email='alfa@exemplo.com.br' where cnpj='19283746000188'")
+    con.execute("update estabelecimentos set ddd1=null, telefone1=null, ddd2='13', telefone2='33334444' where cnpj='86420975000194'")
     return con
 
 
@@ -72,14 +82,24 @@ class Exportar(unittest.TestCase):
         self.assertNotIn("DV errado", sql)
         self.assertIn("'SÃO JOSÉ DO RIO PRETO'", sql)           # nome como a Receita grava, não o digitado
         self.assertIn("'O''Brien & Filhos'", sql)               # aspa simples escapada
-        self.assertIn("on conflict (tenant_id, cnpj) do nothing", sql)
         self.assertIn("null, '4763602', 'SP', 'SANTOS', 'Embaré'", sql)   # sem nome fantasia vira null
         # CEP malformado vira null; score: Alfa = 3*10+5+3 = 38; Delta (ruidoso) = 1*10+5+3-8 = 10
         self.assertIn("'Delta Esportes', '4729699', 'SP', 'SANTOS', 'Aparecida', null, 10,", sql)
-        self.assertIn("'Alfa Suplementos', '4763602', 'SP', 'SANTOS', 'Gonzaga', '11060001', 38,", sql)
+        # Alfa: 3*10 + 5 (fantasia) + 3 (matriz) + 6 (dois CNAEs secundários de canal: 9313100 e 4729699) = 44
+        self.assertIn("'Alfa Suplementos', '4763602', 'SP', 'SANTOS', 'Gonzaga', '11060001', 44, '2026-10', 'AVENIDA ANA COSTA', '100', 'SALA 2', '13999990000', 'alfa@exemplo.com.br', array['4729699','9313100']::text[]", sql)
+        self.assertIn("'1333334444'", sql)                       # sem telefone 1: usa o 2
+        self.assertIn("on conflict (tenant_id, cnpj) do update set", sql)
+        self.assertNotIn("do nothing", sql)
         self.assertEqual([c for c in r["cidades"] if c[2] != "ok"][0][1], "Cidade Que Nao Existe")
         # maior aderência primeiro dentro da cidade
         self.assertLess(sql.index("Alfa Suplementos"), sql.index("Delta Esportes"))
+
+    def test_excluir_cnpj(self):
+        linhas, r = exp.gerar(banco(), TENANT, "2026-10", [("SP", "Santos")], exp.ler_cnaes("4763602:3,9313100:1,4729699:1:ruidoso"), 60, {"86420975000194"})
+        sql = "\n".join(linhas)
+        self.assertNotIn("Beta Academia", sql)
+        self.assertIn("Alfa Suplementos", sql)
+        self.assertEqual(r["excluidas"], 1)
 
     def test_limite_por_cidade(self):
         linhas, r = exp.gerar(banco(), TENANT, "2026-10", [("SP", "Santos")], exp.ler_cnaes("4763602:3,9313100:1,4729699:1:ruidoso"), 2)
@@ -89,6 +109,55 @@ class Exportar(unittest.TestCase):
     def test_tenant_precisa_ser_uuid(self):
         with self.assertRaises(SystemExit):
             exp.gerar(banco(), "x'; drop table t; --", "2026-10", [("SP", "Santos")], {"4763602": (1, False)}, 5)
+
+
+def linha_receita(cnpj, fantasia, cnae, sec, tel1=("13", "33334444"), email="CONTATO@Exemplo.COM.BR", cep="11060001", uf="SP", mun="7071", situacao="02", ddd2="", tel2=""):
+    """Uma linha de Estabelecimentos no layout da Receita: 30 colunas, ';', aspas, latin-1."""
+    c = [""] * 30
+    c[0], c[1], c[2] = cnpj[:8], cnpj[8:12], cnpj[12:]
+    c[3], c[4], c[5], c[10], c[11], c[12] = "1", fantasia, situacao, "20200101", cnae, sec
+    c[13], c[14], c[15], c[16], c[17], c[18], c[19], c[20] = "AVENIDA", "ANA COSTA", "100", "SALA 2", "GONZAGA", cep, uf, mun
+    c[21], c[22], c[23], c[24], c[27] = tel1[0], tel1[1], ddd2, tel2, email
+    return ";".join('"%s"' % x for x in c)
+
+
+class Carregar(unittest.TestCase):
+    def rodar(self, linhas, db):
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+            z.writestr("K.ESTABELE", "\n".join(linhas).encode("latin-1"))
+        aqui = os.path.dirname(os.path.abspath(__file__))
+        r = subprocess.run([sys.executable, os.path.join(aqui, "carregar_arquivo.py"), "--db", db, "--mes", "2026-10", "--arquivo", "t.zip", "--cnaes", "4763602,4771701"],
+                           input=buf.getvalue(), capture_output=True)
+        self.assertEqual(r.returncode, 0, r.stderr.decode())
+
+    def test_guarda_endereco_contato_e_secundarios_e_limpa_placeholders(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = os.path.join(d, "cnpj.db")
+            self.rodar([
+                linha_receita("19283746000188", "ALFA SUPLEMENTOS", "4763602", "9313100,4729699"),
+                linha_receita("86420975000194", "BETA", "4771701", "", tel1=("00", "000000000"), email="isto nao e email", ddd2="13", tel2="999990000"),
+                linha_receita("24681012000197", "INATIVA", "4763602", "", situacao="08"),     # situação não ativa: ignorada
+                linha_receita("13579113000135", "OUTRO CNAE", "1099607", ""),                  # CNAE fora da lista: ignorado
+            ], db)
+            con = sqlite3.connect(db)
+            alfa = con.execute("select logradouro, numero, complemento, bairro, ddd1, telefone1, email, cnaes_secundarios, tipo_logradouro from estabelecimentos where cnpj='19283746000188'").fetchone()
+            self.assertEqual(alfa, ("ANA COSTA", "100", "SALA 2", "GONZAGA", "13", "33334444", "contato@exemplo.com.br", "9313100,4729699", "AVENIDA"))
+            beta = con.execute("select ddd1, telefone1, ddd2, telefone2, email from estabelecimentos where cnpj='86420975000194'").fetchone()
+            self.assertEqual(beta, (None, None, "13", "999990000", None))   # zeros e e-mail inválido viram null
+            self.assertEqual(con.execute("select count(*) from estabelecimentos").fetchone()[0], 2)
+
+    def test_banco_antigo_ganha_as_colunas_novas(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = os.path.join(d, "cnpj.db")
+            c = sqlite3.connect(db)
+            c.executescript("create table estabelecimentos (cnpj text primary key, cnpj_basico text not null, matriz_filial integer, nome_fantasia text, situacao text, data_inicio text, cnae_principal text, tipo_logradouro text, logradouro text, numero text, complemento text, bairro text, cep text, uf text, municipio_receita text, mes_referencia text) without rowid; insert into estabelecimentos (cnpj, cnpj_basico, nome_fantasia) values ('11222333000181','11222333','ANTIGO');")
+            c.commit(); c.close()
+            self.rodar([linha_receita("19283746000188", "ALFA", "4763602", "")], db)
+            con = sqlite3.connect(db)
+            cols = {r[1] for r in con.execute("pragma table_info(estabelecimentos)")}
+            self.assertTrue({"cnaes_secundarios", "ddd1", "telefone1", "ddd2", "telefone2", "email"} <= cols)
+            self.assertEqual(con.execute("select nome_fantasia from estabelecimentos where cnpj='11222333000181'").fetchone()[0], "ANTIGO")   # nada se perde
 
 
 class Fake(http.server.BaseHTTPRequestHandler):
