@@ -19,7 +19,7 @@
 3. **Não prometa SLA nem backup.** Hoje o banco está no plano **grátis** do Supabase: ficou **fora do ar ~24 h em 15–16/10** e **de novo em 23/10**, e esse plano **não faz backup automático**. O plano comercial (`docs/operacao-e-mercado.md`) cita "SLA" na faixa Indústria: **tire** ou só ofereça depois de migrar para o Supabase Pro e ter backup. A cláusula 7 foi escrita como "melhor esforço".
 4. **O visitante do widget fala com terceiros direto do navegador.** O código consulta o **ViaCEP** (CEP) e o **OpenStreetMap/Nominatim** (endereço e coordenadas). Esses serviços recebem o CEP/coordenada e o **IP** do visitante, fora do controle do GeoLynq. A página de privacidade do widget **não menciona isso hoje**: acrescentar uma frase (posso fazer; precisa de novo deploy).
 5. **A leitura por IA envia dados ao exterior.** O painel manda um resumo (números e textos que já estão no painel, que podem incluir termos buscados) à API da **Anthropic**. É um subprocessador e uma possível **transferência internacional** (LGPD, art. 33). Por isso o Anexo II o lista. Se a cliente recusar, dá para desligar a leitura por IA para ela.
-6. **Valores do plano são hipóteses**, e o teto do Junior para a New Millen era diferente da oferta de tabela. Os preços estão como placeholders no Anexo IV.
+6. **Valor da New Millen definido pelo Junior em 24/10: R$ 990,00/mês (piloto de 12 meses), implantação sem custo.** Já está no Anexo IV. Ainda em aberto: vencimento, o que acontece após os 12 meses (preço de lista a definir) e o limite do MEI (ponto 2). Para outros clientes, os valores continuam hipóteses.
 7. **Reajuste, multa e juros** (2% de multa e 1% ao mês) são práticas comuns de mercado, **não** orientação jurídica: confirmar.
 8. **Foro e assinatura.** Sugeri o foro de Praia Grande/SP (sede da DCM) e assinatura eletrônica. Confirmar.
 9. **Papéis na LGPD.** Esta minuta trata a **cliente como controladora** dos dados da medição do widget no site dela e a **DCM como operadora**. Os contatos que chegam pelo formulário da **landing** do GeoLynq são outra coisa: aí a **DCM é controladora** (já descrito na página de privacidade da landing). Não misturar.
@@ -175,15 +175,16 @@ ______________________________ [Razão social] (CONTRATANTE)
 | Cliques (WhatsApp, rota, ligação, site) | Desempenho por revendedor | idem | 12 meses |
 | Data/hora e código aleatório da visita | Funil de uso; limite de abuso | idem | 12 meses |
 
-## ANEXO IV — Condições comerciais [placeholders]
+## ANEXO IV — Condições comerciais (New Millen, piloto; valores definidos em 24/10/2026)
 
 | Item | Valor |
 |---|---|
-| Implantação | R$ [____] (cortesia no contrato de 12 meses, se aplicável) |
-| Mensalidade | R$ [____] por mês |
-| Vencimento | dia [__] |
-| Reajuste | IPCA a cada 12 meses |
-| Piloto/preço de fundador | [condições, se houver] |
+| Implantação | Sem custo para a CONTRATANTE (valor de tabela: R$ 1.500,00), condicionada ao contrato de 12 meses |
+| Mensalidade | **R$ 990,00 por mês**, preço fixo durante os 12 meses do piloto |
+| Vencimento | dia [__] de cada mês |
+| Reajuste | Sem reajuste durante o piloto. Na renovação, preço da tabela vigente, informado com 60 dias de antecedência [confirmar prazo]; sem aceite, o contrato encerra no fim dos 12 meses |
+| Piloto/preço de fundador | Preço de fundador de R$ 990,00 em troca de: (a) depoimento ou estudo de caso sobre o uso, **com aprovação prévia e por escrito do texto**; (b) feedback para melhoria do painel. Nome e logotipo da CONTRATANTE só podem ser usados em peças aprovadas por ela, uma a uma |
+| Entrega por marcos | **Marco 1 (contratado):** widget no site, painel (visão geral, rede, lacunas, catálogo, importações), importação da lista de revendedores e atualização mensal da lista. **Marcos 2 e 3 (sem data fixa):** lista de candidatos a revendedor por lacuna, a partir de dados públicos da Receita; relatório mensal em PDF. A CONTRATADA informa o andamento na reunião mensal. Atraso nos marcos 2 e 3 não gera multa nem desconto [confirmar com advogado] |
 
 ## ANEXO V — Medidas de segurança (estado real em 2026-10-24)
 

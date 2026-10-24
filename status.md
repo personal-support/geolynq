@@ -64,6 +64,10 @@
   crítico do 16.3.4 está resolvido); build do Pódio OK. **Não rodado:** E2E do painel (exige Postgres local, ver `supabase/tests/README.md`) e E2E do widget. **Parte 2 pendente
   (decisão do usuário):** apontar widget/demo, painel e landing do EasyPanel para a `main` (hoje: `bold-cray` e `keen-johnson`) e atualizar a regra de push do `CLAUDE.md`.
   Serviço `geolynq_demo` APAGADO em 24/10 (era do meu erro); sobra remover a deploy key `easypanel-geolynq-demo` no GitHub (Settings → Deploy keys).
+- **New Millen — decisões de 24/10:** preço do piloto = **R$ 990,00/mês, 12 meses, implantação sem custo** (decisão do usuário; substitui os R$ 1.290 e o teto de R$ 1.000 dos docs antigos); território = **Brasil inteiro**;
+  instalação do widget = webmaster da New Millen (usuário/Danilo acompanham; sem senha do site). Contrato (Anexo IV) e material comercial atualizados: `docs/apresentacao-new-millen.md` (resumo para o Danilo, roteiro da demo, mensagem pronta, checklist).
+  **Atenção ao prazo:** 01/11/2026 é **domingo**; meta realista = ir ao ar na **sexta 30/10**, se a lista de revendedores com CNPJ chegar até segunda 26/10. A New Millen **continua NÃO cadastrada**.
+  Pendências que travam: lista com CNPJ + plataforma da loja (aceita script?), contrato (licença Jucimar↔DCM, MEI, advogado), decisão Supabase Pro, usuário demo do painel para o Danilo.
 - **Carga da Receita CONCLUÍDA em 24/10 (VPS, `~/cnpj/cnpj.db`, 142 MB, mês 2026-10):** 599.618 estabelecimentos ativos nos 10 CNAEs de suplementos (SP 141.709; MG 61.328; RJ 44.582; PR 42.202; RS 36.399).
   Por CNAE: 4729699 = 200.192 (33%, ruidoso), 4771701 = 111.699, 4619200 = 87.404, 9313100 = 84.362, 4763602 = 36.178, 4617600 = 31.135, 4639701 = 23.127, 4691500 = 9.970, 4771702 = 8.265, 4637199 = 7.286.
   Todos os 12 arquivos `completo=True`, 0 malformadas; ~20 min no total (Estabelecimentos0, 2,2 GB: 453 s). **1 CNPJ com letras** em `Estabelecimentos0` = primeiro caso real de CNPJ alfanumérico.
