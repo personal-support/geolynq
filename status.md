@@ -96,8 +96,8 @@
   servidor local falso): todos passaram.** **Confirmado com dados REAIS em 24/10 (terminal da VPS, `Estabelecimentos1.zip` de 2026-10, `--amostra 3`):** 30 campos por linha; CNPJ em 3 partes; situação, CNAE, UF, município e CEP nas posições esperadas;
   leitura em fluxo de um trecho cortado funciona; VPS tem Python 3.12.3, curl e bash, 78 GB livres. `Cnaes.zip` = 1.359 linhas e `Municipios.zip` = 5.572 linhas carregadas sem erro. Nas 3 amostras o CNPJ só tinha dígitos
   (CNPJ com letras ainda NÃO visto na prática). **Ainda não verificado:** velocidade e tamanho final do banco (o `teste` de `Estabelecimentos1.zip` estava em andamento quando o usuário colou a saída). Rodar no **terminal da VPS (hPanel → Terminal do navegador)**, NÃO no console do container. Antes do `tudo`, rodar `teste` (só `Estabelecimentos1.zip`, 326 MB) e conferir tempo, linhas e tamanho.
-- **Página de privacidade do widget:** `bold-cray` foi avançada para `e37c61f` em 24/10 a pedido do usuário (fast-forward); o EasyPanel **não redeploya sozinho** ao empurrar: falta o usuário clicar
-  em **Implantar** em `geolynq_widget` e conferir `https://widget.geolynq.personalsupport.tech/privacidade.html`.
+- **Página de privacidade do widget PUBLICADA em 24/10:** o usuário clicou em Implantar; o EasyPanel confirma `geolynq_widget` no commit `10c3963` (contém a página nova) e 1/1. O EasyPanel **não redeploya sozinho** ao
+  empurrar na branch: sempre pedir Implantar. Falta só o usuário olhar `https://widget.geolynq.personalsupport.tech/privacidade.html` (o sandbox não alcança o domínio).
 - **Próximos passos restantes (Fase 5 do plano = Operação):** (1) ativar o monitor acima e criar o monitor externo (UptimeRobot), (2) decisão sobre o Supabase Pro, (3) Fase 2 (retenção `pg_cron`, página de
   privacidade do widget, contrato), (4) Fase 3 (B0.5, base da Receita), (5) Fase 4 (unificar branches em `main`).
 
