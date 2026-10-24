@@ -87,6 +87,14 @@
   com pico de disco de ~2,2 GB se o zip for salvo, ou ~0 se for lido em fluxo (`curl | funzip`). Disco livre da VPS ~62 GB. Esse volume é bem menor que a estimativa do plano (~85 GB descompactado,
   que continua NÃO medido). Segmento `suplementos` tem 10 CNAEs de canal (4729699, 4617600, 4637199, 4763602, 4771701, 4619200, 4639701, 4691500, 4771702, 9313100, pesos 1–3); o tenant
   `fabrica-teste` tem territórios UF RJ e SP. **Decisão pendente do usuário (3.4):** onde guardar o universo filtrado (Postgres na VPS, arquivo SQLite na VPS, ou direto no Supabase, que não cabe).
+- **Fase 3 — carregador da base da Receita PRONTO e TESTADO COM DADOS SINTÉTICOS (24/10); ainda NÃO rodado com dados reais.** Decisão do usuário (3.4): **opção B, arquivo SQLite na VPS**
+  (sem Postgres novo). Descoberta: o console do EasyPanel que o usuário usa é de um **container** (`/ #`) **sem** `funzip`, `unzip`, `iconv`, `python3`, `sqlite3` nem `psql`; disco 78 GB livres, ~6 GB de RAM livres.
+  Por isso o carregador é **Python puro (só `python3` + `curl`)**: `tools/receita/carregar_arquivo.py` (lê um zip em fluxo da entrada padrão, descompacta com `zlib`, nunca grava zip/CSV em disco; filtra
+  situação ativa `02` + CNAE principal de canal; modos `estabelecimentos|municipios|cnaes`; `--amostra N` mostra só campos técnicos) e `tools/receita/carregar_mes.sh AAAA-MM teste|tudo`.
+  **Minimização de dados:** NÃO guarda telefone, e-mail, sócios nem razão social (só nome fantasia, endereço e CNAE). **Testes sintéticos (30.003 linhas, zip em fluxo com descritor de dados e zip64, latin-1,
+  `;` dentro de aspas, CRLF, linha quebrada, CNPJ com letras, fronteiras de bloco de 512 B a 1 MB, download cortado = aviso + código 2, entrada não-zip = erro claro, script de ponta a ponta contra
+  servidor local falso): todos passaram.** **Não verificado com dados reais:** layout de 30 colunas (documentado por memória e por fontes de terceiros), velocidade, tamanho final do banco, se há CNPJ com letras de
+  verdade. Rodar no **terminal da VPS (hPanel → Terminal do navegador)**, NÃO no console do container. Antes do `tudo`, rodar `teste` (só `Estabelecimentos1.zip`, 326 MB) e conferir tempo, linhas e tamanho.
 - **Página de privacidade do widget:** `bold-cray` foi avançada para `e37c61f` em 24/10 a pedido do usuário (fast-forward); o EasyPanel **não redeploya sozinho** ao empurrar: falta o usuário clicar
   em **Implantar** em `geolynq_widget` e conferir `https://widget.geolynq.personalsupport.tech/privacidade.html`.
 - **Próximos passos restantes (Fase 5 do plano = Operação):** (1) ativar o monitor acima e criar o monitor externo (UptimeRobot), (2) decisão sobre o Supabase Pro, (3) Fase 2 (retenção `pg_cron`, página de
