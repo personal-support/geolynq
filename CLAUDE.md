@@ -23,6 +23,7 @@ n8n para importação de catálogo, EasyPanel/Hostinger para hospedagem. Bluepri
 - `supabase/tests` — Postgres local (mini-Supabase) para testar migrations e relatórios sem tocar na produção
 - `docs/` — blueprint, schema v2, workflow n8n versionado, planilha-modelo
 - `docs/operacao-e-mercado.md` — fluxo ponta a ponta, onboarding de cliente, pesquisa de mercado, viabilidade e preço (hipóteses a validar)
+- `docs/golive-new-millen.md` — **roteiro do go-live da New Millen** (portões, pedido de dados, cadastro, importação, acessos, testes, plano de volta); `docs/seguranca-e-backup.md` — segurança e backup diário pela VPS
 
 ## Como trabalhar com o usuário (Junior Lopes)
 - Responda em **português simples e direto**; estruture, dê passos acionáveis, sem jargão solto.
@@ -48,15 +49,19 @@ n8n para importação de catálogo, EasyPanel/Hostinger para hospedagem. Bluepri
 - **EasyPanel: nunca** chame `listProjectsAndServices` (devolve as variáveis de ambiente, com chaves, de TODOS os projetos da conta). Use `getDockerContainers`/`inspectAppService`
   só em `personalsupport_saas`. Se uma ferramenta devolver segredo sem querer, não repita o valor em nenhum lugar e avise o usuário.
 
-## Estado das branches (2026-10-24)
-- A `main` foi atualizada em 2026-10-24 e **contém todo o código em produção** (painel, landing, widget v2, site Pódio): `main` = `claude/bold-cray-vbbdyb` + registro de sessão no `status.md`.
-  A `keen-johnson` e a `bold-cray` são ancestrais da `main`. **Os serviços do EasyPanel ainda publicam das branches antigas** (widget/demo: `bold-cray`; painel/landing: `keen-johnson`):
-  trocar para a `main` é uma decisão à parte (muda o que dispara deploy). Até lá, a regra abaixo continua valendo.
+## Estado das branches (2026-10-24, noite)
+- A `main` é a **branch de referência**: contém todo o código e a documentação atuais (inclui candidatos a revendedor, endurecimento de segurança, backup e o roteiro de go-live). Foi avançada por fast-forward a partir da `claude/tender-goodall-fmpm7m`.
+  **Push na `main` NÃO publica nada no EasyPanel**, mas dispara o workflow `.github/workflows/deploy-widget.yml` quando muda `apps/widget/**`: os testes rodam e o passo "deploy" falha na hora porque o secret `EASYPANEL_WIDGET_DEPLOY_URL` não existe (3 execuções iguais em 24/10). É ruído, não é deploy. Não criar esse secret sem antes apontar o EasyPanel para a `main` (senão o webhook reconstrói a branch antiga).
+- **Os serviços do EasyPanel ainda publicam das branches antigas** (widget/demo: `bold-cray`; painel/landing: `keen-johnson`; as duas estão em `d7f39dc`, igual ao que roda em produção). Mudanças só de banco, documentação ou scripts da VPS não precisam avançar essas branches.
+  Trocar os serviços para a `main` é uma decisão à parte do usuário (muda o que dispara deploy).
 - Cada serviço do EasyPanel com repositório privado tem a **própria chave SSH** (Gerar Chave SSH + GitHub → Settings → Deploy keys, só leitura).
+- **Documentos privados** (briefing do Danilo, acordo Junior ↔ DCM, que têm divisão de resultado e custos) **não ficam no repositório**, que é público: foram entregues ao usuário como `.docx`. O contrato-padrão com o cliente (`docs/contrato-minuta-prestacao-servico.md`) e o roteiro (`docs/golive-new-millen.md`) ficam no repositório.
 
 ## Regras técnicas
-- Desenvolva e dê push só na branch `claude/bold-cray-vbbdyb`. Push na branch **publica o widget
-  sozinho** (webhook → EasyPanel): rode tipos, testes e E2E antes de empurrar.
+- Desenvolva na branch que a sessão indicar e só avance as branches de deploy quando o usuário pedir publicação:
+  push em `claude/bold-cray-vbbdyb` **publica o widget e o demo sozinho** (webhook → EasyPanel) e em
+  `claude/keen-johnson-c0x5hs` vale para painel/landing (este com `deployAppService`/Implantar). Rode tipos, testes e
+  E2E antes de empurrar. Depois de publicar, mantenha a `main` igual (fast-forward). **Nunca** `--force` na `main`.
 - Testes: `npm run typecheck -w @geolynq/widget`, `npm test -w @geolynq/widget`; E2E exige build com
   `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` e depois `npm run e2e -w @geolynq/widget`.
 - Mudança de `nginx.conf`: teste com nginx real (o Dockerfile também roda `nginx -t`).

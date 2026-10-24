@@ -27,7 +27,7 @@ Quem apresenta à New Millen é o **Danilo (DCM Marketing Digital)**. O contrato
 | Marco | O que entrega | Situação |
 |---|---|---|
 | 1 | Widget no site, painel, importação da lista de revendedores, atualização mensal da lista | Pronto para implantar |
-| 2 | Lista de candidatos a revendedor por lacuna (a partir de dados públicos da Receita Federal) | Em desenvolvimento, sem data fixa |
+| 2 | Lista de candidatos a revendedor por lacuna (a partir de dados públicos da Receita Federal) | Funciona na demonstração; para a New Millen depende da lista dela com CNPJ; sem data fixa |
 | 3 | Relatório mensal em PDF | Em desenvolvimento, sem data fixa |
 | — | Reunião mensal de 30 minutos para ler o painel [confirmar quem conduz] | Combinar |
 
@@ -108,7 +108,7 @@ Em troca: depoimento ou caso de uso **aprovado por escrito por ela** e feedback 
 
 ## D. Checklist interno (Junior) antes de ligar para valer
 
-Prazo do compromisso com o Danilo: **01/11 (domingo)**. Meta realista: **sexta, 30/10**.
+Prazo do compromisso com o Danilo: **01/11 (domingo)**. Meta realista: **sexta, 30/10**. O roteiro técnico completo do go-live, com portões e comandos, está em `docs/golive-new-millen.md`.
 
 | # | Item | Quem | Estado |
 |---|---|---|---|
@@ -117,10 +117,10 @@ Prazo do compromisso com o Danilo: **01/11 (domingo)**. Meta realista: **sexta, 
 | 3 | **Contrato:** licença Jucimar↔DCM, MEI (contador), advogado, vencimento e preço pós-piloto | Junior + Danilo | Minuta pronta; revisão pendente |
 | 4 | **Supabase Pro** (US$ 25/mês, ~13% da mensalidade): sem ele não há backup do banco | Junior decide | Pendente |
 | 5 | Usuário de demonstração do painel para o Danilo | Eu / Junior | Pendente |
-| 6 | Confirmar que o painel (`geolynq_admin`) está no ar e com a versão atual | Eu | A conferir |
-| 7 | Cadastro da New Millen pelo CNPJ `00385181000111` (conferência, depois gravar) | Eu | Pronto para rodar |
+| 6 | Confirmar que o painel (`geolynq_admin`) está no ar e com a versão atual | Eu | Feito em 24/10: contêiner 1/1 e monitores sem alerta (URL pública não verificada do ambiente de desenvolvimento) |
+| 7 | Cadastro da New Millen pelo CNPJ `00385181000111` (conferência, depois gravar) | Eu | **Conferência feita em 24/10** (NM ALIMENTOS LTDA, ativa, matriz, Cajamar/SP, 0 avisos; nada gravado). Gravar depende do OK do usuário e da lista (ver `docs/golive-new-millen.md`) |
 | 8 | Planilha-modelo `docs/geolynq-catalogo-modelo.xlsx` enviada ao Danilo | Junior | Pendente |
-| 9 | Frase sobre ViaCEP/OpenStreetMap na página de privacidade do widget (novo deploy) | Eu, com OK do Junior | Pendente |
+| 9 | Frase sobre ViaCEP/OpenStreetMap na página de privacidade do widget (novo deploy) | Eu, com OK do Junior | **Feito e publicado em 24/10** |
 | 10 | Ir ao ar: Danilo cola o script numa **cópia rascunho** da página; o Gofind segue no ar na página oficial; eu confiro com 10 CEPs de teste; vocês comparam lado a lado; depois ele troca na página oficial. Plano de volta: reativar o bloco do Gofind | Danilo + eu | Depois dos itens 1 a 4 |
 | 12 | Política de privacidade do **site da New Millen** citar o widget (ela é a controladora). Eu escrevo o texto, o Danilo publica | Eu + Danilo | Pendente |
 | 13 | **Gofind:** fidelidade, aviso prévio e data de renovação. Só cancelar **depois** de o nosso widget estar aprovado na página oficial. A economia de R$ 7.320/ano depende desse cancelamento | New Millen (Danilo ajuda) | Pendente |
