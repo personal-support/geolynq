@@ -136,6 +136,12 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
         </div>
       </Card>
 
+      {/* Ao vivo, logo depois da frase do painel: o que acabou de acontecer no site e quem da rede gera contato */}
+      <div className="mb-6 grid gap-6 xl:grid-cols-[1.6fr_1fr]" id="ao-vivo">
+        {"erro" in rec ? <ErroPainel erro={rec.erro} /> : <UltimasBuscas eventos={rec.dados} />}
+        {"erro" in perf ? <ErroPainel erro={perf.erro} /> : <QuemGeraContato rede={perf.dados} periodo={periodo} />}
+      </div>
+
       {iaAtiva && leitura && !("erro" in leitura) ? (
         <LeituraDoPeriodo leitura={leitura.dados} periodo={periodo} simulados={await getEventosSimulados(m.tenant.id)} erro={typeof erroIA === "string" ? erroIA : null} detalhe={typeof detIA === "string" && /^[\d.,% a-zç]{1,60}$/i.test(detIA) ? detIA : null} />
       ) : null}
@@ -206,12 +212,6 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
             </ol>
           )}
         </Card>
-      </div>
-
-      {/* Ao vivo: o que acabou de acontecer no site e quem da rede gera contato */}
-      <div className="mb-6 grid gap-6 xl:grid-cols-[1.6fr_1fr]" id="ao-vivo">
-        {"erro" in rec ? <ErroPainel erro={rec.erro} /> : <UltimasBuscas eventos={rec.dados} />}
-        {"erro" in perf ? <ErroPainel erro={perf.erro} /> : <QuemGeraContato rede={perf.dados} periodo={periodo} />}
       </div>
 
       <div className="mb-6 grid gap-6 xl:grid-cols-[1.6fr_1fr]">

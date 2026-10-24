@@ -107,10 +107,11 @@ export function UltimasBuscas({ eventos }: { eventos: EventoRecente[] }) {
           </a>
         }
       />
+      {/* no celular só os 5 mais recentes, para o resto do painel não ficar longe; de 640 px para cima aparecem os 10 */}
       {eventos.length === 0 ? (
         <Empty titulo="Nada por aqui ainda">Quando alguém buscar, escolher um produto ou clicar em um revendedor, aparece aqui.</Empty>
       ) : (
-        <ul className="mt-3 divide-y divide-line pb-2">
+        <ul className="mt-3 divide-y divide-line pb-2 [&>li:nth-child(n+6)]:hidden sm:[&>li:nth-child(n+6)]:flex">
           {eventos.map((e, i) => (
             <Linha key={`${e.quando}-${i}`} e={e} />
           ))}

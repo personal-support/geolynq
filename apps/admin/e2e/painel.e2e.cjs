@@ -220,6 +220,11 @@ async function esperado() {
       check("sem aviso de base pequena quando há volume", (await pageA.locator('[role="note"]', { hasText: "Base pequena" }).count()) === 0);
       const ultimas = pageA.locator("section", { has: pageA.locator("h2", { hasText: "Atividade ao vivo" }) });
       check("ao vivo: 'Atividade ao vivo' lista os 10 eventos mais recentes do banco", (await ultimas.locator("li").count()) === ref.recentes.length && ref.recentes.length === 10, `${await ultimas.locator("li").count()} de ${ref.recentes.length}`);
+      const ordem = await pageA.evaluate(() => {
+        const topo = (t) => { const el = [...document.querySelectorAll("p, h2")].find((x) => x.textContent.trim().startsWith(t)); return el ? el.getBoundingClientRect().top + scrollY : null; };
+        return { radar: topo("O que o radar achou"), vivo: topo("Atividade ao vivo"), kpi: topo("Buscas no widget") };
+      });
+      check("ordem do painel: 'Atividade ao vivo' vem logo depois de 'O que o radar achou' e antes dos números", ordem.radar != null && ordem.radar < ordem.vivo && ordem.vivo < ordem.kpi, JSON.stringify(ordem));
       const primeiro = ref.recentes[0];
       const txtU = await ultimas.innerText();
       const esperadoPrimeiro = { list_open: "Abriu a lista de revendedores", list_search: "Filtrou a lista de revendedores" }[primeiro.tipo] ?? (primeiro.tipo === "reseller_click" ? primeiro.revendedor : null) ?? primeiro.produto ?? primeiro.termo ?? "~~";
@@ -523,6 +528,9 @@ async function esperado() {
         if (l320.sw > l320.iw + 1) estouros320.push(`${rota} (${l320.sw}>${l320.iw})`);
       }
       check("mobile pequeno (320 px): nenhuma tela com rolagem horizontal da página", estouros320.length === 0, estouros320.join(", "));
+      await page.goto(`${BASE}/dashboard`);
+      const visiveis320 = await page.locator("section", { has: page.locator("h2", { hasText: "Atividade ao vivo" }) }).locator("li:visible").count();
+      check("mobile: 'Atividade ao vivo' mostra só os 5 eventos mais recentes", visiveis320 === 5, `${visiveis320} visíveis`);
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(`${BASE}/dashboard?p=mes`);
       await page.locator("details > summary").click();
