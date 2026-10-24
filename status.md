@@ -37,8 +37,13 @@
   (Resend)". Teste manual no workflow "Aviso de novo contato" (execução 4): e-mail aceito
   pelo Resend, contato de 13/10 marcado como avisado. Para o teste o destinatário ficou só
   `personalsupport@hotmail.com` e foi **revertido** para os dois originais (hotmail e
-  danilo.coletivaweb@gmail.com). **O workflow segue inativo**: ativar (toggle no n8n) para o
-  aviso rodar a cada 5 min. Não foi conferido se a caixa recebeu o e-mail (spam/domínio).
+  danilo.coletivaweb@gmail.com). **Ativado em 24/10** (versão ativa `903e2819-…`): roda a cada
+  5 min, e-mail para os dois destinatários. O e-mail de teste chegou ao Outlook.com do dono,
+  mas **na pasta de lixo** (SCL 5, só reputação de domínio novo): SPF, DKIM e DMARC passam
+  (`compauth=pass`), sem ajuste de DNS. Ações: marcar "Não é lixo" e pôr `personalsupport.tech`
+  em remetentes seguros; avisar o Danilo (Gmail) para pôr `avisos@personalsupport.tech` nos
+  contatos. HTML do aviso agora é completo (doctype/html/head/body), envolvido na expressão
+  do nó de envio; testado em 24/10 (execução 5, só para o dono). Para desativar: toggle no n8n.
 - **Contas**: Drive/n8n = `gestao.junior.lopes@gmail.com`; Vercel NÃO é usado no projeto
   (hospedagem é EasyPanel). Conector GitHub da sessão precisa de sessão nova após a troca de
   conta; git por linha de comando funciona.
