@@ -193,11 +193,12 @@ do banco agora é schema + migration acima.
 ## Pendente
 - [ ] Fase 4.1 — site de amostra (em paralelo à Fase 5)
 - [ ] Fase 5 — painel admin
-- [ ] Limpar os dados de teste do tenant `demo` antes de mostrar a cliente. Conferido em 24/10:
-      a única duplicata é "Farmácia Saúde Total" (id `814f5182-efec-43a8-a640-fb529e061b99`,
-      **inativa e sem cobertura**, criada 11/09; a boa é `0ca83394-…`, ativa, 1 cobertura).
-      Apagar só a inativa, com aprovação do usuário. Os demais revendedores do demo não têm CNPJ
-      (esperado: `exigir_cnpj = false` só para o demo).
+- [x] Limpeza do tenant `demo`: **feita em 24/10.** A única duplicata era "Farmácia Saúde Total"
+      (`814f5182-…`, inativa, sem cobertura, 1 endereço): apagada pelo usuário no SQL Editor
+      (com trava: só inativa e sem cobertura). Conferido depois: cópia inativa e endereço
+      órfão = 0; o demo ficou com 11 revendedores; a cópia boa (`0ca83394-…`) segue ativa
+      com 1 cobertura. Os revendedores do demo não têm CNPJ (esperado: `exigir_cnpj = false`
+      só para o demo).
 - [x] Anti-spam em `widget_events`: **já existe no banco** (trigger `widget_events_limit`:
       20/min e 200/h por sessão, 600/min por tenant; `panel_ai_readings_limit`: 1 leitura de IA
       a cada 2 min e 30/dia por tenant). Rate limit extra no Nginx é opcional.
