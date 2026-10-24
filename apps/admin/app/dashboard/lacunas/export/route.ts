@@ -5,7 +5,8 @@
  * Unauthorized copying, replication, redistribution or commercial use is prohibited.
  */
 import { paraCsv } from "@/lib/csv";
-import { getGaps, getMembership, getSession, parseDias } from "@/lib/data";
+import { getGaps, getMembership, getSession } from "@/lib/data";
+import { resolverPeriodo } from "@/lib/periodo";
 import { filtrarLacunas, lerFiltro } from "@/lib/lacunas";
 
 export const dynamic = "force-dynamic";
@@ -18,12 +19,12 @@ export async function GET(req: Request) {
   if (!m) return new Response("Sua conta não está ligada a uma marca.", { status: 403 });
 
   const sp = Object.fromEntries(new URL(req.url).searchParams);
-  const dias = parseDias(sp.dias);
+  const periodo = resolverPeriodo(sp, new Date());
   const filtro = lerFiltro(sp);
 
   let gaps;
   try {
-    gaps = await getGaps(m.tenant.id, dias);
+    gaps = await getGaps(m.tenant.id, periodo);
   } catch {
     return new Response("Não foi possível gerar a lista agora.", { status: 502 });
   }
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
     ["Produto", "SKU", "Cidade", "UF", "Buscas sem revendedor por perto", "Visitas"],
     ...itens.map((l) => [l.produto, l.sku, l.cidade, l.uf, l.buscas, l.sessoes]),
   ]);
-  const nome = `lacunas-${m.tenant.slug.replace(/[^a-z0-9-]/gi, "")}-${dias}d.csv`;
+  const nome = `lacunas-${m.tenant.slug.replace(/[^a-z0-9-]/gi, "")}-${periodo.id.replace(/[^a-z0-9-]/gi, "_")}.csv`;
   return new Response(csv, {
     headers: {
       "content-type": "text/csv; charset=utf-8",

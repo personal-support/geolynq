@@ -8,6 +8,7 @@ import { ErroPainel } from "@/components/erro-painel";
 import { Card, CardHeader, Empty, Kpi, PageHeader, Pill, TD, TH } from "@/components/ui";
 import { carregar, getCatalog, getMembership, getResellerPerf } from "@/lib/data";
 import { num, pct, TIPO_REVENDEDOR } from "@/lib/format";
+import { periodoDeAtalho } from "@/lib/periodo";
 
 export const metadata = { title: "Rede de revendedores" };
 
@@ -23,7 +24,7 @@ export default async function Rede({ searchParams }: { searchParams: SP }) {
 
   const m = await getMembership();
   if (!m) return null;
-  const [r, perf] = await Promise.all([carregar(() => getCatalog(m.tenant.id)), carregar(() => getResellerPerf(m.tenant.id, 30))]);
+  const [r, perf] = await Promise.all([carregar(() => getCatalog(m.tenant.id)), carregar(() => getResellerPerf(m.tenant.id, periodoDeAtalho("30d", new Date())))]);
   if ("erro" in r) return <ErroPainel erro={r.erro} />;
   // O desempenho é um complemento: se falhar, a tabela segue sem a coluna de contatos.
   const contatos = "dados" in perf ? new Map(perf.dados.map((p) => [p.id, p.contatos])) : null;

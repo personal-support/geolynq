@@ -4,12 +4,13 @@
  * total ou parcial, sem autorização prévia e por escrito do desenvolvedor. Ver o arquivo LICENSE na raiz do repositório.
  * Unauthorized copying, replication, redistribution or commercial use is prohibited.
  */
-import { AvisoBasePequena } from "@/components/avisos";
+import { AvisoBasePequena, AvisoPeriodo } from "@/components/avisos";
 import { BarList } from "@/components/charts";
 import { ErroPainel } from "@/components/erro-painel";
 import { PeriodTabs } from "@/components/period-tabs";
 import { Card, CardHeader, Empty, PageHeader, TD, TH } from "@/components/ui";
-import { carregar, getGaps, getMembership, getOverview, parseDias } from "@/lib/data";
+import { carregar, getGaps, getMembership, getOverview } from "@/lib/data";
+import { resolverPeriodo } from "@/lib/periodo";
 import { filtrarLacunas, lerFiltro } from "@/lib/lacunas";
 import { avisoDeBase } from "@/lib/avisos";
 import { num } from "@/lib/format";
@@ -18,11 +19,11 @@ export const metadata = { title: "Lacunas" };
 
 export default async function Lacunas({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const sp = await searchParams;
-  const dias = parseDias(sp.dias);
+  const periodo = resolverPeriodo(sp, new Date());
   const filtro = lerFiltro(sp);
   const m = await getMembership();
   if (!m) return null;
-  const [r, g] = await Promise.all([carregar(() => getOverview(m.tenant.id, dias)), carregar(() => getGaps(m.tenant.id, dias))]);
+  const [r, g] = await Promise.all([carregar(() => getOverview(m.tenant.id, periodo)), carregar(() => getGaps(m.tenant.id, periodo))]);
   if ("erro" in r) return <ErroPainel erro={r.erro} />;
   if ("erro" in g) return <ErroPainel erro={g.erro} />;
   const o = r.dados;
@@ -32,18 +33,22 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
   const totalBuscas = lista.reduce((s, l) => s + l.buscas, 0);
   const ufs = [...new Set(todas.itens.map((l) => l.uf).filter((x): x is string => !!x))].sort();
   const produtos = [...new Map(todas.itens.map((l) => [l.sku, l.produto])).entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
-  const qs = new URLSearchParams({ dias: String(dias), ...(filtro.uf && { uf: filtro.uf }), ...(filtro.sku && { produto: filtro.sku }) }).toString();
+  const qsParams = new URLSearchParams(periodo.query);
+  if (filtro.uf) qsParams.set("uf", filtro.uf);
+  if (filtro.sku) qsParams.set("produto", filtro.sku);
+  const qs = qsParams.toString();
   const truncada = todas.combinacoes > todas.itens.length;
-  const aviso = avisoDeBase(o.kpis.buscas, o.anterior.buscas, dias, false);
+  const aviso = avisoDeBase(o.kpis.buscas, o.anterior.buscas, periodo.dias, false);
 
   return (
     <>
       <PageHeader
         titulo="Lacunas de cobertura"
         subtitulo="Onde as pessoas procuraram um produto da sua marca e não havia revendedor físico a até 100 km."
-        direita={<PeriodTabs dias={dias} base="/dashboard/lacunas" />}
+        direita={<PeriodTabs periodo={periodo} base="/dashboard/lacunas" />}
       />
 
+      <AvisoPeriodo texto={periodo.aviso} />
       <AvisoBasePequena aviso={aviso} />
 
       <Card className="mb-6">
@@ -51,7 +56,7 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
           titulo={`${num(lista.length)} ${lista.length === 1 ? "combinação" : "combinações"} de produto e cidade`}
           dica={
             lista.length
-              ? `${num(totalBuscas)} ${filtrando ? `de ${num(todas.total_buscas)} ` : ""}buscas sem revendedor por perto nos últimos ${dias} dias. Ordenadas das mais procuradas para as menos.${
+              ? `${num(totalBuscas)} ${filtrando ? `de ${num(todas.total_buscas)} ` : ""}buscas sem revendedor por perto no período (${periodo.rotulo.toLowerCase()}). Ordenadas das mais procuradas para as menos.${
                   truncada ? ` Mostrando as ${num(todas.itens.length)} maiores de ${num(todas.combinacoes)}.` : ""
                 }`
               : undefined
@@ -69,7 +74,9 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
         />
         {todas.itens.length > 0 ? (
           <form method="get" className="flex flex-wrap items-end gap-3 px-5 pt-4">
-            <input type="hidden" name="dias" value={dias} />
+            {[...new URLSearchParams(periodo.query)].map(([k, v]) => (
+              <input key={k} type="hidden" name={k} value={v} />
+            ))}
             <label className="text-[13px] font-medium text-ink-2">
               Estado
               <select name="uf" defaultValue={filtro.uf} className="mt-1 block rounded-lg border border-line-2 bg-white px-3 py-2 text-sm font-normal text-ink">
@@ -96,7 +103,7 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
               Filtrar
             </button>
             {filtrando ? (
-              <a href={`/dashboard/lacunas?dias=${dias}`} className="py-2 text-sm font-medium text-ink-2 underline underline-offset-2">
+              <a href={`/dashboard/lacunas?${periodo.query}`} className="py-2 text-sm font-medium text-ink-2 underline underline-offset-2">
                 Limpar
               </a>
             ) : null}

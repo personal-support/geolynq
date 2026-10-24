@@ -36,6 +36,19 @@ export function sanitizeSearchTerm(raw: string): string {
   return raw.replace(/[,()*"\\%_]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
 }
 
+/**
+ * Texto digitado que NÃO deve ser gravado na telemetria: parece dado pessoal (telefone, CPF, e-mail, sequência longa de
+ * números). Devolve o termo limpo, ou null para descartar. Decisão de privacidade: na dúvida, não grava.
+ * Vale para o widget v1 e v2 (o banco tem a mesma regra como segunda barreira: migration 20261024020000).
+ */
+export function termForTelemetry(raw: string): string | null {
+  const t = raw.replace(/\s+/g, " ").trim().slice(0, 60);
+  if (t.length < 3) return null;
+  if (/@/.test(t)) return null;
+  if (/\d[\d .()/-]{5,}\d/.test(t)) return null; // 6+ dígitos seguidos (com separadores): telefone, CPF, CEP, cartão…
+  return t.toLowerCase();
+}
+
 export function parseCep(raw: string): string | null {
   const digits = raw.replace(/\D/g, "");
   return digits.length === 8 ? digits : null;

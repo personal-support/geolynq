@@ -254,7 +254,7 @@ async function esperado() {
       await Promise.all([pageA.waitForURL(/ia=nao_confiavel/, { timeout: 30000 }), cartaoIA.locator("button", { hasText: "Gerar nova leitura" }).click()]);
       await cartaoIA.locator("[role=alert]").waitFor({ timeout: 15000 });
       const txRuim = await cartaoIA.innerText();
-      check("IA: número inventado pelo modelo é descartado (2 tentativas) e NÃO aparece na tela", /descartada por segurança/.test(txRuim) && !txRuim.includes("7777") && ia.chamadas.length === 3, `chamadas=${ia.chamadas.length}`);
+      check("IA: número inventado pelo modelo é descartado (2 tentativas) e NÃO aparece na tela", /descartada por segurança/.test(txRuim) && !(await cartaoIA.locator("[data-leitura]").innerText()).includes("7777") && ia.chamadas.length === 3, `chamadas=${ia.chamadas.length}`);
       check("IA: a leitura boa anterior continua na tela e nada novo foi gravado", (await cartaoIA.locator("[data-leitura]").count()) === 1 && Number((await dbSeed.query("select count(*) n from public.panel_ai_readings")).rows[0].n) === 1);
       ia.modo = "boa";
       const quem = pageA.locator("section", { has: pageA.locator("h2", { hasText: "Quem gera contato" }) });
@@ -275,6 +275,108 @@ async function esperado() {
     await pageA.goto(`${BASE}/dashboard?dias=999`);
     check("período inválido cai em 30 dias", (await pageA.locator('nav[aria-label="Período"] a[aria-current="true"]').innerText()) === "30 dias");
 
+
+    // ---- períodos de calendário: hoje, semana, mês, ano e personalizado (a tela confere com a contagem direta no banco)
+    {
+      await dbSeed.query(`delete from public.widget_events where session_id like 'e2e-per-%'`);
+      await dbSeed.query(`insert into public.widget_events (tenant_id, session_id, event_type, query_text, results_count, telemetry_v, created_at)
+        select (select id from public.tenants where slug='fabrica-teste'), 'e2e-per-' || g, 'search', 'whey', 1, 2, now() - (g || ' minutes')::interval from generate_series(1, 3) g`);
+      const BRT = "'America/Sao_Paulo'";
+      const inicio = (u) => `(date_trunc('${u}', now() at time zone ${BRT}) at time zone ${BRT})`;
+      const contar = async (de, ate) =>
+        Number((await dbSeed.query(`select count(*)::int n from public.widget_events where tenant_id=(select id from public.tenants where slug='fabrica-teste') and event_type='search' and created_at >= ${de} and created_at < ${ate}`)).rows[0].n);
+      const kpiBuscas = async () => {
+        const t = await texto(pageA);
+        const m = t.match(/Buscas no widget\s+([\d.]+)/);
+        return m ? Number(m[1].replace(/\./g, "")) : /Ainda não há buscas/.test(t) ? 0 : null;
+      };
+      const ativoNoMenu = () => pageA.locator("details > summary").innerText().then((x) => x.replace(/\s+/g, " ").trim());
+      const abrir = async (query) => {
+        await pageA.goto(`${BASE}/dashboard?${query}`);
+        return texto(pageA);
+      };
+
+      const casos = [
+        ["hoje", "Hoje", inicio("day"), "now()"],
+        ["semana", "Esta semana", inicio("week"), "now()"],
+        ["semana-passada", "Semana passada", `(${inicio("week")} - interval '7 days')`, inicio("week")],
+        ["mes", "Este mês", inicio("month"), "now()"],
+        ["mes-passado", "Mês anterior", `(${inicio("month")} - interval '1 month')`, inicio("month")],
+        ["ano", "Este ano", inicio("year"), "now()"],
+      ];
+      for (const [chave, rotulo, de, ate] of casos) {
+        const t = await abrir(`p=${chave}`);
+        const esperado = await contar(de, ate);
+        const obtido = await kpiBuscas();
+        check(`período ${rotulo}: buscas da tela = contagem direta no banco`, obtido === esperado, `tela=${obtido} banco=${esperado}`);
+        check(`período ${rotulo}: subtítulo e menu mostram o período`, t.includes(rotulo) && (await ativoNoMenu()).startsWith(rotulo.replace(/ \(.*\)$/, "")), (await ativoNoMenu()));
+        check(`período ${rotulo}: nenhuma aba de 7/30/90 marcada`, (await pageA.locator('nav[aria-label="Período"] a[aria-current="true"]').count()) === 0);
+      }
+      {
+        const t = await abrir("p=hoje");
+        check("hoje: o gráfico é por hora (e traz as buscas de hoje)", (await pageA.locator('svg[aria-label^="Buscas e cliques por hora"]').count()) === 1 && /Buscas por hora/.test(t) && (await kpiBuscas()) >= 3);
+        check("hoje: a comparação é com ontem até a mesma hora", /comparado com ontem, até a mesma hora/.test(t));
+        const t2 = await abrir("p=mes");
+        check("este mês: o gráfico é por dia e a comparação usa os mesmos dias do mês anterior", (await pageA.locator('svg[aria-label^="Buscas e cliques por dia"]').count()) === 1 && /mesmos dias do mês anterior/.test(t2));
+      }
+
+      // personalizado: de 10 a 5 dias atrás (datas de calendário de Brasília)
+      const d = (await dbSeed.query(`select to_char((now() at time zone ${BRT})::date - 10, 'YYYY-MM-DD') de, to_char((now() at time zone ${BRT})::date - 5, 'YYYY-MM-DD') ate`)).rows[0];
+      await abrir(`p=personalizado&de=${d.de}&ate=${d.ate}`);
+      const esperadoPers = await contar(`('${d.de}'::timestamp at time zone ${BRT})`, `(('${d.ate}'::date + 1)::timestamp at time zone ${BRT})`);
+      check("período personalizado: buscas da tela = contagem direta (início e fim inclusivos)", (await kpiBuscas()) === esperadoPers && esperadoPers > 0, `tela=${await kpiBuscas()} banco=${esperadoPers}`);
+      check("período personalizado: o menu mostra dd/mm a dd/mm e o formulário vem preenchido", /\d\d\/\d\d a \d\d\/\d\d/.test(await ativoNoMenu()) && (await pageA.locator('details input[name="de"]').inputValue()) === d.de && (await pageA.locator('details input[name="ate"]').inputValue()) === d.ate);
+
+      // pedido inválido não derruba a página
+      let t = await abrir("p=personalizado&de=2026-13-45&ate=abc");
+      check("personalizado inválido: explica e cai em 30 dias", /Datas inválidas/.test(t) && (await pageA.locator('nav[aria-label="Período"] a[aria-current="true"]').innerText()) === "30 dias");
+      t = await abrir(`p=personalizado&de=${d.ate}&ate=${d.de}`);
+      check("personalizado com início depois do fim: explica e cai em 30 dias", /não pode ser depois/.test(t));
+      t = await abrir("p=qualquer-coisa");
+      check("período desconhecido cai em 30 dias, sem erro", (await pageA.locator('nav[aria-label="Período"] a[aria-current="true"]').innerText()) === "30 dias" && !/Datas inválidas/.test(t));
+
+      // navegação pelo menu e pelo formulário (sem JavaScript do painel: link e GET)
+      await pageA.goto(`${BASE}/dashboard`);
+      await pageA.locator("details > summary").click();
+      await pageA.screenshot({ path: `${OUT}/14-menu-periodos-desktop.png`, clip: { x: 0, y: 0, width: 1440, height: 520 } });
+      await Promise.all([pageA.waitForURL(/p=semana-passada/, { timeout: 15000 }), pageA.locator('details a', { hasText: "Semana passada" }).click()]);
+      await pageA.waitForFunction(() => /Semana passada, comparados com a semana anterior/.test(document.body.innerText), null, { timeout: 15000 });
+      check("menu: clicar em 'Semana passada' leva ao período certo (subtítulo da página nova)", true);
+      await pageA.locator("details > summary").click();
+      await pageA.locator('details input[name="de"]').waitFor({ state: "visible", timeout: 15000 });
+      await pageA.locator('details input[name="de"]').fill(d.de);
+      await pageA.locator('details input[name="ate"]').fill(d.ate);
+      await Promise.all([pageA.waitForURL(/p=personalizado/, { timeout: 15000 }), pageA.locator('details form button[type="submit"]').click()]);
+      check("formulário de datas: aplica o período e mostra o mesmo número do banco", pageA.url().includes(`de=${d.de}`) && pageA.url().includes(`ate=${d.ate}`) && (await kpiBuscas()) === esperadoPers);
+
+      // lacunas e CSV respeitam o período; o filtro de estado não perde o período
+      await pageA.goto(`${BASE}/dashboard/lacunas?p=mes`);
+      check("lacunas: o texto cita o período escolhido", /no período \(este mês\)/.test(await texto(pageA)) || /Nenhuma lacuna/.test(await texto(pageA)));
+      const ufX = await pageA.locator('select[name="uf"] option').nth(1).getAttribute("value").catch(() => null);
+      if (ufX) {
+        await Promise.all([pageA.waitForURL(/uf=/, { timeout: 15000 }), pageA.locator("select[name=uf]").selectOption(ufX).then(() => pageA.click("main form[method=get]:has(select[name=uf]) button[type=submit]"))]);
+        check("lacunas: filtrar por estado mantém o período (?p=mes)", pageA.url().includes("p=mes"), pageA.url());
+      }
+      const baixarCsv = (u) => pageA.evaluate(async (url) => { const x = await fetch(url); return { status: x.status, anexo: x.headers.get("content-disposition") }; }, u);
+      const csv = await baixarCsv(`${BASE}/dashboard/lacunas/export?p=mes`);
+      check("CSV de lacunas: nome do arquivo traz o período", csv.status === 200 && /lacunas-fabrica-teste-mes\.csv/.test(csv.anexo || ""), `${csv.status} ${csv.anexo}`);
+      const csv7 = await baixarCsv(`${BASE}/dashboard/lacunas/export?dias=7`);
+      check("CSV de lacunas: o link antigo (?dias=7) continua funcionando", csv7.status === 200 && /lacunas-fabrica-teste-7d\.csv/.test(csv7.anexo || ""), `${csv7.status} ${csv7.anexo}`);
+
+      // leitura de IA: vale só para o período em que foi gerada e só por 24 h
+      await abrir("p=mes");
+      const cartao = pageA.locator("section", { has: pageA.locator("h2", { hasText: "Leitura do período" }) });
+      check("IA: a leitura do período de 30 dias não aparece em 'Este mês'", (await cartao.locator("[data-leitura]").count()) === 0 && (await cartao.locator("button", { hasText: "Gerar leitura" }).count()) === 1);
+      await dbSeed.query("update public.panel_ai_readings set created_at = now() - interval '25 hours'");
+      await abrir("p=30d");
+      check("IA: leitura com mais de 24 horas não é mais exibida (não comenta dado antigo)", (await cartao.locator("[data-leitura]").count()) === 0 && (await cartao.locator("button", { hasText: "Gerar leitura" }).count()) === 1);
+      await dbSeed.query("update public.panel_ai_readings set created_at = now() - interval '10 minutes'");
+      await abrir("p=30d");
+      check("IA: leitura recente do mesmo período volta a aparecer", (await cartao.locator("[data-leitura]").count()) === 1 && /do período “Últimos 30 dias”/.test(await cartao.innerText()));
+
+      await dbSeed.query(`delete from public.widget_events where session_id like 'e2e-per-%'`);
+    }
+
     // páginas internas
     for (const rota of ["/dashboard/lacunas", "/dashboard/rede", "/dashboard/catalogo", "/dashboard/importacoes", "/dashboard/widget"]) {
       await pageA.goto(`${BASE}${rota}`);
@@ -293,7 +395,7 @@ async function esperado() {
       const ufX = g.itens[0].uf;
       const esperadasUf = g.itens.filter((l) => l.uf === ufX);
       await pageA.selectOption("select[name=uf]", ufX);
-      await Promise.all([pageA.waitForLoadState("networkidle").catch(() => {}), pageA.click("main form[method=get] button[type=submit]")]);
+      await Promise.all([pageA.waitForLoadState("networkidle").catch(() => {}), pageA.click("main form[method=get]:has(select[name=uf]) button[type=submit]")]);
       check("lacunas: filtro por estado mostra só as combinações do estado", (await pageA.locator("table tbody tr").count()) === esperadasUf.length && /\?.*uf=/.test(pageA.url()), `${ufX}: ${esperadasUf.length}`);
       check("lacunas: com filtro, o total mostra 'X de Y'", new RegExp(`${esperadasUf.reduce((a, l) => a + l.buscas, 0)} de ${g.total_buscas} buscas`).test(await texto(pageA)));
       // filtro por produto (sku) via URL
@@ -411,6 +513,16 @@ async function esperado() {
         if (rota === "/dashboard/rede") await page.screenshot({ path: `${OUT}/09-rede-mobile.png`, fullPage: true });
       }
       check("mobile (390 px): nenhuma tela com rolagem horizontal da página", ok, estouros.join(", "));
+      await page.goto(`${BASE}/dashboard?p=mes`);
+      await page.locator("details > summary").click();
+      await page.waitForTimeout(200);
+      const lm = await page.evaluate(() => {
+        const menu = document.querySelector("details > div");
+        const r = menu ? menu.getBoundingClientRect() : null;
+        return { sw: document.documentElement.scrollWidth, iw: window.innerWidth, esq: r ? Math.round(r.left) : null, dir: r ? Math.round(r.right) : null };
+      });
+      check("mobile: menu de períodos aberto cabe na tela (sem rolagem lateral e sem sair pela borda)", lm.sw <= lm.iw + 1 && lm.esq >= 0 && lm.dir <= lm.iw, JSON.stringify(lm));
+      await page.screenshot({ path: `${OUT}/15-menu-periodos-mobile.png`, clip: { x: 0, y: 0, width: 390, height: 760 } });
       check("mobile: menu de seções disponível", (await page.locator('header nav[aria-label="Seções do painel"] a').count()) === 6);
       check("sem erros de JS no mobile", erros.length === 0, erros.join(" | "));
       await page.goto(`${BASE}/login`);

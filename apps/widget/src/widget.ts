@@ -30,6 +30,7 @@ import {
   sanitizeSearchTerm,
   summarizeResults,
   telLink,
+  termForTelemetry,
   whatsappLink,
 } from "./util";
 
@@ -175,10 +176,12 @@ export class GeoLynqWidget extends HTMLElement {
       if (run !== this.token) return;
       this.products = products;
       // Termo que não bate com nenhum SKU = demanda por produto fora do catálogo (Fase 10).
-      if (products.length === 0) {
+      // O texto só é gravado se não parecer dado pessoal (CEP, telefone, e-mail…); senão, nada é registrado.
+      const seguro = termForTelemetry(term);
+      if (products.length === 0 && seguro) {
         this.log({
           event_type: "search",
-          query_text: term,
+          query_text: seguro,
           product_id: null,
           results_count: 0,
           ...locationFields(null),
@@ -276,7 +279,7 @@ export class GeoLynqWidget extends HTMLElement {
       const summary = summarizeResults(resellers);
       this.log({
         event_type: "search",
-        query_text: sanitizeSearchTerm(this.term) || product.name,
+        query_text: termForTelemetry(this.term) ?? product.name,
         product_id: product.id,
         results_count: summary.physical_count,
         ...locationFields(located),
@@ -314,7 +317,7 @@ export class GeoLynqWidget extends HTMLElement {
   private trackClick(reseller: ResellerResult, action: WidgetEventAction): void {
     this.log({
       event_type: "reseller_click",
-      query_text: sanitizeSearchTerm(this.term) || this.product?.name || null,
+      query_text: termForTelemetry(this.term) ?? this.product?.name ?? null,
       product_id: this.product?.id ?? null,
       reseller_id: reseller.reseller_id,
       ...locationFields(this.point),

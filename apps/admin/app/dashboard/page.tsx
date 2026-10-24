@@ -5,7 +5,7 @@
  * Unauthorized copying, replication, redistribution or commercial use is prohibited.
  */
 import Link from "next/link";
-import { AvisoBasePequena } from "@/components/avisos";
+import { AvisoBasePequena, AvisoPeriodo } from "@/components/avisos";
 import { BarList, TrendChart } from "@/components/charts";
 import { CoverageMap } from "@/components/coverage-map";
 import { ErroPainel } from "@/components/erro-painel";
@@ -14,7 +14,8 @@ import { Card, CardHeader, Delta, Empty, Kpi, PageHeader } from "@/components/ui
 import { UltimasBuscas, QuemGeraContato } from "@/components/ao-vivo";
 import { FunilDeUso } from "@/components/funil";
 import { LeituraDoPeriodo } from "@/components/leitura";
-import { carregar, getCatalog, getEventosSimulados, getFunnel, getMembership, getUltimaLeitura, getOverview, getRecent, getResellerPerf, parseDias } from "@/lib/data";
+import { carregar, getCatalog, getEventosSimulados, getFunnel, getMembership, getUltimaLeitura, getOverview, getRecent, getResellerPerf } from "@/lib/data";
+import { resolverPeriodo } from "@/lib/periodo";
 import { avisoDeBase } from "@/lib/avisos";
 import { ACAO_CLIQUE, km, num, pct, variacao } from "@/lib/format";
 
@@ -23,7 +24,7 @@ export const metadata = { title: "Visão geral" };
 type SP = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function VisaoGeral({ searchParams }: { searchParams: SP }) {
-  const dias = parseDias((await searchParams).dias);
+  const periodo = resolverPeriodo(await searchParams, new Date());
   const m = await getMembership();
   if (!m) return null;
 
@@ -31,12 +32,12 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
   const erroIA = (await searchParams).ia;
   const detIA = (await searchParams).det;
   const [ov, cat, rec, perf, fun, leitura] = await Promise.all([
-    carregar(() => getOverview(m.tenant.id, dias)),
+    carregar(() => getOverview(m.tenant.id, periodo)),
     carregar(() => getCatalog(m.tenant.id)),
     carregar(() => getRecent(m.tenant.id, 10)),
-    carregar(() => getResellerPerf(m.tenant.id, dias)),
-    carregar(() => getFunnel(m.tenant.id, dias)),
-    iaAtiva ? carregar(() => getUltimaLeitura(m.tenant.id, dias)) : Promise.resolve(null),
+    carregar(() => getResellerPerf(m.tenant.id, periodo)),
+    carregar(() => getFunnel(m.tenant.id, periodo)),
+    iaAtiva ? carregar(() => getUltimaLeitura(m.tenant.id, periodo)) : Promise.resolve(null),
   ]);
   if ("erro" in ov) return <ErroPainel erro={ov.erro} />;
   if ("erro" in cat) return <ErroPainel erro={cat.erro} />;
@@ -47,16 +48,17 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
   const semBuscas = k.buscas === 0;
   const maior = o.lacunas[0];
   const vLacunas = variacao(k.sem_cobertura, o.anterior.sem_cobertura, "descer");
-  const aviso = avisoDeBase(k.buscas, o.anterior.buscas, dias, true);
+  const aviso = avisoDeBase(k.buscas, o.anterior.buscas, periodo.dias, true);
 
   return (
     <>
       <PageHeader
         titulo="Visão geral"
-        subtitulo={`Últimos ${dias} dias, comparados com os ${dias} dias anteriores.`}
-        direita={<PeriodTabs dias={dias} base="/dashboard" />}
+        subtitulo={`${periodo.rotulo}, ${periodo.comparacao}.`}
+        direita={<PeriodTabs periodo={periodo} base="/dashboard" />}
       />
 
+      <AvisoPeriodo texto={periodo.aviso} />
       <AvisoBasePequena aviso={aviso} />
 
       {/* A frase do painel: o que a equipe comercial precisa saber primeiro */}
@@ -135,7 +137,7 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
       </Card>
 
       {iaAtiva && leitura && !("erro" in leitura) ? (
-        <LeituraDoPeriodo leitura={leitura.dados} dias={dias} simulados={await getEventosSimulados(m.tenant.id)} erro={typeof erroIA === "string" ? erroIA : null} detalhe={typeof detIA === "string" && /^[\d.,% a-zç]{1,60}$/i.test(detIA) ? detIA : null} />
+        <LeituraDoPeriodo leitura={leitura.dados} periodo={periodo} simulados={await getEventosSimulados(m.tenant.id)} erro={typeof erroIA === "string" ? erroIA : null} detalhe={typeof detIA === "string" && /^[\d.,% a-zç]{1,60}$/i.test(detIA) ? detIA : null} />
       ) : null}
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
@@ -209,13 +211,13 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
       {/* Ao vivo: o que acabou de acontecer no site e quem da rede gera contato */}
       <div className="mb-6 grid gap-6 xl:grid-cols-[1.6fr_1fr]" id="ao-vivo">
         {"erro" in rec ? <ErroPainel erro={rec.erro} /> : <UltimasBuscas eventos={rec.dados} />}
-        {"erro" in perf ? <ErroPainel erro={perf.erro} /> : <QuemGeraContato rede={perf.dados} dias={dias} />}
+        {"erro" in perf ? <ErroPainel erro={perf.erro} /> : <QuemGeraContato rede={perf.dados} periodo={periodo} />}
       </div>
 
       <div className="mb-6 grid gap-6 xl:grid-cols-[1.6fr_1fr]">
         <Card>
           <CardHeader
-            titulo="Buscas por dia"
+            titulo={o.periodo.granularidade === "hora" ? "Buscas por hora" : "Buscas por dia"}
             dica="Linha escura: buscas. Linha verde: cliques em revendedor."
             direita={
               <ul className="flex shrink-0 gap-4 text-xs text-ink-2" aria-label="Legenda">
@@ -229,7 +231,7 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
             }
           />
           <div className="px-3 pb-4 pt-2 sm:px-5">
-            {o.serie.length > 0 ? <TrendChart serie={o.serie} /> : <Empty titulo="Sem dados" />}
+            {o.serie.length > 0 ? <TrendChart serie={o.serie} porHora={o.periodo.granularidade === "hora"} /> : <Empty titulo="Sem dados" />}
           </div>
         </Card>
 

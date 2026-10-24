@@ -6,6 +6,7 @@
  */
 import { Card, CardHeader, Empty } from "@/components/ui";
 import { ACAO_CLIQUE, haQuanto, num, TIPO_REVENDEDOR } from "@/lib/format";
+import type { Periodo } from "@/lib/periodo";
 import type { EventoRecente, RevendedorDesempenho } from "@/lib/types";
 
 /** Passos de navegação (digitou, escolheu produto, abriu a lista, filtrou a lista). */
@@ -120,7 +121,7 @@ export function UltimasBuscas({ eventos }: { eventos: EventoRecente[] }) {
 }
 
 /** Quem da rede mais gera contato no período; mostra também quem está parado. */
-export function QuemGeraContato({ rede, dias }: { rede: RevendedorDesempenho[]; dias: number }) {
+export function QuemGeraContato({ rede, periodo }: { rede: RevendedorDesempenho[]; periodo: Periodo }) {
   const fisicosOuTodos = rede;
   const top = fisicosOuTodos.filter((r) => r.contatos > 0).slice(0, 6);
   const parados = fisicosOuTodos.filter((r) => r.contatos === 0 && r.tipo !== "online");
@@ -129,7 +130,7 @@ export function QuemGeraContato({ rede, dias }: { rede: RevendedorDesempenho[]; 
     <Card>
       <CardHeader
         titulo="Quem gera contato"
-        dica={`Revendedores que mais receberam clique (WhatsApp, ligação, rota ou site) nos últimos ${dias} dias.`}
+        dica={`Revendedores que mais receberam clique (WhatsApp, ligação, rota ou site) no período (${periodo.rotulo.toLowerCase()}).`}
       />
       {top.length === 0 ? (
         <Empty titulo="Sem contatos no período">Ainda não houve clique em revendedores.</Empty>

@@ -10,7 +10,7 @@ import { diaCurto, num } from "@/lib/format";
  * Tendência diária: buscas (tinta, com área) e cliques em revendedor (teal).
  * SVG puro, renderizado no servidor: sem biblioteca de gráfico, sem JS no navegador.
  */
-export function TrendChart({ serie }: { serie: { dia: string; buscas: number; cliques: number }[] }) {
+export function TrendChart({ serie, porHora = false }: { serie: { dia: string; buscas: number; cliques: number }[]; porHora?: boolean }) {
   const W = 760;
   const H = 320;
   const m = { t: 14, r: 12, b: 28, l: 34 };
@@ -31,7 +31,7 @@ export function TrendChart({ serie }: { serie: { dia: string; buscas: number; cl
       viewBox={`0 0 ${W} ${H}`}
       className="h-auto w-full"
       role="img"
-      aria-label={`Buscas e cliques por dia. Total de ${num(total)} buscas no período.`}
+      aria-label={`Buscas e cliques por ${porHora ? "hora" : "dia"}. Total de ${num(total)} buscas no período.`}
     >
       {ticks.map((t) => (
         <g key={t}>

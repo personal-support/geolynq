@@ -19,6 +19,7 @@ import {
   resolveColor,
   safeUrl,
   sanitizeSearchTerm,
+  termForTelemetry,
   telLink,
   whatsappLink,
 } from "./util";
@@ -175,5 +176,27 @@ describe("telemetria v2: resumo dos resultados", () => {
   it("sem resultados, ou físicos sem distância (sem localização): nearest_km nulo", () => {
     expect(summarizeResults([])).toEqual({ physical_count: 0, online_count: 0, nearest_km: null });
     expect(summarizeResults([{ type: "loja_fisica", distance_km: null }])).toEqual({ physical_count: 1, online_count: 0, nearest_km: null });
+  });
+});
+
+describe("termForTelemetry (privacidade do texto digitado, widget v1 e v2)", () => {
+  it("descarta os casos reais que apareceram em produção: CEP digitado no campo de busca", () => {
+    expect(termForTelemetry("02636-060")).toBeNull();
+    expect(termForTelemetry("02636060")).toBeNull();
+  });
+  it("descarta e-mail, telefone, CPF e cartão", () => {
+    for (const bad of ["joao@email.com", "(13) 99999-8888", "13999998888", "123.456.789-09", "cartão 4111 1111 1111 1111"]) {
+      expect(termForTelemetry(bad)).toBeNull();
+    }
+  });
+  it("mantém nome de produto e SKU, em minúsculas e até 60 caracteres", () => {
+    expect(termForTelemetry("Whey Protein Isolado 900g")).toBe("whey protein isolado 900g");
+    expect(termForTelemetry("OM3-120")).toBe("om3-120");
+    expect(termForTelemetry("BCAA 2:1:1 120 cápsulas")).toBe("bcaa 2:1:1 120 cápsulas");
+    expect(termForTelemetry("x".repeat(100))?.length).toBe(60);
+  });
+  it("descarta termo curto demais", () => {
+    expect(termForTelemetry("ab")).toBeNull();
+    expect(termForTelemetry("   ")).toBeNull();
   });
 });

@@ -26,5 +26,9 @@ psql -d geolynq_test -f supabase/tests/09_widget_v2_nucleo.sql                  
 `04_*` confere: membro do cliente A lê os relatórios do A; usuário só do cliente B recebe NULL/0 linhas ao tentar ler o A;
 anônimo não vê nada e não executa as funções.
 
+Testes mais novos (cada um imprime `OK nn` e termina com ROLLBACK): `13_cnpj_alfanumerico.sql` (CNPJ com letras), `15_query_text_privacidade.sql` (texto digitado com cara de dado pessoal
+é descartado), `16_painel_periodo.sql` (funções `panel_*_r` iguais às antigas e períodos de calendário). `14_demo_podio_historico.sql` gera histórico simulado da Pódio com datas fixas
+(precisa da rede da Pódio: `14a_rede_podio_local.sql`); `psql -v slug=demo -v prefix=seed-pod-a- -v ini='2026-07-26 00:00-03' -v fim='2026-08-08 00:00-03' -v n=110 -f 14_demo_podio_historico.sql`.
+
 `03_eventos_simulados.sql` também serve para popular o tenant `fabrica-teste` em produção (todas as sessões começam com
 `seed-`; para apagar: `delete from public.widget_events where session_id like 'seed-%';` no SQL Editor).

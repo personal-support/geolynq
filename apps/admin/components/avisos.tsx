@@ -56,3 +56,13 @@ export function AvisoBasePequena({ aviso }: { aviso: AvisoBase }) {
     </div>
   );
 }
+
+/** Período pedido na URL era inválido (ex.: datas): a página mostra o padrão e explica por quê. */
+export function AvisoPeriodo({ texto }: { texto: string | null }) {
+  if (!texto) return null;
+  return (
+    <p role="note" className="mb-6 rounded-2xl border border-line-2 bg-card px-4 py-3 text-[14px] text-ink-2 shadow-card sm:px-5">
+      {texto} Mostrando os últimos 30 dias.
+    </p>
+  );
+}

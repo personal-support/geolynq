@@ -24,14 +24,5 @@ export function initials(name: string): string {
   return (words[0]?.[0] ?? "?").concat(words[1]?.[0] ?? "").toUpperCase();
 }
 
-/**
- * Texto digitado que NÃO deve ser gravado na telemetria: parece dado pessoal (telefone, CPF, e-mail, sequência longa de
- * números). Devolve o termo limpo, ou null para descartar. Decisão de privacidade: na dúvida, não grava.
- */
-export function termForTelemetry(raw: string): string | null {
-  const t = raw.replace(/\s+/g, " ").trim().slice(0, 60);
-  if (t.length < 3) return null;
-  if (/@/.test(t)) return null;
-  if (/\d[\d .()/-]{5,}\d/.test(t)) return null; // 6+ dígitos seguidos (com separadores): telefone, CPF, CEP, cartão…
-  return t.toLowerCase();
-}
+/** Regra de privacidade do texto digitado: vive em ../util (compartilhada com o widget v1). */
+export { termForTelemetry } from "../util";

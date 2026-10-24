@@ -27,7 +27,7 @@ COPY apps/admin apps/admin
 # Para outro projeto/chave, passe --build-arg (ou os mesmos nomes como variável de build no EasyPanel).
 ARG NEXT_PUBLIC_SUPABASE_URL=https://vshlsisnuaugeceafipt.supabase.co
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_uPV6cGkhNDXFiDb0Teq2rA_EUFyKIxR
-ARG NEXT_PUBLIC_WIDGET_SCRIPT_URL=https://widget.geolynq.personalsupport.tech/v1/embed.js
+ARG NEXT_PUBLIC_WIDGET_SCRIPT_URL=https://widget.geolynq.personalsupport.tech/v2/embed.js
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
     NEXT_PUBLIC_WIDGET_SCRIPT_URL=$NEXT_PUBLIC_WIDGET_SCRIPT_URL \

@@ -9,6 +9,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Leitura } from "@/lib/ia";
 import type { Catalog, EventoRecente, Funil, ImportBatch, LacunasCompletas, Overview, RevendedorDesempenho, Tenant } from "@/lib/types";
+import type { Periodo } from "./periodo";
 
 /** Usuário logado (validado no servidor do Supabase) + client. Uma consulta por requisição. */
 export const getSession = cache(async () => {
@@ -56,13 +57,19 @@ export const getMembership = cache(async (): Promise<Membership | null> => {
   return todos.find((m) => m.tenant.slug === slug) ?? todos[0];
 });
 
+const PERIODOS_HINT =
+  "Os períodos de calendário ainda não foram habilitados neste banco (migration 20261024030000_painel_periodo_calendario.sql).";
+
+/** Intervalo [de, ate) que as funções `_r` do banco esperam. */
+const intervalo = (p: Periodo) => ({ p_from: p.de, p_to: p.ate });
+
 const REPORTS_HINT =
   "Os relatórios do painel ainda não foram habilitados neste banco (migration 20261006000000_painel_relatorios.sql).";
 
-export const getOverview = cache(async (tenantId: string, dias: number): Promise<Overview> => {
+export const getOverview = cache(async (tenantId: string, periodo: Periodo): Promise<Overview> => {
   const { supabase } = await getSession();
-  const { data, error } = await supabase.rpc("panel_overview", { p_tenant_id: tenantId, p_days: dias });
-  if (error) throw new Error(error.code === "PGRST202" ? REPORTS_HINT : `Relatório de demanda indisponível: ${error.message}`);
+  const { data, error } = await supabase.rpc("panel_overview_r", { p_tenant_id: tenantId, ...intervalo(periodo), p_prev_from: periodo.ant_de, p_prev_to: periodo.ant_ate });
+  if (error) throw new Error(error.code === "PGRST202" ? PERIODOS_HINT : `Relatório de demanda indisponível: ${error.message}`);
   if (!data) throw new Error("Sem acesso a este cliente.");
   return data as Overview;
 });
@@ -86,13 +93,6 @@ export const getImports = cache(async (tenantId: string): Promise<ImportBatch[]>
   if (error) throw new Error(`Histórico de importações indisponível: ${error.message}`);
   return (data ?? []) as ImportBatch[];
 });
-
-/** Períodos aceitos no painel (dias). Qualquer outro valor cai em 30. */
-export const PERIODOS = [7, 30, 90] as const;
-export function parseDias(v: string | string[] | undefined): number {
-  const n = Number(Array.isArray(v) ? v[0] : v);
-  return (PERIODOS as readonly number[]).includes(n) ? n : 30;
-}
 
 /**
  * Em produção o Next esconde a mensagem de erros de Server Components. Para o cliente ver algo útil
@@ -130,46 +130,51 @@ export const getRecent = cache(async (tenantId: string, limite = 12): Promise<Ev
 });
 
 /** Contatos gerados por revendedor no período (inclui quem não gerou nenhum). */
-export const getResellerPerf = cache(async (tenantId: string, dias: number): Promise<RevendedorDesempenho[]> => {
+export const getResellerPerf = cache(async (tenantId: string, periodo: Periodo): Promise<RevendedorDesempenho[]> => {
   const { supabase } = await getSession();
-  const { data, error } = await supabase.rpc("panel_resellers", { p_tenant_id: tenantId, p_days: dias });
-  if (error) throw new Error(error.code === "PGRST202" ? REPORTS_HINT : `Desempenho da rede indisponível: ${error.message}`);
+  const { data, error } = await supabase.rpc("panel_resellers_r", { p_tenant_id: tenantId, ...intervalo(periodo) });
+  if (error) throw new Error(error.code === "PGRST202" ? PERIODOS_HINT : `Desempenho da rede indisponível: ${error.message}`);
   return (data ?? []) as RevendedorDesempenho[];
 });
 
 
 /** Funil de uso do widget (digitou, escolheu produto, informou local, achou revendedor, clicou; e o caminho pela lista). */
-export const getFunnel = cache(async (tenantId: string, dias: number): Promise<Funil> => {
+export const getFunnel = cache(async (tenantId: string, periodo: Periodo): Promise<Funil> => {
   const { supabase } = await getSession();
-  const { data, error } = await supabase.rpc("panel_funnel", { p_tenant_id: tenantId, p_days: dias });
-  if (error) throw new Error(error.code === "PGRST202" ? REPORTS_HINT : `Funil indisponível: ${error.message}`);
+  const { data, error } = await supabase.rpc("panel_funnel_r", { p_tenant_id: tenantId, ...intervalo(periodo) });
+  if (error) throw new Error(error.code === "PGRST202" ? PERIODOS_HINT : `Funil indisponível: ${error.message}`);
   if (!data) throw new Error("Sem acesso a este cliente.");
   return data as Funil;
 });
 
 /** Todas as lacunas do período (até 500 combinações) com o total exato de buscas sem revendedor por perto. */
-export const getGaps = cache(async (tenantId: string, dias: number): Promise<LacunasCompletas> => {
+export const getGaps = cache(async (tenantId: string, periodo: Periodo): Promise<LacunasCompletas> => {
   const { supabase } = await getSession();
-  const { data, error } = await supabase.rpc("panel_gaps", { p_tenant_id: tenantId, p_days: dias });
-  if (error) throw new Error(error.code === "PGRST202" ? REPORTS_HINT : `Lacunas indisponíveis: ${error.message}`);
+  const { data, error } = await supabase.rpc("panel_gaps_r", { p_tenant_id: tenantId, ...intervalo(periodo) });
+  if (error) throw new Error(error.code === "PGRST202" ? PERIODOS_HINT : `Lacunas indisponíveis: ${error.message}`);
   if (!data) throw new Error("Sem acesso a este cliente.");
   return data as LacunasCompletas;
 });
 
-/** Última leitura por IA guardada para o cliente e o período (ou null). */
+/** Quanto tempo uma leitura por IA continua aparecendo (24 h). */
+export const VALIDADE_LEITURA_MS = 24 * 60 * 60 * 1000;
+
+/** Última leitura por IA, ainda válida, para o cliente e o período (ou null). */
 export interface LeituraGuardada {
   id: string;
   conteudo: Leitura;
   modelo: string;
   created_at: string;
 }
-export const getUltimaLeitura = cache(async (tenantId: string, dias: number): Promise<LeituraGuardada | null> => {
+export const getUltimaLeitura = cache(async (tenantId: string, periodo: Periodo): Promise<LeituraGuardada | null> => {
   const { supabase } = await getSession();
   const { data, error } = await supabase
     .from("panel_ai_readings")
     .select("id, conteudo, modelo, created_at")
     .eq("tenant_id", tenantId)
-    .eq("dias", dias)
+    .eq("chave", periodo.id)
+    // uma leitura só vale por 24 h: depois disso os números já mudaram e ela passaria a comentar algo antigo
+    .gte("created_at", new Date(Date.now() - VALIDADE_LEITURA_MS).toISOString())
     .order("created_at", { ascending: false })
     .limit(1);
   if (error) {

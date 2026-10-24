@@ -9,22 +9,25 @@ import { BotaoGerar } from "@/components/botao-gerar";
 import { Card, CardHeader, Empty } from "@/components/ui";
 import type { LeituraGuardada } from "@/lib/data";
 import { num } from "@/lib/format";
+import type { Periodo } from "@/lib/periodo";
 import { MENSAGEM_ERRO, type ErroIA } from "@/lib/ia";
 
 const quando = (iso: string) =>
   new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 
-function Botao({ dias, rotulo }: { dias: number; rotulo: string }) {
+function Botao({ periodo, rotulo }: { periodo: Periodo; rotulo: string }) {
   return (
     <form action={gerarLeituraIA}>
-      <input type="hidden" name="dias" value={dias} />
+      {[...new URLSearchParams(periodo.query)].map(([k, v]) => (
+        <input key={k} type="hidden" name={k} value={v} />
+      ))}
       <BotaoGerar rotulo={rotulo} />
     </form>
   );
 }
 
 /** Leitura do período por IA. Os números vêm do banco e são conferidos antes de aparecer (lib/ia.ts). */
-export function LeituraDoPeriodo({ leitura, dias, erro, detalhe, simulados }: { leitura: LeituraGuardada | null; dias: number; erro: string | null; detalhe?: string | null; simulados?: { simulados: number; total: number } | null }) {
+export function LeituraDoPeriodo({ leitura, periodo, erro, detalhe, simulados }: { leitura: LeituraGuardada | null; periodo: Periodo; erro: string | null; detalhe?: string | null; simulados?: { simulados: number; total: number } | null }) {
   const msg = erro && erro in MENSAGEM_ERRO ? MENSAGEM_ERRO[erro as ErroIA] : null;
   const c = leitura?.conteudo;
   return (
@@ -33,7 +36,7 @@ export function LeituraDoPeriodo({ leitura, dias, erro, detalhe, simulados }: { 
       <CardHeader
         titulo="Leitura do período"
         dica="Texto escrito por IA a partir dos números deste painel. Cada número citado é conferido contra os dados antes de aparecer; a IA não calcula nada."
-        direita={leitura ? <Botao dias={dias} rotulo="Gerar nova leitura" /> : undefined}
+        direita={leitura ? <Botao periodo={periodo} rotulo="Gerar nova leitura" /> : undefined}
       />
       <div className="px-5 pb-6 pt-4">
         {simulados && simulados.simulados > 0 ? (
@@ -52,7 +55,7 @@ export function LeituraDoPeriodo({ leitura, dias, erro, detalhe, simulados }: { 
             <Empty titulo="Nenhuma leitura gerada para este período">
               Gere um resumo com os pontos de atenção e as ações sugeridas para a equipe comercial.
             </Empty>
-            <Botao dias={dias} rotulo="Gerar leitura" />
+            <Botao periodo={periodo} rotulo="Gerar leitura" />
           </div>
         ) : (
           <div data-leitura>
@@ -79,7 +82,7 @@ export function LeituraDoPeriodo({ leitura, dias, erro, detalhe, simulados }: { 
               ))}
             </ol>
             <p className="mt-5 text-xs text-ink-3">
-              Gerada por IA em {quando(leitura.created_at)}, com os dados dos últimos {dias} dias. Confira sempre os números nos cartões acima e abaixo.
+              Gerada por IA em {quando(leitura.created_at)}, com os dados do período “{periodo.rotulo}”. Vale por 24 horas: depois disso os números já mudaram e ela some. Confira sempre os números nos cartões acima e abaixo.
             </p>
           </div>
         )}

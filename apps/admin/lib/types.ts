@@ -48,7 +48,7 @@ export interface PontoDemanda {
 }
 
 export interface Overview {
-  periodo: { dias: number; de: string; ate: string; anterior_de: string };
+  periodo: { dias: number; de: string; ate: string; anterior_de: string; anterior_ate?: string; granularidade?: "dia" | "hora" };
   kpis: Kpis;
   anterior: { buscas: number; sessoes: number; cliques: number; sem_cobertura: number };
   serie: { dia: string; buscas: number; cliques: number }[];

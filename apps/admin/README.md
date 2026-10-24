@@ -28,7 +28,15 @@ Os relatórios vêm de 2 funções do banco (`panel_overview`, `panel_catalog`) 
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto `geolynq-prod` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | chave **publishable** (`sb_publishable_…`). Nunca `service_role` |
-| `NEXT_PUBLIC_WIDGET_SCRIPT_URL` | (opcional) bundle do widget; padrão `https://widget.geolynq.personalsupport.tech/v1/embed.js` |
+| `NEXT_PUBLIC_WIDGET_SCRIPT_URL` | (opcional) bundle do widget; padrão `https://widget.geolynq.personalsupport.tech/v2/embed.js` (o mesmo widget da demonstração; o v1 continua no ar para quem já o embutiu) |
+
+## Períodos
+Seletor no alto da Visão geral e das Lacunas: **7, 30 e 90 dias** (janela móvel, como sempre) e o menu **Outros períodos**: Hoje, Esta semana (segunda a hoje), Semana passada,
+Este mês, Mês anterior, Este ano e **Personalizado** (datas inicial e final, no máximo 366 dias). O período vai na URL (`?p=mes`, `?p=personalizado&de=AAAA-MM-DD&ate=AAAA-MM-DD`; o antigo `?dias=7|30|90`
+continua valendo), então o endereço pode ser salvo ou compartilhado. Regras: calendário em horário de Brasília; semana começa na segunda; a comparação usa os MESMOS dias do período anterior
+(um mês pela metade é comparado com os mesmos dias do mês anterior); "Hoje" e dias únicos mostram o gráfico por hora; datas inválidas caem em 30 dias com um aviso.
+Não existe "Ano anterior": os dados são guardados por 12 meses (retenção). Código: `lib/periodo.ts` (puro, testado em `e2e/periodo.test.mts`); banco: funções `panel_*_r` (migration `20261024030000_painel_periodo_calendario.sql`,
+exige aplicá-la ANTES de publicar o painel). As telas Rede, Catálogo, Importações e Widget não dependem de período.
 
 ## Leitura do período por IA (variáveis SECRETAS, só do servidor)
 Definir no EasyPanel, serviço `geolynq_admin`, aba Ambiente (em tempo de execução; **sem** prefixo `NEXT_PUBLIC_`, nunca no Dockerfile nem no repositório):
@@ -41,7 +49,7 @@ Definir no EasyPanel, serviço `geolynq_admin`, aba Ambiente (em tempo de execu�
 
 Sem `ANTHROPIC_API_KEY` o cartão "Leitura do período" nem aparece. Requer a migration `20261012000000_leitura_ia.sql`. Regras: números vêm do SQL e são
 conferidos contra os dados antes de aparecer (`lib/ia.ts`); no máximo 1 leitura a cada 2 minutos e 30 por dia por cliente.
-Teste da lógica pura: `node --experimental-strip-types apps/admin/e2e/ia.test.mts`.
+Testes da lógica pura: `node --experimental-strip-types apps/admin/e2e/ia.test.mts` e `node --experimental-strip-types apps/admin/e2e/periodo.test.mts`.
 
 ## Rodar e testar
 ```bash
@@ -55,7 +63,7 @@ export NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 NEXT_PUBLIC_SUPABASE_ANON
 npm run build -w @geolynq/admin
 E2E_STANDALONE=1 PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers npm run e2e -w @geolynq/admin   # servidor "standalone" = o da imagem Docker
 ```
-Cobre: login/erro/`?next` externo, isolamento entre clientes, números da tela = números do banco, filtros, período, mapa, faixa de demonstração, aviso de base pequena,
+Cobre: login/erro/`?next` externo, isolamento entre clientes, números da tela = números do banco, filtros, períodos de calendário (hoje, semana, mês, ano, personalizado, comparados com a contagem direta no banco), menu de períodos no celular, mapa, faixa de demonstração, aviso de base pequena,
 sem rolagem lateral no celular, cookies `httpOnly`, CSP, sair. Capturas em `E2E_OUT` (padrão `/tmp/geolynq-e2e`).
 
 ## Publicar (EasyPanel, projeto `personalsupport_saas`)

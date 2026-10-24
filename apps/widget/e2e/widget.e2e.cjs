@@ -102,6 +102,16 @@ async function setup(ctx) {
   const injTerm = supabaseCalls.filter(c => c.path === 'rpc/widget_search_products').pop().body.p_term;
   check('termo com sintaxe de filtro é neutralizado antes de ir à API', !/[,()]/.test(injTerm), injTerm);
 
+  // privacidade do texto digitado (v1): termo com cara de dado pessoal NÃO vira evento; termo comum sem produto continua virando (demanda fora do catálogo)
+  const evAntesPriv = events.length;
+  for (const pessoal of ['02636-060', 'joao@email.com', '(13) 99999-8888']) {
+    await sel('input#gl-term').fill(pessoal); await sel('button[type=submit]').click(); await page.waitForTimeout(600);
+  }
+  check('privacidade (v1): CEP, e-mail e telefone digitados no campo de busca NÃO são gravados', events.slice(evAntesPriv).length === 0 && !/02636|joao@|99999-8888/.test(JSON.stringify(events)), JSON.stringify(events.slice(evAntesPriv)));
+  await sel('input#gl-term').fill('Colageno Marinho'); await sel('button[type=submit]').click(); await page.waitForTimeout(600);
+  const evFora = events.slice(evAntesPriv);
+  check('privacidade (v1): termo comum sem produto continua gravado (demanda fora do catálogo), em minúsculas', evFora.length === 1 && evFora[0].event_type === 'search' && evFora[0].product_id === null && evFora[0].query_text === 'colageno marinho', JSON.stringify(evFora));
+
   await sel('input#gl-term').fill('PROTEINA'); await sel('button[type=submit]').click();
   await sel('button.pick:has-text("Barra de Proteína")').first().waitFor({ timeout: 10000 });
   check('busca sem acento ("PROTEINA") acha "Barra de Proteína" via RPC', /Barra de Proteína/.test(await sel('button.pick').first().innerText()) && supabaseCalls.filter(c => c.path === 'rpc/widget_search_products').pop().body.p_term === 'PROTEINA');

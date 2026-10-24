@@ -42,6 +42,7 @@ export function dataHora(iso: string | null | undefined): string {
 }
 
 export function diaCurto(dia: string): string {
+  if (dia.includes("T")) return `${dia.slice(11, 13)}h`; // série por hora: "AAAA-MM-DDTHH:00" -> "14h"
   const [, m, d] = dia.split("-");
   return `${d}/${m}`;
 }

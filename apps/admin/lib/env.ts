@@ -19,4 +19,4 @@ export function supabaseEnv(): { url: string; key: string } {
 
 /** Bundle do widget publicado (usado só na tela "Widget" para o preview e o snippet de instalação). */
 export const WIDGET_SCRIPT_URL =
-  process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL ?? "https://widget.geolynq.personalsupport.tech/v1/embed.js";
+  process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL ?? "https://widget.geolynq.personalsupport.tech/v2/embed.js";

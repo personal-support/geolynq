@@ -5,6 +5,7 @@
  * Unauthorized copying, replication, redistribution or commercial use is prohibited.
  */
 import type { Funil, Overview, RevendedorDesempenho } from "@/lib/types";
+import type { Periodo } from "./periodo";
 
 /**
  * "Leitura do período" por IA. Regras que não se negociam:
@@ -70,12 +71,14 @@ export const MENSAGEM_ERRO: Record<ErroIA, string> = {
 const pctVar = (atual: number, anterior: number): number | null => (anterior > 0 ? Math.round((100 * (atual - anterior)) / anterior) : null);
 
 /** Resumo numérico que vai para a IA. Só números e textos que já estão no painel. */
-export function montarDados(nome: string, dias: number, ov: Overview, funil: Funil, rede: RevendedorDesempenho[]) {
+export function montarDados(nome: string, periodo: Periodo, ov: Overview, funil: Funil, rede: RevendedorDesempenho[]) {
   const k = ov.kpis;
   const fisicos = rede.filter((r) => r.tipo !== "online");
   return {
     cliente: nome,
-    periodo_dias: dias,
+    periodo: periodo.rotulo,
+    periodo_dias: periodo.dias,
+    comparado_com: periodo.comparacao.replace(/^comparad[oa]s? com /, ""),
     buscas: k.buscas,
     visitas_com_busca: k.sessoes,
     cliques_em_revendedor: k.cliques,

@@ -109,6 +109,18 @@ function start(port = 54321) {
           const r = await comoUsuario(claims.sub, (db) => db.query("select public.panel_overview($1::uuid, $2::int) as j", [body.p_tenant_id, body.p_days]));
           return send(200, r.rows[0].j);
         }
+        if (rota === "rpc/panel_overview_r") {
+          const r = await comoUsuario(claims.sub, (db) =>
+            db.query("select public.panel_overview_r($1::uuid, $2::timestamptz, $3::timestamptz, $4::timestamptz, $5::timestamptz) as j", [body.p_tenant_id, body.p_from, body.p_to, body.p_prev_from, body.p_prev_to]),
+          );
+          return send(200, r.rows[0].j);
+        }
+        for (const nome of ["panel_gaps_r", "panel_funnel_r", "panel_resellers_r"]) {
+          if (rota === `rpc/${nome}`) {
+            const r = await comoUsuario(claims.sub, (db) => db.query(`select public.${nome}($1::uuid, $2::timestamptz, $3::timestamptz) as j`, [body.p_tenant_id, body.p_from, body.p_to]));
+            return send(200, r.rows[0].j);
+          }
+        }
         if (rota === "rpc/panel_catalog") {
           const r = await comoUsuario(claims.sub, (db) => db.query("select public.panel_catalog($1::uuid) as j", [body.p_tenant_id]));
           return send(200, r.rows[0].j);
@@ -154,8 +166,8 @@ function start(port = 54321) {
             try {
               await comoUsuario(claims.sub, (db) =>
                 db.query(
-                  "insert into public.panel_ai_readings (tenant_id, dias, conteudo, modelo, tokens_in, tokens_out) values ($1::uuid, $2::int, $3::jsonb, $4, $5, $6)",
-                  [b.tenant_id, b.dias, JSON.stringify(b.conteudo), b.modelo, b.tokens_in ?? null, b.tokens_out ?? null],
+                  "insert into public.panel_ai_readings (tenant_id, dias, chave, conteudo, modelo, tokens_in, tokens_out) values ($1::uuid, $2::int, $3, $4::jsonb, $5, $6, $7)",
+                  [b.tenant_id, b.dias, b.chave ?? null, JSON.stringify(b.conteudo), b.modelo, b.tokens_in ?? null, b.tokens_out ?? null],
                 ),
               );
             } catch (e) {
@@ -165,11 +177,15 @@ function start(port = 54321) {
           }
           const tenant = (url.searchParams.get("tenant_id") || "").replace(/^eq\./, "");
           const dias = (url.searchParams.get("dias") || "").replace(/^eq\./, "");
+          const chave = (url.searchParams.get("chave") || "").replace(/^eq\./, "");
+          const desde = (url.searchParams.get("created_at") || "").replace(/^gte\./, "");
+          const params = [tenant];
+          let filtro = "";
+          if (dias) filtro += ` and dias = $${params.push(dias)}::int`;
+          if (chave) filtro += ` and chave = $${params.push(chave)}`;
+          if (desde) filtro += ` and created_at >= $${params.push(desde)}::timestamptz`;
           const r = await comoUsuario(claims.sub, (db) =>
-            db.query(
-              `select id, conteudo, modelo, created_at from public.panel_ai_readings where tenant_id = $1::uuid ${dias ? "and dias = $2::int" : ""} order by created_at desc limit 1`,
-              dias ? [tenant, dias] : [tenant],
-            ),
+            db.query(`select id, conteudo, modelo, created_at from public.panel_ai_readings where tenant_id = $1::uuid${filtro} order by created_at desc limit 1`, params),
           );
           return send(200, r.rows);
         }
