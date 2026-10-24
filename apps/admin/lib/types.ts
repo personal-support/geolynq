@@ -38,6 +38,29 @@ export interface Lacuna {
   sessoes: number;
 }
 
+export type StatusCandidato = "novo" | "contatado" | "vende" | "nao_vende" | "sem_interesse";
+
+/** Empresa do ramo do cliente que não consta na rede dele (dado cadastral da Receita; sem telefone nem e-mail). */
+export interface Candidato {
+  id: string;
+  cnpj: string;
+  nome: string | null;
+  cnae: string;
+  cnae_desc: string | null;
+  bairro: string | null;
+  cep: string | null;
+  score: number;
+  status: StatusCandidato;
+}
+
+export interface CandidatosCidade {
+  uf: string;
+  cidade: string;
+  abertos: number;
+  por_status: Record<StatusCandidato, number>;
+  itens: Candidato[];
+}
+
 export interface PontoDemanda {
   cidade: string;
   uf: string | null;

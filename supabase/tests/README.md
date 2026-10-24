@@ -32,3 +32,5 @@ Testes mais novos (cada um imprime `OK nn` e termina com ROLLBACK): `13_cnpj_alf
 
 `03_eventos_simulados.sql` também serve para popular o tenant `fabrica-teste` em produção (todas as sessões começam com
 `seed-`; para apagar: `delete from public.widget_events where session_id like 'seed-%';` no SQL Editor).
+
+- `17_candidatos_a_revendedor.sql` — candidatos a revendedor e CNAEs de canal (migration `20261025000000`): proposta por 5% e 3+, relatório de exclusões, busca por cidade sem acento, filial escondida, permissões (owner/viewer/estranho/anônimo), restrições. Hermético (cria o próprio cliente). Imprime `OK 17`.

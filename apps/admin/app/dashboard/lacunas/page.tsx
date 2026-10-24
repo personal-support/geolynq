@@ -9,7 +9,8 @@ import { BarList } from "@/components/charts";
 import { ErroPainel } from "@/components/erro-painel";
 import { PeriodTabs } from "@/components/period-tabs";
 import { Card, CardHeader, Empty, PageHeader, TD, TH } from "@/components/ui";
-import { carregar, getGaps, getMembership, getOverview } from "@/lib/data";
+import { CandidatosPorCidade } from "@/components/candidatos";
+import { carregar, getCandidatos, getGaps, getMembership, getOverview } from "@/lib/data";
 import { resolverPeriodo } from "@/lib/periodo";
 import { filtrarLacunas, lerFiltro } from "@/lib/lacunas";
 import { avisoDeBase } from "@/lib/avisos";
@@ -39,6 +40,21 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
   const qs = qsParams.toString();
   const truncada = todas.combinacoes > todas.itens.length;
   const aviso = avisoDeBase(o.kpis.buscas, o.anterior.buscas, periodo.dias, false);
+
+  // candidatos a revendedor: as 10 cidades com mais buscas sem revendedor (dentro do filtro atual)
+  const porCidade = new Map<string, { uf: string; cidade: string; buscas: number }>();
+  for (const l of lista) {
+    if (!l.uf) continue;
+    const k = `${l.uf}|${l.cidade.toLowerCase()}`;
+    const x = porCidade.get(k) ?? { uf: l.uf, cidade: l.cidade, buscas: 0 };
+    x.buscas += l.buscas;
+    porCidade.set(k, x);
+  }
+  const maisBuscadas = [...porCidade.values()].sort((a, b) => b.buscas - a.buscas).slice(0, 10);
+  const candidatos = await getCandidatos(m.tenant.id, maisBuscadas.map(({ uf, cidade }) => ({ uf, cidade })));
+  const buscasPorCidade = Object.fromEntries(maisBuscadas.map((c) => [`${c.uf}|${c.cidade.toLowerCase()}`, c.buscas]));
+  if (candidatos) candidatos.sort((a, b) => (buscasPorCidade[`${b.uf}|${b.cidade.toLowerCase()}`] ?? 0) - (buscasPorCidade[`${a.uf}|${a.cidade.toLowerCase()}`] ?? 0));
+  const erroCand = typeof sp.cand === "string" && /^(permissao|falha|invalido)$/.test(sp.cand) ? sp.cand : null;
 
   return (
     <>
@@ -147,12 +163,13 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
                 ))}
               </tbody>
             </table>
-            <p className="border-t border-line px-5 py-3 text-[13px] text-ink-3">
-              Em breve: para cada lacuna, a lista de candidatos a revendedor na região (empresas do ramo que ainda não vendem a sua marca).
-            </p>
           </div>
         )}
       </Card>
+
+      {lista.length > 0 ? (
+        <CandidatosPorCidade cidades={candidatos} buscasPorCidade={buscasPorCidade} podeEditar={m.role === "owner" || m.role === "admin"} periodoQuery={periodo.query} erro={erroCand} />
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>

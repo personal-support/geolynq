@@ -82,3 +82,30 @@ export async function gerarLeituraIA(formData: FormData) {
   }
   return volta();
 }
+
+const ANDAMENTOS = ["novo", "contatado", "vende", "nao_vende", "sem_interesse"] as const;
+
+/**
+ * Muda o andamento de um candidato a revendedor (contatado, vende, não vende, sem interesse). O banco confere o papel
+ * (só owner/admin) e o vínculo com o cliente; aqui só validamos a forma dos campos e voltamos para a lista.
+ */
+export async function marcarCandidato(formData: FormData) {
+  const campo = (k: string) => {
+    const v = formData.get(k);
+    return typeof v === "string" ? v : "";
+  };
+  const periodo = resolverPeriodo({ p: campo("p") || undefined, de: campo("de") || undefined, ate: campo("ate") || undefined, dias: campo("dias") || undefined }, new Date());
+  const volta = (erro?: string) => redirect(`/dashboard/lacunas?${periodo.query}${erro ? `&cand=${erro}` : ""}#candidatos`);
+  const id = campo("id");
+  const status = campo("status");
+  if (!/^[0-9a-f-]{36}$/i.test(id) || !(ANDAMENTOS as readonly string[]).includes(status)) return volta("invalido");
+  const m = await getMembership();
+  if (!m) return volta("falha");
+  const { supabase } = await getSession();
+  const { error } = await supabase.rpc("panel_candidate_status", { p_tenant_id: m.tenant.id, p_candidate_id: id, p_status: status });
+  if (error) {
+    console.error("[candidatos] andamento não gravado:", error.code, error.message);
+    return volta(error.code === "42501" ? "permissao" : "falha");
+  }
+  return volta();
+}

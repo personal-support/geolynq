@@ -121,6 +121,22 @@ function start(port = 54321) {
             return send(200, r.rows[0].j);
           }
         }
+        if (rota === "rpc/panel_candidates") {
+          const r = await comoUsuario(claims.sub, (db) =>
+            db.query("select public.panel_candidates($1::uuid, $2::jsonb, $3::int) as j", [body.p_tenant_id, JSON.stringify(body.p_cidades ?? null), body.p_limit ?? 6]),
+          );
+          return send(200, r.rows[0].j);
+        }
+        if (rota === "rpc/panel_candidate_status") {
+          try {
+            const r = await comoUsuario(claims.sub, (db) =>
+              db.query("select public.panel_candidate_status($1::uuid, $2::uuid, $3::text) as j", [body.p_tenant_id, body.p_candidate_id, body.p_status]),
+            );
+            return send(200, r.rows[0].j);
+          } catch (e) {
+            return send(e.code === "42501" ? 403 : 400, { code: e.code, message: e.message });
+          }
+        }
         if (rota === "rpc/panel_catalog") {
           const r = await comoUsuario(claims.sub, (db) => db.query("select public.panel_catalog($1::uuid) as j", [body.p_tenant_id]));
           return send(200, r.rows[0].j);

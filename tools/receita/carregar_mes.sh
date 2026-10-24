@@ -10,7 +10,7 @@
 #   bash carregar_mes.sh 2026-10 teste    # carrega só Estabelecimentos1.zip (326 MB) e as tabelas pequenas: mede tempo e linhas
 #   bash carregar_mes.sh 2026-10 tudo     # os 10 arquivos de Estabelecimentos (≈5,2 GB); pode demorar, rode dentro do tmux/screen
 #
-# Variáveis (opcionais): DB (padrão $HOME/cnpj/cnpj.db), CODIGO (código do compartilhamento da Receita), UFS (ex.: SP,RJ; vazio = Brasil).
+# Variáveis (opcionais): CNAES (CNAEs de canal, separados por vírgula), DB (padrão $HOME/cnpj/cnpj.db), CODIGO (código do compartilhamento da Receita), UFS (ex.: SP,RJ; vazio = Brasil).
 set -u -o pipefail
 
 MES="${1:?Use: bash carregar_mes.sh AAAA-MM teste|tudo}"
@@ -18,8 +18,9 @@ MODO="${2:-teste}"
 CODIGO="${CODIGO:-gn672Ad4CF8N6TK}"
 DB="${DB:-$HOME/cnpj/cnpj.db}"
 UFS="${UFS:-}"
-# CNAEs de canal do segmento "suplementos" (tabela segment_channel_cnaes do Supabase, conferida em 2026-10-24)
-CNAES="4729699,4617600,4637199,4763602,4771701,4619200,4639701,4691500,4771702,9313100"
+# CNAEs de canal. Padrão: segmento "suplementos" (tabela segment_channel_cnaes do Supabase, conferida em 2026-10-24).
+# Outro cliente: CNAES="1234567,7654321" DB=$HOME/cnpj/cliente.db bash carregar_mes.sh AAAA-MM tudo   (um banco por cliente)
+CNAES="${CNAES:-4729699,4617600,4637199,4763602,4771701,4619200,4639701,4691500,4771702,9313100}"
 BASE="https://arquivos.receitafederal.gov.br/public.php/webdav/Dados/Cadastros/CNPJ/$MES"
 AQUI="$(cd "$(dirname "$0")" && pwd)"
 CARGA="$AQUI/carregar_arquivo.py"

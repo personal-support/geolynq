@@ -137,6 +137,7 @@ async function esperado() {
     await dbSeed.connect();
     await dbSeed.query("delete from public.widget_events where session_id like 'e2e-%'");
     await dbSeed.query("delete from public.panel_ai_readings");
+    await dbSeed.query("delete from public.reseller_candidates where nome_fantasia like 'E2E %'");
     await dbSeed.query(`insert into public.widget_events (tenant_id, session_id, event_type, query_text, results_count, telemetry_v, created_at)
       select (select id from public.tenants where slug='demo'), 'e2e-' || g, 'search', 'whey', 1, 2, now() - (g || ' hours')::interval from generate_series(1, 5) g`);
     browser = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });
@@ -392,8 +393,50 @@ async function esperado() {
     {
       const linhas = await pageA.locator("table tbody tr").count();
       check("lacunas: tabela com todas as combinações", linhas === ref.ov.lacunas.length, `${linhas} de ${ref.ov.lacunas.length}`);
-      check("lacunas: orienta o próximo passo sem prometer o que não existe", /em breve/i.test(await texto(pageA)));
+      check("lacunas: sem candidatos carregados, diz que ainda não há (sem prometer o que não existe)", /Ainda não há candidatos para estas cidades/.test(await texto(pageA)));
       await pageA.screenshot({ path: `${OUT}/03-lacunas-desktop.png`, fullPage: true });
+
+      // candidatos a revendedor: 4 na cidade com mais buscas sem revendedor (a Receita grava em MAIÚSCULAS e sem acento)
+      const somaCidade = new Map();
+      for (const l of ref.gaps30.itens) if (l.uf) somaCidade.set(`${l.uf}|${l.cidade}`, (somaCidade.get(`${l.uf}|${l.cidade}`) || 0) + l.buscas);
+      const [topUf, topCidade] = [...somaCidade.entries()].sort((a, b) => b[1] - a[1])[0][0].split("|");
+      const top = { uf: topUf, cidade: topCidade };   // a cidade com mais buscas sem revendedor é a primeira (e a única aberta) do cartão
+      const semAcento = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+      const T = (await dbSeed.query("select id from public.tenants where slug='fabrica-teste'")).rows[0].id;
+      const cnpjsCand = [["19283746000188", "E2E Alfa Suplementos", 40], ["86420975000194", "E2E Beta Academia", 30], ["24681012000197", "E2E Gama Nutrição", 20], ["13579113000135", "E2E Delta Esportes", 10]];
+      for (const [cnpj, nome, score] of cnpjsCand)
+        await dbSeed.query("insert into public.reseller_candidates (tenant_id, cnpj, nome_fantasia, cnae, uf, municipio, bairro, cep, score) values ($1,$2,$3,'4763602',$4,$5,'Centro','11060001',$6)", [T, cnpj, nome, top.uf, semAcento(top.cidade), score]);
+      await pageA.goto(`${BASE}/dashboard/lacunas`);
+      const txtCand = await texto(pageA);
+      check("candidatos: o cartão mostra a cidade da maior lacuna e 4 em aberto", /Candidatos a revendedor/.test(txtCand) && new RegExp(`${top.cidade}[\\s\\S]{0,60}4 candidatos em aberto`).test(txtCand), top.cidade);
+      check("candidatos: lista os 4 pelo nome fantasia, maior aderência primeiro", (await pageA.locator("[data-candidato]").evaluateAll((els) => els.map((e) => e.querySelector("p").textContent))).join("|") === "E2E Alfa Suplementos|E2E Beta Academia|E2E Gama Nutrição|E2E Delta Esportes");
+      check("candidatos: avisa que não sabemos se já vendem e que não há telefone/e-mail", /não sabemos se já vendem/.test(txtCand) && /sem\s+telefone nem e-mail/.test(txtCand));
+      check("candidatos: CNPJ formatado e CEP com hífen", /19\.283\.746\/0001-88/.test(txtCand) && /11060-001/.test(txtCand));
+      await pageA.screenshot({ path: `${OUT}/16-lacunas-candidatos-desktop.png`, fullPage: true });
+      // o dono marca "Contatado" e depois "Sem interesse"
+      const linhaAlfa = pageA.locator('[data-candidato="19283746000188"]');
+      await linhaAlfa.locator("select").selectOption("contatado");
+      await Promise.all([pageA.waitForURL(/#candidatos|\/dashboard\/lacunas/), linhaAlfa.locator("button", { hasText: "Salvar" }).click()]);
+      for (let i = 0; i < 40; i++) {
+        if ((await dbSeed.query("select status from public.reseller_candidates where cnpj='19283746000188'")).rows[0].status === "contatado") break;
+        await pageA.waitForTimeout(150);
+      }
+      await pageA.waitForLoadState("networkidle").catch(() => {});
+      const stAlfa = (await dbSeed.query("select status, status_por from public.reseller_candidates where cnpj='19283746000188'")).rows[0];
+      check("candidatos: marcar 'Contatado' grava no banco com quem marcou", stAlfa.status === "contatado" && !!stAlfa.status_por, JSON.stringify(stAlfa));
+      check("candidatos: a tela volta com o novo andamento selecionado e o período preservado", (await pageA.locator('[data-candidato="19283746000188"] select').inputValue()) === "contatado" && /\/dashboard\/lacunas\?/.test(pageA.url()), pageA.url());
+      await pageA.locator('[data-candidato="86420975000194"] select').selectOption("sem_interesse");
+      await pageA.locator('[data-candidato="86420975000194"] button', { hasText: "Salvar" }).click();
+      for (let i = 0; i < 40; i++) {
+        if ((await dbSeed.query("select status from public.reseller_candidates where cnpj='86420975000194'")).rows[0].status === "sem_interesse") break;
+        await pageA.waitForTimeout(150);
+      }
+      await pageA.goto(`${BASE}/dashboard/lacunas`);
+      check("candidatos: 'Sem interesse' tira da contagem de em aberto (4 → 3)", new RegExp(`${top.cidade}[\\s\\S]{0,60}3 candidatos em aberto`).test(await texto(pageA)));
+      // volta tudo para 'novo' (a limpeza final apaga os candidatos E2E)
+      await dbSeed.query("update public.reseller_candidates set status='novo' where nome_fantasia like 'E2E %'");
+      await pageA.goto(`${BASE}/dashboard/lacunas`);
+      await pageA.screenshot({ path: `${OUT}/16b-lacunas-candidatos-reset.png`, fullPage: false });
       const g = ref.gaps30;
       check("lacunas: título e total vêm de panel_gaps (exato), não da soma truncada", new RegExp(`${g.combinacoes} combinações de produto e cidade`).test(await texto(pageA)) && (await texto(pageA)).includes(String(g.total_buscas)), `${g.combinacoes} combinações / ${g.total_buscas} buscas`);
       // filtro por estado
@@ -516,6 +559,7 @@ async function esperado() {
         }
         if (rota === "/dashboard") await page.screenshot({ path: `${OUT}/08-visao-geral-mobile.png`, fullPage: true });
         if (rota === "/dashboard/rede") await page.screenshot({ path: `${OUT}/09-rede-mobile.png`, fullPage: true });
+        if (rota === "/dashboard/lacunas") await page.screenshot({ path: `${OUT}/17-lacunas-mobile.png`, fullPage: true });
       }
       check("mobile (390 px): nenhuma tela com rolagem horizontal da página", ok, estouros.join(", "));
       // celular pequeno (320 px): o funil e as demais telas também não podem gerar rolagem lateral
@@ -611,6 +655,7 @@ async function esperado() {
       const c = new Client({ connectionString: process.env.DATABASE_URL || "postgres://e2e:e2e@127.0.0.1:5432/geolynq_test" });
       await c.connect();
       await c.query("delete from public.widget_events where session_id like 'e2e-%'");
+      await c.query("delete from public.reseller_candidates where nome_fantasia like 'E2E %'");
       await c.query("delete from public.tenant_users where user_id='00000000-0000-4000-8000-0000000000aa' and tenant_id=(select id from public.tenants where slug='demo')");
       await c.end();
     } catch {}

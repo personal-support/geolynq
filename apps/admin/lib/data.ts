@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Leitura } from "@/lib/ia";
-import type { Catalog, EventoRecente, Funil, ImportBatch, LacunasCompletas, Overview, RevendedorDesempenho, Tenant } from "@/lib/types";
+import type { CandidatosCidade, Catalog, EventoRecente, Funil, ImportBatch, LacunasCompletas, Overview, RevendedorDesempenho, Tenant } from "@/lib/types";
 import type { Periodo } from "./periodo";
 
 /** Usuário logado (validado no servidor do Supabase) + client. Uma consulta por requisição. */
@@ -148,6 +148,21 @@ export const getFunnel = cache(async (tenantId: string, periodo: Periodo): Promi
 });
 
 /** Todas as lacunas do período (até 500 combinações) com o total exato de buscas sem revendedor por perto. */
+/**
+ * Candidatos a revendedor nas cidades com lacuna. Nunca derruba a tela Lacunas: se a função ainda não existe no banco
+ * (migration 20261025000000 não aplicada) ou falhar, devolve null e a tela mostra o aviso "em breve".
+ */
+export async function getCandidatos(tenantId: string, cidades: { uf: string; cidade: string }[]): Promise<CandidatosCidade[] | null> {
+  if (cidades.length === 0) return [];
+  const { supabase } = await getSession();
+  const { data, error } = await supabase.rpc("panel_candidates", { p_tenant_id: tenantId, p_cidades: cidades, p_limit: 6 });
+  if (error) {
+    if (error.code !== "PGRST202") console.error("[candidatos]", error.code, error.message);
+    return null;
+  }
+  return (data ?? []) as CandidatosCidade[];
+}
+
 export const getGaps = cache(async (tenantId: string, periodo: Periodo): Promise<LacunasCompletas> => {
   const { supabase } = await getSession();
   const { data, error } = await supabase.rpc("panel_gaps_r", { p_tenant_id: tenantId, ...intervalo(periodo) });
