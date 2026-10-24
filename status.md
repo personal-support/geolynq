@@ -73,12 +73,16 @@
   será apagado na execução de 12–13/11. **Aviso:** como o painel calcula os relatórios a partir de `widget_events`, depois de 12 meses esse histórico some (nada passa disso hoje).
   **2.3 FEITA no repositório:** `apps/widget/public/privacidade.html` sem `[a definir]` e sem o banner "em revisão" (texto só diz o que o sistema faz; não promete agregados guardados no banco).
   **Para publicar:** o serviço `geolynq_widget` publica da `bold-cray`; precisa avançar a `bold-cray` até aqui (é ancestral, fast-forward) ou apontar o serviço para a `main`, e implantar.
-- **Fase 3 (B0.5, base da Receita) — 3.1 rodado em 24/10, SEM sucesso:** o caminho do plano (`arquivos.receitafederal.gov.br/dados/cnpj/dados_abertos_cnpj/`) devolve **HTTP 404**
-  (a página é um Nextcloud "SERPRO+": qualquer caminho inexistente cai na tela do aplicativo). O sandbox leva 403 nesse host, então a verificação tem que ser feita na VPS ou no navegador do usuário.
-  Pesquisa web (fontes de terceiros, NÃO oficiais): a Receita mudou o layout e os caminhos no fim de jan/2026; o acesso principal seria um *compartilhamento Nextcloud* (`/index.php/s/<código>`).
-  **Falta descobrir o endereço atual** (abrir o site no navegador, achar a pasta de dados abertos do CNPJ e copiar o endereço). **Atenção:** CNPJ alfanumérico — notícias de jul/2026 falam em
-  novos CNPJs com letras a partir de 31/07/2026; o Import v2 e o Cadastro por CNPJ validam só dígitos (`replace(/\D/g, '')` e dígito verificador numérico) e precisarão aceitar letras
-  (12 primeiras posições alfanuméricas; 2 dígitos verificadores calculados com o valor ASCII menos 48). Conferir na fonte oficial antes de mexer.
+- **Fase 3 (B0.5, base da Receita) — acesso DESCOBERTO em 24/10:** o caminho do plano (`.../dados/cnpj/dados_abertos_cnpj/`) devolve 404 (o site é um Nextcloud "SERPRO+": qualquer caminho
+  inexistente cai na tela do aplicativo; o sandbox leva 403 nesse host, então testar sempre pela VPS). **Caminho que funciona:** compartilhamento público
+  `https://arquivos.receitafederal.gov.br/index.php/s/gn672Ad4CF8N6TK?dir=/Dados/Cadastros/CNPJ` (indicado pelo usuário). Listagem por WebDAV, **verificada na VPS**:
+  `curl -s -u 'gn672Ad4CF8N6TK:' -X PROPFIND -H 'Depth: 1' https://arquivos.receitafederal.gov.br/public.php/webdav/Dados/Cadastros/CNPJ/` (usuário = código do compartilhamento, senha vazia; HTTP 207).
+  Há **uma pasta por mês de `2023-08/` a `2026-10/`** e um arquivo solto `cnpj.tar.gz` (tamanho ainda não visto). **Próximo (3.1, parte 2):** listar nomes e tamanhos dos arquivos de `2026-10/`
+  (e decidir como ler em fluxo, um arquivo por vez; disco livre da VPS ~62 GB). Nada foi baixado. **CNPJ alfanumérico:** notícias de jul/2026 (fontes de terceiros, não oficiais) falam em novos CNPJs com
+  letras a partir de 31/07/2026; o Import v2 e o Cadastro por CNPJ validam só dígitos (`replace(/\D/g, '')` e dígito verificador numérico) e precisarão aceitar letras (12 primeiras posições
+  alfanuméricas; 2 dígitos verificadores com o valor ASCII menos 48). Conferir na fonte oficial antes de mexer. Detalhe: o dado da Receita vem em CSV sem cabeçalho, separador `;`, latin-1 (fonte de terceiros).
+- **Página de privacidade do widget:** `bold-cray` foi avançada para `e37c61f` em 24/10 a pedido do usuário (fast-forward); o EasyPanel **não redeploya sozinho** ao empurrar: falta o usuário clicar
+  em **Implantar** em `geolynq_widget` e conferir `https://widget.geolynq.personalsupport.tech/privacidade.html`.
 - **Próximos passos restantes (Fase 5 do plano = Operação):** (1) ativar o monitor acima e criar o monitor externo (UptimeRobot), (2) decisão sobre o Supabase Pro, (3) Fase 2 (retenção `pg_cron`, página de
   privacidade do widget, contrato), (4) Fase 3 (B0.5, base da Receita), (5) Fase 4 (unificar branches em `main`).
 
