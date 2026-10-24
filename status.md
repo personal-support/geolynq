@@ -64,6 +64,14 @@
   crítico do 16.3.4 está resolvido); build do Pódio OK. **Não rodado:** E2E do painel (exige Postgres local, ver `supabase/tests/README.md`) e E2E do widget. **Parte 2 pendente
   (decisão do usuário):** apontar widget/demo, painel e landing do EasyPanel para a `main` (hoje: `bold-cray` e `keen-johnson`) e atualizar a regra de push do `CLAUDE.md`.
   Serviço `geolynq_demo` APAGADO em 24/10 (era do meu erro); sobra remover a deploy key `easypanel-geolynq-demo` no GitHub (Settings → Deploy keys).
+- **Fase 2 (privacidade, retenção, contrato) — INICIADA em 24/10, nada aplicado em produção.** Achados: a landing promete apagar contatos em **30 dias** e nenhum job faz
+  isso; o único contato (13/10, do próprio usuário) completa 30 dias em **2026-11-12** (prazo real). `pg_cron` 1.6.4 está **disponível e não instalado**. `leads`: 1 linha;
+  `widget_events`: ~2.050 linhas (784 kB; as mais antigas são simuladas). A página de privacidade do widget (`apps/widget/public/privacidade.html`) tem **3 trechos
+  `[a definir]`** (linhas ~53 base legal, ~59 prazo de guarda, ~65 contato) mais o banner "texto-base em revisão" (linha 27). **Rascunho pronto no repositório:**
+  `supabase/migrations/20261024000000_retencao_pg_cron.sql` (extensão + `retencao_simular()` + `retencao_limpar()` + agenda diária 06:17 UTC; sintaxe validada com `pglast`, **não
+  executada**; aplicar pelo SQL Editor, não pelo conector). **Pendente do usuário (plano 2.1):** aprovar os valores (leads 30 dias; eventos individuais 12 meses; base legal =
+  legítimo interesse da marca com aviso e opção de recusar; contato = `personalsupport@hotmail.com` ou e-mail da DCM). Só depois: aplicar a migration, preencher a página (2.3) e redigir o contrato (2.4).
+- **Fase 3 (B0.5, base da Receita):** primeiro passo é o comando 3.1 do `docs/plano-2026-10-15.md` na VPS (só leitura, lista os arquivos e tamanhos). **Ainda não rodado.**
 - **Próximos passos restantes (Fase 5 do plano = Operação):** (1) ativar o monitor acima e criar o monitor externo (UptimeRobot), (2) decisão sobre o Supabase Pro, (3) Fase 2 (retenção `pg_cron`, página de
   privacidade do widget, contrato), (4) Fase 3 (B0.5, base da Receita), (5) Fase 4 (unificar branches em `main`).
 
