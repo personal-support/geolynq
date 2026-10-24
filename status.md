@@ -59,6 +59,11 @@
   real: `Connection Timeout` a partir da **Europa** em `widget…/healthz`, enquanto por dentro (n8n) estava 200 e a API da Hostinger dizia `running`:
   hipótese principal = falha pontual de rota; conferir o "is up again" e testar pelo celular com dados móveis. O plano grátis do UptimeRobot é, pelo
   que sei, de uso não comercial (conferir os termos; alternativa gratuita: Better Stack).
+- **Branches unificadas em 24/10 (Fase 4 do plano, parte 1):** `main` avançou (fast-forward, sem conflito) de `b09ee7b` até este ponto: contém `keen-johnson`,
+  `bold-cray` e este bloco. Antes de avançar foram conferidos nesta árvore: widget `typecheck` OK e 47/47 testes; painel `tsc`, `eslint` e `next build` OK (Next 16.3.8, o alerta
+  crítico do 16.3.4 está resolvido); build do Pódio OK. **Não rodado:** E2E do painel (exige Postgres local, ver `supabase/tests/README.md`) e E2E do widget. **Parte 2 pendente
+  (decisão do usuário):** apontar widget/demo, painel e landing do EasyPanel para a `main` (hoje: `bold-cray` e `keen-johnson`) e atualizar a regra de push do `CLAUDE.md`.
+  Serviço `geolynq_demo` APAGADO em 24/10 (era do meu erro); sobra remover a deploy key `easypanel-geolynq-demo` no GitHub (Settings → Deploy keys).
 - **Próximos passos restantes (Fase 5 do plano = Operação):** (1) ativar o monitor acima e criar o monitor externo (UptimeRobot), (2) decisão sobre o Supabase Pro, (3) Fase 2 (retenção `pg_cron`, página de
   privacidade do widget, contrato), (4) Fase 3 (B0.5, base da Receita), (5) Fase 4 (unificar branches em `main`).
 

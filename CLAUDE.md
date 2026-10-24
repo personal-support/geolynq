@@ -48,6 +48,12 @@ n8n para importação de catálogo, EasyPanel/Hostinger para hospedagem. Bluepri
 - **EasyPanel: nunca** chame `listProjectsAndServices` (devolve as variáveis de ambiente, com chaves, de TODOS os projetos da conta). Use `getDockerContainers`/`inspectAppService`
   só em `personalsupport_saas`. Se uma ferramenta devolver segredo sem querer, não repita o valor em nenhum lugar e avise o usuário.
 
+## Estado das branches (2026-10-24)
+- A `main` foi atualizada em 2026-10-24 e **contém todo o código em produção** (painel, landing, widget v2, site Pódio): `main` = `claude/bold-cray-vbbdyb` + registro de sessão no `status.md`.
+  A `keen-johnson` e a `bold-cray` são ancestrais da `main`. **Os serviços do EasyPanel ainda publicam das branches antigas** (widget/demo: `bold-cray`; painel/landing: `keen-johnson`):
+  trocar para a `main` é uma decisão à parte (muda o que dispara deploy). Até lá, a regra abaixo continua valendo.
+- Cada serviço do EasyPanel com repositório privado tem a **própria chave SSH** (Gerar Chave SSH + GitHub → Settings → Deploy keys, só leitura).
+
 ## Regras técnicas
 - Desenvolva e dê push só na branch `claude/bold-cray-vbbdyb`. Push na branch **publica o widget
   sozinho** (webhook → EasyPanel): rode tipos, testes e E2E antes de empurrar.
