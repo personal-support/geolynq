@@ -30,8 +30,9 @@
   Account account" do n8n novo foi trocada para ela; **Import v2 reexecutado (execução 3):
   33 linhas, 0 falhas, mesmo resultado**. Para cada cliente real: compartilhar a planilha dele
   com esse e-mail (leitora basta).
-  **Pendências de limpeza:** apagar o `.json` baixado da pasta Downloads e, no Google Cloud,
-  a chave que foi criada em 23/10 para a conta antiga `tiana-moda-afro` (a mais recente).
+  O `.json` baixado fica guardado pelo usuário (decisão dele em 24/10: não precisa apagar).
+  Opcional: no Google Cloud, a chave criada em 23/10 para a conta antiga `tiana-moda-afro`
+  deixou de ser usada pelo GeoLynq e pode ser apagada quando quiser.
 - **Resend: FEITO em 24/10.** Credencial `Resend API key` (tipo Bearer Auth, chave só do
   GeoLynq, "Sending access" no domínio `personalsupport.tech`) ligada ao nó "Enviar e-mail
   (Resend)". Teste manual no workflow "Aviso de novo contato" (execução 4): e-mail aceito
