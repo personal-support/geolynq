@@ -39,8 +39,16 @@
   `widget_get_tenant*` e `is_active_tenant` executáveis por `anon` é intencional).
 - **Contas:** Drive/n8n = `gestao.junior.lopes@gmail.com`; **Vercel não é usado** (hospedagem = EasyPanel). Conector GitHub da
   sessão ficou com `invalid session` após a troca de conta (git por linha de comando funciona).
-- **Próximos passos sugeridos (Fase 5 do plano = Operação):** (1) monitor de disponibilidade externo (ping a cada 5 min em
-  `widget_get_tenant` e nos hosts; não exige Pro), (2) decisão sobre o Supabase Pro, (3) Fase 2 (retenção `pg_cron`, página de
+- **Monitor de disponibilidade (Fase 5 do plano) CRIADO em 24/10, INATIVO até o usuário aprovar:** workflow n8n novo
+  `n99RNNzlBSWDZs0Y` ("GeoLynq — Monitor de disponibilidade"). A cada 5 min confere 6 endereços: Supabase
+  (`rpc/widget_get_tenant?p_slug=demo` com a chave publishable; exige `"slug"` na resposta), `widget…/healthz`, `widget…/v1/embed.js`,
+  `demo…/`, `painel…/` e a landing (todos HTTP 200). Só avisa após **2 rodadas seguidas** com falha, avisa a volta ao normal e repete a cada
+  3 h; e-mail pelo Resend (credencial `Resend API key`) para `personalsupport@hotmail.com`. Estado em static data (só persiste com o workflow
+  ativo). Não guarda execuções bem-sucedidas (288/dia). **Testado manualmente:** execução 19 = 6 OK, nenhum aviso; execução 18 pegou um
+  bug meu (o corpo da resposta vinha em `data`, não `body`), gerou 1 alerta falso (e-mail de teste enviado) e provou o caminho do e-mail;
+  corrigido com `outputPropertyName: body`. **Limite honesto:** roda na mesma VPS do n8n, então **não avisa se a VPS inteira cair**: usar
+  também um monitor externo gratuito (UptimeRobot, e-mail a cada 5 min) para a VPS e para `widget…/healthz`.
+- **Próximos passos restantes (Fase 5 do plano = Operação):** (1) ativar o monitor acima e criar o monitor externo (UptimeRobot), (2) decisão sobre o Supabase Pro, (3) Fase 2 (retenção `pg_cron`, página de
   privacidade do widget, contrato), (4) Fase 3 (B0.5, base da Receita), (5) Fase 4 (unificar branches em `main`).
 
 ## Última atualização
