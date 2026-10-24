@@ -28,7 +28,7 @@ function LinhaNavegacao({ e, local }: { e: EventoRecente; local: string | null }
   }
   return (
     <li className="flex items-start gap-3 px-5 py-3">
-      <span className="mt-0.5 rounded-md bg-line px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink-3">Navegação</span>
+      <span className="mt-0.5 rounded-md bg-line px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink-3">Navegação</span>
       <div className="min-w-0 flex-1 text-sm">
         <p className="font-medium">{titulo}</p>
         <p className="truncate text-[13px] text-ink-3">{detalhe}</p>
@@ -45,7 +45,7 @@ function Linha({ e }: { e: EventoRecente }) {
   if (e.tipo === "reseller_click") {
     return (
       <li className="flex items-start gap-3 px-5 py-3">
-        <span className="mt-0.5 rounded-md bg-ok-soft px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ok-deep">Contato</span>
+        <span className="mt-0.5 rounded-md bg-ok-soft px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-ok-deep">Contato</span>
         <div className="min-w-0 flex-1 text-sm">
           <p className="font-medium">
             {e.acao ? ACAO_CLIQUE[e.acao] ?? e.acao : "Contato"} · {e.revendedor ?? "revendedor"}
@@ -63,7 +63,7 @@ function Linha({ e }: { e: EventoRecente }) {
   const semLoja = !foraDoCatalogo && (e.resultado ?? 0) === 0;
   return (
     <li className="flex items-start gap-3 px-5 py-3">
-      <span className="mt-0.5 rounded-md bg-line px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink-2">Busca</span>
+      <span className="mt-0.5 rounded-md bg-line px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink-2">Busca</span>
       <div className="min-w-0 flex-1 text-sm">
         <p className="font-medium">
           {foraDoCatalogo ? (

@@ -513,6 +513,17 @@ async function esperado() {
         if (rota === "/dashboard/rede") await page.screenshot({ path: `${OUT}/09-rede-mobile.png`, fullPage: true });
       }
       check("mobile (390 px): nenhuma tela com rolagem horizontal da página", ok, estouros.join(", "));
+      // celular pequeno (320 px): o funil e as demais telas também não podem gerar rolagem lateral
+      await page.setViewportSize({ width: 320, height: 640 });
+      const estouros320 = [];
+      for (const rota of ["/dashboard", "/dashboard?p=mes", "/dashboard/lacunas", "/dashboard/rede", "/dashboard/catalogo", "/dashboard/importacoes", "/dashboard/widget"]) {
+        await page.goto(`${BASE}${rota}`);
+        await page.waitForTimeout(250);
+        const l320 = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth }));
+        if (l320.sw > l320.iw + 1) estouros320.push(`${rota} (${l320.sw}>${l320.iw})`);
+      }
+      check("mobile pequeno (320 px): nenhuma tela com rolagem horizontal da página", estouros320.length === 0, estouros320.join(", "));
+      await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(`${BASE}/dashboard?p=mes`);
       await page.locator("details > summary").click();
       await page.waitForTimeout(200);

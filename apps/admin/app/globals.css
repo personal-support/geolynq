@@ -86,6 +86,11 @@ h3 {
   background: #e6ecea;
   font-family: var(--font-sans);
 }
+.gl-map .leaflet-bar a {
+  width: 36px;
+  height: 36px;
+  line-height: 36px;
+}
 .gl-map .leaflet-control-attribution {
   font-size: 10px;
   background: rgba(255, 255, 255, 0.8);

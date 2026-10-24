@@ -135,7 +135,7 @@ export default async function Lacunas({ searchParams }: { searchParams: Promise<
                   <tr key={`${l.product_id}-${l.cidade}-${l.uf}`}>
                     <td className={TD}>
                       <p className="font-semibold">{l.produto}</p>
-                      <p className="font-mono text-[11px] text-ink-3">{l.sku}</p>
+                      <p className="font-mono text-xs text-ink-3">{l.sku}</p>
                     </td>
                     <td className={TD}>
                       {l.cidade}

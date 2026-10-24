@@ -138,7 +138,7 @@ details p{margin:0 0 18px;color:var(--ink-2)}
 
 /* rodapé */
 .rodape{background:#06151e;color:#9bb0b4;padding-block:34px;font-size:.92rem}
-.rodape a{color:#cbd9d7}
+.rodape a{color:#cbd9d7;display:inline-block;padding-block:6px}
 .rodape p{margin:0 0 8px}
 .rodape__pq{font-size:.8rem;opacity:.8}
 
@@ -158,7 +158,7 @@ details p{margin:0 0 18px;color:var(--ink-2)}
   .hero__fatos{flex-direction:row;flex-wrap:wrap;gap:8px 28px}
 }
 @media (min-width:761px){
-  .topo__nav a:not(.btn){display:inline}
+  .topo__nav a:not(.btn){display:inline-flex;align-items:center;min-height:44px}
   .hero{align-items:center}
   .hero__in{padding-block:130px 70px}
   .hero__sub{max-width:46ch}

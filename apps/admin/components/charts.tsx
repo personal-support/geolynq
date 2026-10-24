@@ -83,7 +83,7 @@ export function BarList({ itens, vazio, neutro = false }: { itens: BarItem[]; va
             <div className="flex items-baseline justify-between gap-3">
               <p className="min-w-0 truncate text-sm font-medium">
                 {i.rotulo}
-                {i.sub ? <span className="ml-2 font-mono text-[11px] font-normal text-ink-3">{i.sub}</span> : null}
+                {i.sub ? <span className="ml-2 font-mono text-xs font-normal text-ink-3">{i.sub}</span> : null}
               </p>
               <p className="shrink-0 font-display text-base font-semibold">{num(i.valor)}</p>
             </div>

@@ -15,7 +15,27 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { user } = await getSession();
   if (!user) redirect("/login");
 
-  const m = await getMembership().catch(() => null);
+  let m: Awaited<ReturnType<typeof getMembership>> = null;
+  let falhou = false;
+  try {
+    m = await getMembership();
+  } catch {
+    falhou = true;
+  }
+  if (falhou) {
+    return (
+      <main className="grid min-h-screen place-items-center px-6">
+        <div className="max-w-md text-center">
+          <RadarMark size={44} className="mx-auto text-ink" />
+          <h1 className="mt-5 text-[28px] font-semibold leading-tight">Não conseguimos carregar o painel agora</h1>
+          <p className="mt-3 text-[15px] text-ink-2">É um problema temporário de conexão, e a sua conta não foi alterada. Aguarde alguns segundos e atualize a página.</p>
+          <a href="/dashboard" className="mt-6 inline-block rounded-xl bg-ink px-5 py-2.5 text-sm font-semibold text-white hover:bg-ink-2">
+            Tentar de novo
+          </a>
+        </div>
+      </main>
+    );
+  }
   if (!m) {
     return (
       <main className="grid min-h-screen place-items-center px-6">

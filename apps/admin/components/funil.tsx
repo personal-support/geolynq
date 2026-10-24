@@ -19,9 +19,9 @@ function Degraus({ etapas, tom }: { etapas: Etapa[]; tom: "ink" | "ok" }) {
         const doAnterior = anterior && anterior > 0 ? Math.round((100 * e.valor) / anterior) : null;
         return (
           <li key={e.rotulo} data-etapa={e.rotulo}>
-            <div className="flex items-baseline justify-between gap-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
               <p className="min-w-0 text-sm font-semibold">{e.rotulo}</p>
-              <p className="shrink-0 text-sm">
+              <p className="text-sm">
                 <span className="font-display text-base font-semibold">{num(e.valor)}</span>
                 {doAnterior !== null ? <span className="ml-2 text-xs text-ink-3">{pct(doAnterior)} da etapa anterior</span> : null}
               </p>
@@ -53,7 +53,7 @@ export function FunilDeUso({ f }: { f: Funil }) {
           Quando alguém digitar no campo de busca, escolher um produto ou abrir a lista de revendedores, o caminho aparece aqui.
         </Empty>
       ) : (
-        <div className="grid gap-8 px-5 pb-6 pt-4 lg:grid-cols-[1.3fr_1fr]" data-funil>
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-8 px-5 pb-6 pt-4 lg:grid-cols-[1.3fr_1fr]" data-funil>
           <div className="space-y-8">
             <section aria-label="Caminho pelo produto">
               <h3 className="mb-3 text-[13px] font-semibold uppercase tracking-[0.12em] text-ink-3">Caminho pelo produto</h3>
@@ -93,7 +93,7 @@ export function FunilDeUso({ f }: { f: Funil }) {
                   <li key={t.termo} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
                     <span className="min-w-0 truncate">
                       “{t.termo}”
-                      {t.achou ? null : <span className="ml-2 rounded-md bg-gap-soft px-1.5 py-0.5 text-[11px] font-semibold text-gap-deep">fora do catálogo</span>}
+                      {t.achou ? null : <span className="ml-2 rounded-md bg-gap-soft px-1.5 py-0.5 text-xs font-semibold text-gap-deep">fora do catálogo</span>}
                     </span>
                     <span className="shrink-0 font-semibold">{num(t.buscas)}</span>
                   </li>

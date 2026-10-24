@@ -150,7 +150,7 @@ export default async function Rede({ searchParams }: { searchParams: SP }) {
                       <tr key={x.id}>
                         <td className={TD}>
                           <p className="font-semibold">{x.nome}</p>
-                          {x.cnpj ? <p className="font-mono text-[11px] text-ink-3">{formataCnpj(x.cnpj)}</p> : null}
+                          {x.cnpj ? <p className="font-mono text-xs text-ink-3">{formataCnpj(x.cnpj)}</p> : null}
                         </td>
                         <td className={TD}>{TIPO_REVENDEDOR[x.tipo] ?? x.tipo}</td>
                         <td className={TD}>

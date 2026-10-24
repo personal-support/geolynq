@@ -65,12 +65,12 @@ export function Sidebar({
           <RadarMark size={30} className="text-white" />
           <div className="leading-none">
             <p className="font-display text-xl font-semibold tracking-tight">GeoLynq</p>
-            <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/55">Radar de cobertura</p>
+            <p className="mt-1 text-xs uppercase tracking-[0.14em] text-white/55">Radar de cobertura</p>
           </div>
         </div>
 
         <div className="mt-8 rounded-xl bg-white/[0.07] p-3.5">
-          <p className="text-[11px] uppercase tracking-[0.12em] text-white/50">Cliente</p>
+          <p className="text-xs uppercase tracking-[0.12em] text-white/50">Cliente</p>
           <p className="mt-1 line-clamp-2 break-words font-display text-[17px] font-semibold leading-tight" title={cliente}>
             {cliente}
           </p>

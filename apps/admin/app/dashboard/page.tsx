@@ -199,7 +199,7 @@ export default async function VisaoGeral({ searchParams }: { searchParams: SP })
                   </div>
                   <p className="shrink-0 text-right">
                     <span className="font-display text-xl font-semibold text-gap">{num(l.buscas)}</span>
-                    <span className="block text-[11px] text-ink-3">{l.buscas === 1 ? "busca" : "buscas"}</span>
+                    <span className="block text-xs text-ink-3">{l.buscas === 1 ? "busca" : "buscas"}</span>
                   </p>
                 </li>
               ))}

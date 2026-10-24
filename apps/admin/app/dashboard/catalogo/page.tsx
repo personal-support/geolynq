@@ -65,7 +65,7 @@ export default async function Catalogo() {
                   <tr key={p.id}>
                     <td className={TD}>
                       <p className="font-semibold">{p.name}</p>
-                      <p className="font-mono text-[11px] text-ink-3">{p.sku}</p>
+                      <p className="font-mono text-xs text-ink-3">{p.sku}</p>
                     </td>
                     <td className={`${TD} text-ink-2`}>{rotuloCategoria(p.category)}</td>
                     <td className={`${TD} text-right font-display text-base font-semibold`}>{num(p.revendedores)}</td>
