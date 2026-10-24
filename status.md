@@ -191,13 +191,16 @@ do banco agora é schema + migration acima.
       `claude/tender-goodall-fmpm7m`** (`apps/demo`: `index.html` com 2 widgets do tenant `demo`,
       12 SVGs `img/<sku>.svg` que o banco já referencia, `nginx.conf`, `Dockerfile`; layout
       conferido no Chromium em 420 e 1100 px; **Dockerfile/nginx.conf não foram construídos**,
-      sem daemon Docker no ambiente). **Falta no EasyPanel (usuário):** criar o app
-      `geolynq_demo` em `personalsupport_saas` (fonte Git `git@github.com:personal-support/geolynq.git`,
-      branch `claude/tender-goodall-fmpm7m`, Dockerfile `apps/demo/Dockerfile`, contexto na raiz,
-      porta 80), **mover o domínio `demo.geolynq.personalsupport.tech`** do serviço `geolynq_widget`
-      (onde está hoje e só serve `/v1/*` e `/healthz`, então as fotos dão 404) para o novo app,
-      e implantar. Validar: `/healthz` = ok, `/img/wpi-900.svg` abre, a página mostra os widgets.
-      Quando a branch for para a `main`, trocar a branch do app.
+      sem daemon Docker no ambiente). **Implantado em 24/10 pelo usuário:** app `geolynq_demo` em
+      `personalsupport_saas` (Git `git@github.com:personal-support/geolynq.git`, branch
+      `claude/tender-goodall-fmpm7m`, commit `d9a61cb`, Dockerfile `apps/demo/Dockerfile`, porta 80),
+      domínio `demo.geolynq.personalsupport.tech` movido do `geolynq_widget` para ele (o widget
+      ficou só com `widget.geolynq…`); serviço 1/1. **Falta validar no navegador:** `/healthz` = ok,
+      `/img/wpi-900.svg` abre, a página mostra os 2 widgets e a busca funciona (ex.: "whey" +
+      CEP 01310-100). Quando a branch for para a `main`, trocar a branch do app.
+      **Lição:** a chave SSH (deploy key) do EasyPanel é **por serviço**: cada app novo com repo
+      privado precisa de "Gerar Chave SSH" e de ser cadastrada em GitHub → Settings → Deploy
+      keys (read-only); sem isso dá "Cannot access repository".
 - [ ] Fase 5 — painel admin
 - [x] Limpeza do tenant `demo`: **feita em 24/10.** A única duplicata era "Farmácia Saúde Total"
       (`814f5182-…`, inativa, sem cobertura, 1 endereço): apagada pelo usuário no SQL Editor
