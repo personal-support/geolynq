@@ -64,7 +64,8 @@
   crítico do 16.3.4 está resolvido); build do Pódio OK. **Não rodado:** E2E do painel (exige Postgres local, ver `supabase/tests/README.md`) e E2E do widget. **Parte 2 pendente
   (decisão do usuário):** apontar widget/demo, painel e landing do EasyPanel para a `main` (hoje: `bold-cray` e `keen-johnson`) e atualizar a regra de push do `CLAUDE.md`.
   Serviço `geolynq_demo` APAGADO em 24/10 (era do meu erro); sobra remover a deploy key `easypanel-geolynq-demo` no GitHub (Settings → Deploy keys).
-- **Fase 2 (privacidade, retenção, contrato) — 2.1, 2.2 e 2.3 FEITAS em 24/10; 2.3 ainda NÃO publicada; falta 2.4 (contrato).**
+- **Fase 2 (privacidade, retenção, contrato) — 2.1, 2.2, 2.3 FEITAS e 2.4 em RASCUNHO (24/10).** **2.4:** minuta em `docs/contrato-minuta-prestacao-servico.md` (parte A = 9 pontos de atenção; parte B = cláusulas 1–14 e anexos I–V). NÃO é versão final: preços em branco, falta cadeia de licença Jucimar↔DCM, conferir limite do MEI da DCM e revisão jurídica antes de assinar.
+  (2.3 foi publicada no commit 10c3963.)
   **2.1 APROVADA pelo usuário em 24/10:** contatos da landing 30 dias; eventos individuais do widget 12 meses; base legal = legítimo interesse da marca (LGPD art. 7º, IX) com
   aviso e opção de recusar; contato = `personalsupport@hotmail.com`. O usuário optou por não levar a página a advogado (o plano recomenda revisão antes de assinar contrato com a New Millen).
   **2.2 APLICADA EM PRODUÇÃO em 24/10** (extensão `pg_cron` 1.6.4, `retencao_simular()` pelo conector; `retencao_limpar()`, `revoke` e `cron.schedule` pelo SQL Editor do usuário):
