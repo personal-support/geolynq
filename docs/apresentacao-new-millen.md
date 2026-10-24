@@ -51,13 +51,15 @@ Em troca: depoimento ou caso de uso **aprovado por escrito por ela** e feedback 
 
 **Antes de começar (Junior prepara):**
 - Tenha prints de cada tela como plano B, caso a internet falhe.
-- Dados do painel de demonstração são **simulados**. Diga isso logo no início (a tela já traz o aviso).
-- Danilo precisa de um usuário de demonstração do painel [pendente: o Junior cria].
+- O site de amostra e o painel de demonstração usam o **mesmo cliente de teste, `demo`** (em 24/10: 1.496 eventos **simulados** e 75 eventos **reais**, feitos por quem já navegou no site de amostra). A faixa "Dados de demonstração" do painel avisa isso. Diga logo no início.
+- O Danilo precisa de um **usuário próprio** no painel do cliente `demo` [pendente: o Junior cria; não compartilhar o login do Junior].
+- **Ensaie o passo 2b antes** (busca no site, recarregar o painel). Não foi testado num navegador, só confirmado no banco que as buscas reais chegam.
 
 | # | Mostrar | Dizer | Evitar |
 |---|---|---|---|
 | 1 | Site de amostra: `https://demo.geolynq.personalsupport.tech` (marca fictícia "Pódio", no estilo da New Millen) | "Este é um site de exemplo. O da New Millen terá a sua marca" | Usar logo ou fotos reais da New Millen sem autorização |
 | 2 | Digitar um CEP de Santos/SP e abrir o resultado | "O consumidor acha o revendedor mais próximo em 3 toques e chama no WhatsApp" | Prometer rota de entrega ou estoque em tempo real |
+| 2b | **Momento principal:** no painel (tela Visão geral, bloco "Últimas buscas"), **recarregar a página** e mostrar a busca que acabou de ser feita no site de amostra, no topo, com a hora | "Isto é o dado fresco: a busca que fiz há 10 segundos já está aqui. Não é nota fiscal de meses atrás" | Dizer que atualiza sozinho na tela: precisa recarregar (F5). Dizer "tempo real" sem essa ressalva |
 | 3 | Painel, tela **Rede** | "Onde a marca está hoje: por cidade, tipo, e se o cadastro está completo" | Dizer que cobre "todo o Brasil" sem a lista deles |
 | 4 | Painel, tela **Visão geral** | "Como está: o que as pessoas buscam e clicam" | Tratar número simulado como real |
 | 5 | Painel, tela **Lacunas** | "Onde não está: buscas em cidades sem revendedor por perto" | "A loja X não vende". Diga "não consta na base" |
