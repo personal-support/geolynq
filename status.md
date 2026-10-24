@@ -23,13 +23,15 @@
   (`nhiCkFN9GAllOdsJ`). **Import v2 testado em 23/10** no tenant de teste
   `88a5496b-…` (Fábrica Teste): 33 linhas, 0 falhas, `partial` só pelo aviso de foto
   `http://` do TST-002 (esperado). O n8n antigo (AWS, conector `n8n`) tem os mesmos workflows.
-- **Pendência (gatilho: antes de importar a planilha do 1º cliente real): conta de serviço
-  Google própria do GeoLynq.** Hoje o n8n usa a `tiana-moda-afro@…`, compartilhada com outro
-  projeto (mesma identidade enxerga as planilhas dos dois; vazamento da chave expõe ambos).
-  Grátis (conta de serviço + APIs Sheets/Drive, sem cartão). ~5 min no Google Cloud:
-  IAM e administrador → Contas de serviço → Criar → chave JSON; compartilhar a planilha do
-  cliente com o e-mail novo (editor); trocar a credencial no n8n; **apagar a chave JSON criada
-  em 23/10 para a `tiana-moda-afro`**. Sem urgência enquanto as planilhas forem de teste.
+- **Conta de serviço Google própria do GeoLynq: FEITA em 23/10.**
+  `geolynq-importador@tiana-moda-afro.iam.gserviceaccount.com` (mesmo projeto Google Cloud, mas
+  identidade separada da `tiana-moda-afro@…`). Leitora da planilha de teste "Fábrica Teste
+  (dados hipotéticos)" e da pasta "GeoLynq — Testes (n8n)". A credencial "Google Service
+  Account account" do n8n novo foi trocada para ela; **Import v2 reexecutado (execução 3):
+  33 linhas, 0 falhas, mesmo resultado**. Para cada cliente real: compartilhar a planilha dele
+  com esse e-mail (leitora basta).
+  **Pendências de limpeza:** apagar o `.json` baixado da pasta Downloads e, no Google Cloud,
+  a chave que foi criada em 23/10 para a conta antiga `tiana-moda-afro` (a mais recente).
 - **Falta no n8n novo**: credencial do **Resend** (nó "Enviar e-mail (Resend)" usa Bearer;
   criar como `httpTemplatedCustomAuth` com `Authorization: Bearer {{api_key}}`). Workflows
   seguem inativos; o de aviso só ativa depois do Resend.
