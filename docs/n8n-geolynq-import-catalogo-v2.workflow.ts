@@ -187,12 +187,12 @@ const codeValidarRevendedores = node({
         "const tiposValidos = ['loja_fisica', 'farmacia', 'online', 'distribuidor', 'outro'];\n" +
         "function dv(base, pesos) {\n" +
         "  let soma = 0;\n" +
-        "  for (let i = 0; i < pesos.length; i++) soma += Number(base[i]) * pesos[i];\n" +
+        "  for (let i = 0; i < pesos.length; i++) soma += (base.charCodeAt(i) - 48) * pesos[i];\n" +
         "  const resto = soma % 11;\n" +
         "  return resto < 2 ? 0 : 11 - resto;\n" +
         "}\n" +
         "function cnpjValido(d) {\n" +
-        "  if (d.length !== 14 || /^(\\d)\\1{13}$/.test(d)) return false;\n" +
+        "  if (!/^[0-9A-Z]{12}[0-9]{2}$/.test(d) || /^(.)\\1{13}$/.test(d)) return false;\n" +
         "  return dv(d, [5,4,3,2,9,8,7,6,5,4,3,2]) === Number(d[12]) && dv(d, [6,5,4,3,2,9,8,7,6,5,4,3,2]) === Number(d[13]);\n" +
         "}\n" +
         "const vistos = {};\n" +
@@ -212,8 +212,8 @@ const codeValidarRevendedores = node({
         "    out.push({ json: { _valid: false, _sheet: 'Revendedores', _row: row, _error: 'tipo inválido: ' + tipo + ' (use ' + tiposValidos.join('/') + ')' } });\n" +
         "    return;\n" +
         "  }\n" +
-        "  let cnpj = (d.cnpj || '').toString().replace(/\\D/g, '');\n" +
-        "  if (cnpj.length > 0 && cnpj.length < 14) cnpj = cnpj.padStart(14, '0');\n" +
+        "  let cnpj = (d.cnpj || '').toString().toUpperCase().replace(/[^0-9A-Z]/g, '');\n" +
+        "  if (/^[0-9]+$/.test(cnpj) && cnpj.length < 14) cnpj = cnpj.padStart(14, '0');\n" +
         "  if (!cnpj) {\n" +
         "    if (exigirCnpj) {\n" +
         "      out.push({ json: { _valid: false, _sheet: 'Revendedores', _row: row, _error: 'CNPJ é obrigatório para este cliente (coluna cnpj)' } });\n" +
@@ -385,8 +385,8 @@ const codeValidarCobertura = node({
         "  const d = item.json;\n" +
         "  const sku = (d.sku_produto || '').toString().trim();\n" +
         "  const nomeRev = (d.nome_revendedor || '').toString().trim();\n" +
-        "  let cnpjRev = (d.cnpj_revendedor || '').toString().replace(/\\D/g, '');\n" +
-        "  if (cnpjRev.length > 0 && cnpjRev.length < 14) cnpjRev = cnpjRev.padStart(14, '0');\n" +
+        "  let cnpjRev = (d.cnpj_revendedor || '').toString().toUpperCase().replace(/[^0-9A-Z]/g, '');\n" +
+        "  if (/^[0-9]+$/.test(cnpjRev) && cnpjRev.length < 14) cnpjRev = cnpjRev.padStart(14, '0');\n" +
         "  if (!sku || (!cnpjRev && !nomeRev)) {\n" +
         "    out.push({ json: { _valid: false, _sheet: 'Cobertura', _row: row, _error: 'sku_produto e (cnpj_revendedor ou nome_revendedor) são obrigatórios' } });\n" +
         "    return;\n" +

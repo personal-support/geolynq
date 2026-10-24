@@ -46,15 +46,15 @@ const codeValidarParametros = node({
       language: 'javaScript',
       jsCode:
         "const p = $input.first().json;\n" +
-        "const cnpj = String(p.cnpj || '').replace(/\\D/g, '');\n" +
+        "const cnpj = String(p.cnpj || '').toUpperCase().replace(/[^0-9A-Z]/g, '');\n" +
         "function dv(base, pesos) {\n" +
         "  let soma = 0;\n" +
-        "  for (let i = 0; i < pesos.length; i++) soma += Number(base[i]) * pesos[i];\n" +
+        "  for (let i = 0; i < pesos.length; i++) soma += (base.charCodeAt(i) - 48) * pesos[i];\n" +
         "  const resto = soma % 11;\n" +
         "  return resto < 2 ? 0 : 11 - resto;\n" +
         "}\n" +
         "function cnpjValido(d) {\n" +
-        "  if (d.length !== 14 || /^(\\d)\\1{13}$/.test(d)) return false;\n" +
+        "  if (!/^[0-9A-Z]{12}[0-9]{2}$/.test(d) || /^(.)\\1{13}$/.test(d)) return false;\n" +
         "  return dv(d, [5,4,3,2,9,8,7,6,5,4,3,2]) === Number(d[12]) && dv(d, [6,5,4,3,2,9,8,7,6,5,4,3,2]) === Number(d[13]);\n" +
         "}\n" +
         "if (!cnpjValido(cnpj)) throw new Error('CNPJ inválido (dígito verificador): ' + p.cnpj);\n" +

@@ -9,6 +9,7 @@
 > **Estado (2026-10-02): B0.1 APLICADO em produção** (migration `supabase/migrations/20261003000000_b0_tenant_profile.sql`,
 > autorizada pelo Junior). Os passos B0.2 em diante continuam só desenho. A seção 5 é o rascunho original; **vale o arquivo da migration**
 > (diferença: CNPJ guardado só com 14 dígitos puros, `check (cnpj ~ '^[0-9]{14}$')`, para a chave única não duplicar por causa de máscara).
+> **Atualização 24/10/2026 (CNPJ alfanumérico):** desde jul/2026 a Receita emite CNPJ com letras. O CNPJ guardado passa a ser "14 caracteres sem máscara, em maiúsculas" (12 de 0-9/A-Z + 2 dígitos verificadores numéricos); migration `20261024010000_cnpj_alfanumerico.sql`, teste `supabase/tests/13_cnpj_alfanumerico.sql`.
 > Decisão confirmada pelo Junior: **território = Brasil inteiro e todos os canais, e o sistema não é só para a New Millen.**
 >
 > **Verificado em produção:** `is_valid_cnpj` (CNPJ da New Millen e do BB válidos; dígito errado, repetido, curto recusados); as 3 recusas

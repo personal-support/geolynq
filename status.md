@@ -64,6 +64,15 @@
   crítico do 16.3.4 está resolvido); build do Pódio OK. **Não rodado:** E2E do painel (exige Postgres local, ver `supabase/tests/README.md`) e E2E do widget. **Parte 2 pendente
   (decisão do usuário):** apontar widget/demo, painel e landing do EasyPanel para a `main` (hoje: `bold-cray` e `keen-johnson`) e atualizar a regra de push do `CLAUDE.md`.
   Serviço `geolynq_demo` APAGADO em 24/10 (era do meu erro); sobra remover a deploy key `easypanel-geolynq-demo` no GitHub (Settings → Deploy keys).
+- **Carga da Receita CONCLUÍDA em 24/10 (VPS, `~/cnpj/cnpj.db`, 142 MB, mês 2026-10):** 599.618 estabelecimentos ativos nos 10 CNAEs de suplementos (SP 141.709; MG 61.328; RJ 44.582; PR 42.202; RS 36.399).
+  Por CNAE: 4729699 = 200.192 (33%, ruidoso), 4771701 = 111.699, 4619200 = 87.404, 9313100 = 84.362, 4763602 = 36.178, 4617600 = 31.135, 4639701 = 23.127, 4691500 = 9.970, 4771702 = 8.265, 4637199 = 7.286.
+  Todos os 12 arquivos `completo=True`, 0 malformadas; ~20 min no total (Estabelecimentos0, 2,2 GB: 453 s). **1 CNPJ com letras** em `Estabelecimentos0` = primeiro caso real de CNPJ alfanumérico.
+  Ainda nada da Receita foi para o Supabase (precisa de aprovação do usuário). Estimativa errada minha: previ 350–450 mil; deu 600 mil (o CNAE 4729699 pesa muito).
+- **CNPJ alfanumérico — correção PRONTA NO REPOSITÓRIO, NÃO APLICADA (24/10):** `supabase/migrations/20261024010000_cnpj_alfanumerico.sql` (validação com letras, 3 CHECKs, `provision_tenant`, `import_reseller`),
+  `supabase/tests/13_cnpj_alfanumerico.sql` (OK 13 no Postgres local: exemplo oficial 12.ABC.345/01DE-35, 40 vetores independentes, 20 mil numéricos iguais à função antiga; testes 05 e 09 seguem OK),
+  e código dos nós em `docs/n8n-geolynq-import-catalogo-v2.workflow.ts` e `docs/n8n-geolynq-cadastro-cliente.workflow.ts` (testado em node: 12 casos), formatação no painel (`rede/page.tsx`).
+  **Para valer em produção:** (1) usuário roda a migration no SQL Editor (tem DROP CONSTRAINT); (2) atualizar os 2 workflows no n8n novo (Import v2 `8hXMMiLGaFTa8bw6`, Cadastro `gTDZOrphnSqujiux`); (3) publicar o painel. Ordem: banco antes do n8n.
+  **Não verificado:** a fonte oficial (gov.br) não foi aberta; regra conferida por notícias + exemplo; **BrasilAPI aceitar CNPJ alfanumérico não foi testado** (o Cadastro por CNPJ depende dela).
 - **Fase 2 (privacidade, retenção, contrato) — 2.1, 2.2, 2.3 FEITAS e 2.4 em RASCUNHO (24/10).** **2.4:** minuta em `docs/contrato-minuta-prestacao-servico.md` (parte A = 9 pontos de atenção; parte B = cláusulas 1–14 e anexos I–V). NÃO é versão final: preços em branco, falta cadeia de licença Jucimar↔DCM, conferir limite do MEI da DCM e revisão jurídica antes de assinar.
   (2.3 foi publicada no commit 10c3963.)
   **2.1 APROVADA pelo usuário em 24/10:** contatos da landing 30 dias; eventos individuais do widget 12 meses; base legal = legítimo interesse da marca (LGPD art. 7º, IX) com

@@ -188,5 +188,5 @@ export default async function Rede({ searchParams }: { searchParams: SP }) {
 }
 
 function formataCnpj(v: string) {
-  return v.length === 14 ? v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : v;
+  return v.length === 14 ? v.replace(/^([0-9A-Z]{2})([0-9A-Z]{3})([0-9A-Z]{3})([0-9A-Z]{4})(\d{2})$/, "$1.$2.$3/$4-$5") : v;
 }
