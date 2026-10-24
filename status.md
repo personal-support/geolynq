@@ -45,6 +45,16 @@
   em remetentes seguros; avisar o Danilo (Gmail) para pôr `avisos@personalsupport.tech` nos
   contatos. HTML do aviso agora é completo (doctype/html/head/body), envolvido na expressão
   do nó de envio; testado em 24/10 (execução 5, só para o dono). Para desativar: toggle no n8n.
+- **n8n antigo (AWS/EasyPanel, expira 10/11/2026)**: tem 5 workflows, todos inativos, 1 projeto,
+  sem arquivados (conferido em 24/10). Os 3 do GeoLynq em uso (Aviso, Cadastro por CNPJ, Import
+  v2) já estão no n8n novo. **Import Catálogo v1 não foi migrado de propósito** (o v2 o
+  substitui; o v1 duplica revendedores na reimportação). Resta migrar o **`acervo-meishu-sama`**
+  (não é do GeoLynq): o usuário guardou o `.json` e importa no n8n novo (Import from file). Para
+  rodar lá: (1) credencial Google com acesso à pasta do acervo (`13tDR-…`), provavelmente a
+  conta de serviço `tiana-moda-afro` (por isso NÃO apagar a chave dela criada em 23/10);
+  (2) variáveis de ambiente `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `GEMINI_API_KEY` no serviço
+  `n8n` do EasyPanel, mais `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` se `$env` vier bloqueado (n8n
+  2.x); (3) o `x-api-key` do extrator vai dentro do nó. Depois de migrar, o n8n antigo pode sair.
 - **Contas**: Drive/n8n = `gestao.junior.lopes@gmail.com`; Vercel NÃO é usado no projeto
   (hospedagem é EasyPanel). Conector GitHub da sessão precisa de sessão nova após a troca de
   conta; git por linha de comando funciona.
@@ -167,7 +177,10 @@ Validado como role `anon` no geolynq-prod: lê produtos/revendedores/endereços/
 do banco agora é schema + migration acima.
 
 ## Decisões em aberto (usuário decide)
-- [ ] **Reimportação de revendedores duplica registros.** `products` tem
+- [x] **RESOLVIDO em 24/10 para imports novos:** o Import v2 (n8n) faz upsert por (tenant, CNPJ)
+      via `import_reseller` e reexecutado 2× no tenant de teste não duplicou nada. Sobra só a
+      duplicata antiga do tenant `demo` (ver Pendente). Texto original abaixo, histórico:
+- [ ] ~~**Reimportação de revendedores duplica registros.**~~ `products` tem
       `unique(tenant_id, sku)` (duplicata vira erro por linha), mas `resellers` não tem
       constraint única — reimportar a mesma planilha cria revendedores duplicados em
       silêncio (já visto no tenant `demo`: 2× "Farmácia Saúde Total", das execuções #97/#98).
@@ -180,9 +193,20 @@ do banco agora é schema + migration acima.
 ## Pendente
 - [ ] Fase 4.1 — site de amostra (em paralelo à Fase 5)
 - [ ] Fase 5 — painel admin
-- [ ] Limpar os dados de teste do tenant `demo` (revendedor duplicado) antes de mostrar a cliente
-- [ ] Anti-spam em `widget_events` (qualquer um com a anon key pode inserir) — rate limit
-      no gateway/Nginx quando o widget estiver público
+- [ ] Limpar os dados de teste do tenant `demo` antes de mostrar a cliente. Conferido em 24/10:
+      a única duplicata é "Farmácia Saúde Total" (id `814f5182-efec-43a8-a640-fb529e061b99`,
+      **inativa e sem cobertura**, criada 11/09; a boa é `0ca83394-…`, ativa, 1 cobertura).
+      Apagar só a inativa, com aprovação do usuário. Os demais revendedores do demo não têm CNPJ
+      (esperado: `exigir_cnpj = false` só para o demo).
+- [x] Anti-spam em `widget_events`: **já existe no banco** (trigger `widget_events_limit`:
+      20/min e 200/h por sessão, 600/min por tenant; `panel_ai_readings_limit`: 1 leitura de IA
+      a cada 2 min e 30/dia por tenant). Rate limit extra no Nginx é opcional.
+- Advisors de segurança do Supabase (24/10): `spatial_ref_sys` sem RLS e `postgis` no schema
+  `public` (risco baixo, já listado abaixo); `widget_get_tenant(_v2)` e `is_active_tenant`
+  executáveis por `anon` é intencional (o widget precisa); `widget_events_limit`,
+  `panel_ai_readings_limit` e `st_estimatedextent` aparecem como SECURITY DEFINER, mas as duas
+  primeiras são funções de trigger (não chamáveis como RPC útil). "Leaked password protection"
+  desligada: recurso de plano pago, só importa se houver login por senha.
 - [ ] `public.spatial_ref_sys` (PostGIS) sem RLS — risco baixo (só sistemas de coordenadas),
       advisor marca como crítico; decidir entre `ENABLE ROW LEVEL SECURITY` ou mover PostGIS
       para o schema `extensions`
