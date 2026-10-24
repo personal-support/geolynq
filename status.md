@@ -187,7 +187,10 @@ do banco agora é schema + migration acima.
       `unaccent` + RPC de busca quando houver catálogo real.
 
 ## Pendente
-- [ ] Fase 4.1 — site de amostra (em paralelo à Fase 5). **Código pronto em 24/10 na branch
+- [x] **Fase 4.1 CONCLUÍDA e validada em 24/10** (usuário abriu `/healthz`, `/img/wpi-900.svg` e a página;
+      busca "whey" achou os 2 whey, CEP 01310-100 listou 5 revendedores com distância,
+      WhatsApp, ligar, site e rota). Histórico abaixo.
+- Fase 4.1 — site de amostra. **Código pronto em 24/10 na branch
       `claude/tender-goodall-fmpm7m`** (`apps/demo`: `index.html` com 2 widgets do tenant `demo`,
       12 SVGs `img/<sku>.svg` que o banco já referencia, `nginx.conf`, `Dockerfile`; layout
       conferido no Chromium em 420 e 1100 px; **Dockerfile/nginx.conf não foram construídos**,
@@ -195,9 +198,8 @@ do banco agora é schema + migration acima.
       `personalsupport_saas` (Git `git@github.com:personal-support/geolynq.git`, branch
       `claude/tender-goodall-fmpm7m`, commit `d9a61cb`, Dockerfile `apps/demo/Dockerfile`, porta 80),
       domínio `demo.geolynq.personalsupport.tech` movido do `geolynq_widget` para ele (o widget
-      ficou só com `widget.geolynq…`); serviço 1/1. **Falta validar no navegador:** `/healthz` = ok,
-      `/img/wpi-900.svg` abre, a página mostra os 2 widgets e a busca funciona (ex.: "whey" +
-      CEP 01310-100). Quando a branch for para a `main`, trocar a branch do app.
+      ficou só com `widget.geolynq…`); serviço 1/1; validado no navegador (ver acima).
+      Quando a branch for para a `main`, trocar a branch do app `geolynq_demo`.
       **Lição:** a chave SSH (deploy key) do EasyPanel é **por serviço**: cada app novo com repo
       privado precisa de "Gerar Chave SSH" e de ser cadastrada em GitHub → Settings → Deploy
       keys (read-only); sem isso dá "Cannot access repository".
