@@ -117,6 +117,16 @@ begin
   -- ordem: abertos primeiro, maior score primeiro (Alfa 40, Gama 35, Beta 30, Delta 20, Épsilon 10), depois os fechados (Eta 33, Zeta 12); o padrão mostra 6
   assert (select string_agg(i ->> 'nome', ',' order by o) from jsonb_array_elements(g -> 'itens') with ordinality t(i, o)) =
          'Alfa Suplementos,Gama Nutrição,Beta Academia,Delta Esportes,Épsilon Fit,Eta Vitaminas', 'ordem dos itens (limite padrão de 6; fechados por último)';
+  -- pedido de exclusão (pela raiz do CNPJ): some para todos os clientes, vale para a matriz e a filial
+  reset role;   -- quem registra o pedido é o service_role/SQL Editor, não o painel
+  insert into public.candidate_optout (raiz) values ('86420975');
+  set local role authenticated;
+  g := (select x from jsonb_array_elements(public.panel_candidates(t, '[{"uf":"SP","cidade":"Santos"}]'::jsonb)) x);
+  assert not exists (select 1 from jsonb_array_elements(g -> 'itens') i where i ->> 'nome' = 'Beta Academia'), 'candidato com pedido de exclusão não pode aparecer';
+  assert (g ->> 'abertos')::int = 4, 'abertos deveria cair para 4 sem o Beta: ' || (g ->> 'abertos');
+  reset role;
+  delete from public.candidate_optout where raiz = '86420975';
+  set local role authenticated;
   -- limite
   g := (select x from jsonb_array_elements(public.panel_candidates(t, '[{"uf":"SP","cidade":"SANTOS"}]'::jsonb, 3)) x);
   assert jsonb_array_length(g -> 'itens') = 3 and (g ->> 'abertos')::int = 5, 'o limite só corta a lista, não a contagem';

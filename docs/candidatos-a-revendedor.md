@@ -15,7 +15,7 @@
    encontrado, inativo, consulta falhou, pendente).
 
 ## Passo a passo para um cliente novo
-**0. Uma vez só:** aplicar `supabase/migrations/20261025000000_candidatos_a_revendedor.sql` no SQL Editor (tabelas novas; não altera nada existente).
+**0. Uma vez só:** aplicar `supabase/migrations/20261025000000_candidatos_a_revendedor.sql` e `20261025010000_candidatos_optout.sql` no SQL Editor (já aplicadas em produção em 24/10) (tabelas novas; não altera nada existente).
 Sem isso o painel continua igual e a tela Lacunas mostra "Em breve".
 
 **1. Lista de revendedores já importada** (Import v2). Pegar `id` e `cnpj` (SQL Editor → "Download CSV" ou copiar o resultado para `revendedores.csv` na VPS):
@@ -62,6 +62,7 @@ Colar `candidatos.sql` no SQL Editor. Repetir o passo 6 todo mês (e quando surg
 
 ## Privacidade e regras
 - Guardamos só dado cadastral de **empresa**: CNPJ, nome fantasia, CNAE, bairro, CEP, cidade. Sem telefone, e-mail, sócios, razão social (que em MEI traz o nome da pessoa).
+- **Pedido de exclusão** (a página de privacidade da landing promete): o titular escreve com o CNPJ; no SQL Editor: `insert into public.candidate_optout (raiz) values ('<8 primeiros caracteres do CNPJ>') on conflict do nothing;`. Vale para matriz e filiais e para todos os clientes, e continua valendo quando a base for recarregada.
 - Quem já é revendedor (mesmo CNPJ **ou mesma raiz de 8 caracteres**, isto é, filial) nunca aparece como candidato.
 - Só `owner` e `admin` do cliente mudam o andamento; `viewer` só lê (o banco confere, não só a tela).
 - Texto ao cliente: "não constam na sua rede". Antes de abordar, a equipe confere o contato por fontes próprias.
